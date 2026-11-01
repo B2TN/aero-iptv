@@ -10,12 +10,12 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/B2TN/aero-iptv/issues/new?template=avis.yml"><img src="docs/assets/bouton-avis.svg" alt="Share your feedback" height="68"></a>
+  <a href="https://github.com/B2TN/aero-iptv/issues/new?template=feedback.yml"><img src="docs/assets/bouton-avis.svg" alt="Share your feedback" height="68"></a>
 </p>
 <p align="center">
   <a href="https://github.com/B2TN/aero-iptv/issues/new?template=bug.yml"><img src="docs/assets/bouton-bug.svg" alt="Report a bug" height="48"></a>
   &nbsp;
-  <a href="https://github.com/B2TN/aero-iptv/issues/new?template=idee.yml"><img src="docs/assets/bouton-idee.svg" alt="Suggest an idea" height="48"></a>
+  <a href="https://github.com/B2TN/aero-iptv/issues/new?template=idea.yml"><img src="docs/assets/bouton-idee.svg" alt="Suggest an idea" height="48"></a>
 </p>
 
 <p align="center">
@@ -96,12 +96,12 @@ The titles and posters in these screenshots are made up for the demo. The interf
 Aero IPTV is a young project built in spare time. Every bit of feedback counts: a first impression, a confusing screen, a channel that won't start, an idea. All you need is a free GitHub account, and the form takes a minute.
 
 <p align="center">
-  <a href="https://github.com/B2TN/aero-iptv/issues/new?template=avis.yml"><img src="docs/assets/bouton-avis.svg" alt="Share your feedback" height="68"></a>
+  <a href="https://github.com/B2TN/aero-iptv/issues/new?template=feedback.yml"><img src="docs/assets/bouton-avis.svg" alt="Share your feedback" height="68"></a>
 </p>
 <p align="center">
   <a href="https://github.com/B2TN/aero-iptv/issues/new?template=bug.yml"><img src="docs/assets/bouton-bug.svg" alt="Report a bug" height="48"></a>
   &nbsp;
-  <a href="https://github.com/B2TN/aero-iptv/issues/new?template=idee.yml"><img src="docs/assets/bouton-idee.svg" alt="Suggest an idea" height="48"></a>
+  <a href="https://github.com/B2TN/aero-iptv/issues/new?template=idea.yml"><img src="docs/assets/bouton-idee.svg" alt="Suggest an idea" height="48"></a>
 </p>
 
 Feedback is public: **never post your username, password or playlist address.**
@@ -131,8 +131,8 @@ Aero IPTV does not provide, host or recommend any content. You are responsible f
 
 ## For developers
 
-The project is written in Flutter, with media_kit (libmpv) for playback and Drift for the local database. Everything is in the [development guide](docs/DEVELOPPEMENT.md) (in French).
+The project is written in Flutter, with media_kit (libmpv) for playback and Drift for the local database. Everything is in the [development guide](docs/DEVELOPMENT.md).
 
 ## License
 
-© 2026 B2TN. Aero IPTV's code is released under the [GPL v3 license](LICENSE): you can use, modify and redistribute it, as long as your versions stay open under the same license. See also the [third-party licenses](docs/LICENCES_TIERS.md) (in French).
+© 2026 B2TN. Aero IPTV's code is released under the [GPL v3 license](LICENSE): you can use, modify and redistribute it, as long as your versions stay open under the same license. See also the [third-party licenses](docs/THIRD_PARTY_LICENSES.md).

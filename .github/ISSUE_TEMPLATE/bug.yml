@@ -1,65 +1,65 @@
-name: Signaler un bug
-description: Quelque chose ne fonctionne pas comme prévu.
-title: "Bug : "
+name: Report a bug
+description: Something doesn't work as expected.
+title: "Bug: "
 labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
-        Ce formulaire est public. N'écrivez jamais votre identifiant, votre mot de passe ni l'adresse de votre playlist. Vérifiez aussi vos captures d'écran avant de les joindre.
+        This form is public: never post your username, password or playlist address. Check your screenshots too before attaching them.
   - type: input
     id: version
     attributes:
-      label: Version de l'application
-      description: Le numéro figure dans le nom du fichier téléchargé.
+      label: App version
+      description: The number is on the releases page, next to the file you downloaded.
       placeholder: "0.1.9"
     validations:
       required: true
   - type: dropdown
-    id: appareil
+    id: device
     attributes:
-      label: Votre appareil
+      label: Your device
       options:
-        - PC Windows
+        - Windows PC
         - Fire TV Stick
         - Android TV
-        - Autre
+        - Other
     validations:
       required: true
   - type: dropdown
     id: source
     attributes:
-      label: Votre type de playlist
+      label: Your playlist type
       options:
         - Xtream Codes
         - M3U
-        - Sans rapport avec la playlist
+        - Not related to the playlist
     validations:
       required: true
   - type: textarea
-    id: probleme
+    id: problem
     attributes:
-      label: Que s'est-il passé ?
-      description: Recopiez le message d'erreur s'il y en a un. Masquez toute adresse de serveur.
+      label: What happened?
+      description: Copy any error message. Hide any server address.
     validations:
       required: true
   - type: textarea
-    id: etapes
+    id: steps
     attributes:
-      label: Comment le reproduire ?
+      label: How can it be reproduced?
       placeholder: |
-        1. Ouvrir un film
-        2. Choisir une version
-        3. L'erreur apparaît
+        1. Open a movie
+        2. Choose a version
+        3. The error appears
     validations:
       required: true
   - type: dropdown
-    id: frequence
+    id: frequency
     attributes:
-      label: À quelle fréquence ?
+      label: How often does it happen?
       options:
-        - À chaque fois
-        - Souvent
-        - Une seule fois
+        - Every time
+        - Often
+        - Only once
     validations:
       required: false

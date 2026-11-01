@@ -1,0 +1,43 @@
+name: Share your feedback
+description: A first impression, what you like, what bothers you.
+title: "Feedback: "
+labels: ["feedback"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking a minute. This form is public: never post your username, password or playlist address.
+  - type: dropdown
+    id: rating
+    attributes:
+      label: Your overall impression
+      options:
+        - "Love it"
+        - "It's good"
+        - "Could be better"
+        - "Didn't like it"
+    validations:
+      required: true
+  - type: dropdown
+    id: device
+    attributes:
+      label: Your device
+      options:
+        - Windows PC
+        - Fire TV Stick
+        - Android TV
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: likes
+    attributes:
+      label: What you like
+    validations:
+      required: false
+  - type: textarea
+    id: dislikes
+    attributes:
+      label: What bothers you or is missing
+    validations:
+      required: false
