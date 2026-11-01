@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="240" height="56" viewBox="0 0 240 56" role="img" aria-label="Signaler un bug">
-  <title>Signaler un bug</title>
+<svg xmlns="http://www.w3.org/2000/svg" width="207" height="56" viewBox="0 0 207 56" role="img" aria-label="Report a bug">
+  <title>Report a bug</title>
   <defs>
     <linearGradient id="gel" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#ffd79a"/>
@@ -11,10 +11,10 @@
       <stop offset="1" stop-color="#ffffff" stop-opacity="0.08"/>
     </linearGradient>
   </defs>
-  <rect x="1.5" y="1.5" width="237" height="53" rx="26.0" fill="url(#gel)" stroke="#9c4212" stroke-width="3"/>
-  <rect x="6" y="5" width="228" height="23.0" rx="12.5" fill="url(#reflet)"/>
+  <rect x="1.5" y="1.5" width="204" height="53" rx="26.0" fill="url(#gel)" stroke="#9c4212" stroke-width="3"/>
+  <rect x="6" y="5" width="195" height="23.0" rx="12.5" fill="url(#reflet)"/>
   <g font-family="Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="20" font-weight="600" text-anchor="middle">
-    <text x="120.0" y="36.2" fill="#000000" fill-opacity="0.35">Signaler un bug</text>
-    <text x="120.0" y="35.2" fill="#ffffff">Signaler un bug</text>
+    <text x="103.5" y="36.2" fill="#000000" fill-opacity="0.35">Report a bug</text>
+    <text x="103.5" y="35.2" fill="#ffffff">Report a bug</text>
   </g>
 </svg>

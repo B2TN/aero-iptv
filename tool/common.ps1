@@ -34,7 +34,7 @@ $env:GIT_CONFIG_VALUE_0 = 'true'
 # dans dist. Cette copie peut être supprimée à tout moment.
 function Use-Workshop {
     if ($ProjectRoot -notmatch '\\OneDrive') { return }
-    $workshop = if ($env:AERO_WORKSHOP) { $env:AERO_WORKSHOP } else { 'C:\dev\aero_iptv_atelier' }
+    $workshop = if ($env:AERO_WORKSHOP) { $env:AERO_WORKSHOP } else { Join-Path $env:USERPROFILE 'aero_iptv_atelier' }
     robocopy $ProjectRoot $workshop /MIR /R:1 /W:1 /NFL /NDL /NJH /NJS /NP `
         /XD build .dart_tool .gradle .kotlin ephemeral dist .git /XF '*.g.dart' | Out-Null
     # Robocopy ne signale une erreur qu'à partir du code 8.

@@ -5,138 +5,134 @@
 <h1 align="center">Aero IPTV</h1>
 
 <p align="center">
-  <strong>Vos chaînes, films et séries sur la TV et le PC, dans une interface de verre et d'eau.</strong><br>
-  Pour Android TV, Fire TV et Windows. Gratuit, sans compte et sans publicité.
+  <strong>Your channels, movies and series on TV and PC, in an interface made of glass and water.</strong><br>
+  For Android TV, Fire TV and Windows. Free, no account, no ads.
 </p>
 
 <p align="center">
-  <a href="https://github.com/B2TN/aero-iptv/issues/new?template=avis.yml"><img src="docs/assets/bouton-avis.svg" alt="Donner mon avis" height="68"></a>
+  <a href="https://github.com/B2TN/aero-iptv/issues/new?template=avis.yml"><img src="docs/assets/bouton-avis.svg" alt="Share your feedback" height="68"></a>
 </p>
 <p align="center">
-  <a href="https://github.com/B2TN/aero-iptv/issues/new?template=bug.yml"><img src="docs/assets/bouton-bug.svg" alt="Signaler un bug" height="48"></a>
+  <a href="https://github.com/B2TN/aero-iptv/issues/new?template=bug.yml"><img src="docs/assets/bouton-bug.svg" alt="Report a bug" height="48"></a>
   &nbsp;
-  <a href="https://github.com/B2TN/aero-iptv/issues/new?template=idee.yml"><img src="docs/assets/bouton-idee.svg" alt="Proposer une idée" height="48"></a>
+  <a href="https://github.com/B2TN/aero-iptv/issues/new?template=idee.yml"><img src="docs/assets/bouton-idee.svg" alt="Suggest an idea" height="48"></a>
 </p>
 
 <p align="center">
-  <img src="docs/captures/accueil.png" alt="Écran d'accueil d'Aero IPTV : une sélection à la une, puis des rangées de séries et de films" width="860">
+  <img src="docs/captures/accueil.png" alt="Aero IPTV home screen: a featured title, then rows of series and movies" width="860">
 </p>
 
-## Installer
+## Install
 
-Choisissez votre appareil. Le téléchargement démarre tout de suite.
+Pick your device. The download starts right away.
 
-| Appareil | Fichier | |
+| Device | File | |
 |---|---|---|
-| PC Windows 10 ou 11 (64 bits) | Archive `.zip` | <a href="https://github.com/B2TN/aero-iptv/releases/latest/download/aero-iptv-windows-x64.zip"><img src="docs/assets/bouton-windows.svg" alt="Télécharger pour Windows" height="44"></a> |
-| Tous les Fire TV Stick, boîtiers Android 32 bits | `.apk` 32 bits | <a href="https://github.com/B2TN/aero-iptv/releases/latest/download/aero-iptv-fire-tv-armeabi-v7a.apk"><img src="docs/assets/bouton-firetv.svg" alt="Télécharger pour Fire TV Stick" height="44"></a> |
-| TV et boîtiers Android TV 64 bits | `.apk` 64 bits | <a href="https://github.com/B2TN/aero-iptv/releases/latest/download/aero-iptv-android-tv-arm64-v8a.apk"><img src="docs/assets/bouton-androidtv.svg" alt="Télécharger pour Android TV" height="44"></a> |
+| Windows 10 or 11 PC (64-bit) | `.zip` archive | <a href="https://github.com/B2TN/aero-iptv/releases/latest/download/aero-iptv-windows-x64.zip"><img src="docs/assets/bouton-windows.svg" alt="Download for Windows" height="44"></a> |
+| All Fire TV Sticks, 32-bit Android boxes | 32-bit `.apk` | <a href="https://github.com/B2TN/aero-iptv/releases/latest/download/aero-iptv-fire-tv-armeabi-v7a.apk"><img src="docs/assets/bouton-firetv.svg" alt="Download for Fire TV Stick" height="44"></a> |
+| 64-bit Android TVs and boxes | 64-bit `.apk` | <a href="https://github.com/B2TN/aero-iptv/releases/latest/download/aero-iptv-android-tv-arm64-v8a.apk"><img src="docs/assets/bouton-androidtv.svg" alt="Download for Android TV" height="44"></a> |
 
-Toutes les versions sont sur la [page des versions](https://github.com/B2TN/aero-iptv/releases).
+All versions are on the [releases page](https://github.com/B2TN/aero-iptv/releases).
 
 <details>
-<summary><strong>Installer sous Windows</strong></summary>
+<summary><strong>Install on Windows</strong></summary>
 
-1. Téléchargez l'archive et faites un clic droit dessus, puis **Extraire tout**.
-2. Ouvrez le dossier extrait et lancez `aero_iptv.exe`. Gardez tous les fichiers ensemble : l'application en a besoin.
-3. Si Windows affiche « Windows a protégé votre ordinateur », cliquez sur **Informations complémentaires**, puis **Exécuter quand même**. Ce message apparaît pour toute application sans signature payante.
+1. Download the archive, right-click it and choose **Extract All**.
+2. Open the extracted folder and run `aero_iptv.exe`. Keep all the files together: the app needs them.
+3. If Windows shows "Windows protected your PC", click **More info**, then **Run anyway**. This message appears for any app without a paid signature.
 
 </details>
 
 <details>
-<summary><strong>Installer sur Fire TV</strong></summary>
+<summary><strong>Install on Fire TV</strong></summary>
 
-1. Sur la Fire TV, installez l'application gratuite **Downloader** depuis l'Appstore.
-2. Dans **Paramètres**, **Ma Fire TV**, **Options pour les développeurs**, autorisez les applications de sources inconnues pour Downloader.
-3. Dans Downloader, saisissez l'adresse du bouton **Fire TV Stick** ci-dessus, puis installez le fichier.
+1. On your Fire TV, install the free **Downloader** app from the Appstore.
+2. In **Settings**, **My Fire TV**, **Developer options**, allow apps from unknown sources for Downloader.
+3. In Downloader, enter the address of the **Fire TV Stick** button above, then install the file.
 
 </details>
 
 <details>
-<summary><strong>Installer sur Android TV</strong></summary>
+<summary><strong>Install on Android TV</strong></summary>
 
-1. Copiez le fichier `.apk` sur une clé USB, ou téléchargez-le avec une application comme Downloader.
-2. Ouvrez-le avec un gestionnaire de fichiers, puis autorisez l'installation quand la TV le demande.
-3. Si la TV refuse la version 64 bits, installez celle du bouton **Fire TV Stick** : elle fonctionne partout.
+1. Copy the `.apk` file to a USB drive, or download it with an app such as Downloader.
+2. Open it with a file manager, then allow the installation when the TV asks.
+3. If the TV refuses the 64-bit version, install the one from the **Fire TV Stick** button: it works everywhere.
 
 </details>
 
-### Premier lancement
+### First launch
 
-Ajoutez votre playlist M3U ou vos codes Xtream Codes : c'est tout. Aero IPTV est un lecteur, il ne fournit **aucune chaîne ni aucun contenu**. Il vous faut donc une playlist ou un abonnement auprès d'un fournisseur.
+Add your M3U playlist or your Xtream Codes login, and you're ready. Aero IPTV is a player: it provides **no channels and no content**. You need a playlist or a subscription from a provider.
 
-## Ce que vous y trouverez
+## What's inside
 
-- **Un accueil qui donne envie** : sélection à la une, tendances et reprise là où vous en étiez.
-- **La TV en direct** : chaînes par groupe, avec le programme en cours.
-- **Une seule fiche par film ou série** : toutes les versions et langues y sont réunies.
-- **Une lecture complète** : pistes audio, sous-titres, sauts de 30 secondes, passer l'intro, épisode suivant.
-- **Des sous-titres traduits** dans la langue de votre choix.
-- **Une vraie navigation à la télécommande**, et à la souris sous Windows.
-- **Les abonnements limités à une connexion** sont pris en charge.
-- **Cinq langues** : français, anglais, espagnol, allemand et arabe.
+- **A welcoming home screen**: featured picks, trending titles, and resume where you left off.
+- **Live TV**: channels by group, with what's on now.
+- **One page per movie or series**: all versions and languages in one place.
+- **Full playback controls**: audio tracks, subtitles, 30-second jumps, skip intro, next episode.
+- **Translated subtitles** in the language of your choice.
+- **Real remote-control navigation**, plus mouse support on Windows.
+- **Single-connection subscriptions** are supported.
+- **Five languages**: English, French, Spanish, German and Arabic.
 
-## Aperçu
+## Preview
 
 <table>
   <tr>
-    <td><img src="docs/captures/chaines.png" alt="Liste des chaînes par groupe, avec le programme en cours"></td>
-    <td><img src="docs/captures/lecteur.png" alt="Lecteur avec barre de temps, audio et sous-titres"></td>
+    <td><img src="docs/captures/chaines.png" alt="Channel list by group, with what's on now"></td>
+    <td><img src="docs/captures/lecteur.png" alt="Player with time bar, audio and subtitles"></td>
   </tr>
   <tr>
-    <td><img src="docs/captures/recherche.png" alt="Recherche avec un clavier à l'écran utilisable à la télécommande"></td>
-    <td><img src="docs/captures/parametres.png" alt="Paramètres de l'application"></td>
+    <td><img src="docs/captures/recherche.png" alt="Search with an on-screen keyboard that works with a remote"></td>
+    <td><img src="docs/captures/parametres.png" alt="App settings"></td>
   </tr>
 </table>
 
-Les titres et les affiches de ces captures sont inventés pour la démonstration.
+The titles and posters in these screenshots are made up for the demo. The interface is shown in French.
 
-## Votre avis fait avancer l'application
+## Your feedback shapes the app
 
-Aero IPTV est un projet récent, développé sur son temps libre. Chaque retour compte : une impression, un écran peu clair, une chaîne qui ne se lance pas, une idée. Il suffit d'un compte GitHub gratuit, et le formulaire ne prend qu'une minute.
+Aero IPTV is a young project built in spare time. Every bit of feedback counts: a first impression, a confusing screen, a channel that won't start, an idea. All you need is a free GitHub account, and the form takes a minute.
 
 <p align="center">
-  <a href="https://github.com/B2TN/aero-iptv/issues/new?template=avis.yml"><img src="docs/assets/bouton-avis.svg" alt="Donner mon avis" height="68"></a>
+  <a href="https://github.com/B2TN/aero-iptv/issues/new?template=avis.yml"><img src="docs/assets/bouton-avis.svg" alt="Share your feedback" height="68"></a>
 </p>
 <p align="center">
-  <a href="https://github.com/B2TN/aero-iptv/issues/new?template=bug.yml"><img src="docs/assets/bouton-bug.svg" alt="Signaler un bug" height="48"></a>
+  <a href="https://github.com/B2TN/aero-iptv/issues/new?template=bug.yml"><img src="docs/assets/bouton-bug.svg" alt="Report a bug" height="48"></a>
   &nbsp;
-  <a href="https://github.com/B2TN/aero-iptv/issues/new?template=idee.yml"><img src="docs/assets/bouton-idee.svg" alt="Proposer une idée" height="48"></a>
+  <a href="https://github.com/B2TN/aero-iptv/issues/new?template=idee.yml"><img src="docs/assets/bouton-idee.svg" alt="Suggest an idea" height="48"></a>
 </p>
 
-Les retours sont publics : **n'y écrivez jamais votre identifiant, votre mot de passe ni l'adresse de votre playlist.**
+Feedback is public: **never post your username, password or playlist address.**
 
-La version Windows est celle qui a le plus servi. Les versions Android ont été testées sur émulateur, pas encore sur un vrai Fire TV Stick : vos retours sur ces appareils sont particulièrement utiles.
+The Windows version has seen the most use. The Android versions have been tested on an emulator, not yet on a real Fire TV Stick, so feedback from those devices is especially useful.
 
-## Sous-titres traduits (facultatif)
+## Translated subtitles (optional)
 
-Deux services gratuits ajoutent la traduction, chacun avec votre propre clé, à saisir dans **Paramètres** :
+Two free services add translation, each with your own key, entered in **Settings**:
 
-| Clé | Ce qu'elle apporte |
+| Key | What it does |
 |---|---|
-| [DeepL](https://www.deepl.com/your-account/keys) | Traduit les répliques des sous-titres du film au fil de la lecture |
-| [OpenSubtitles](https://www.opensubtitles.com/consumers) | Trouve un fichier complet, traduit d'un bloc dès que vous le choisissez. Il peut être légèrement décalé, car il vient d'une autre source que la vidéo |
+| [DeepL](https://www.deepl.com/your-account/keys) | Translates the subtitle lines of the video as you watch |
+| [OpenSubtitles](https://www.opensubtitles.com/consumers) | Finds a complete file, translated in one go as soon as you pick it. It may be slightly out of sync, since it comes from a different source than the video |
 
-Sous-titres dessinés en images (PGS, VobSub) : ils ne contiennent aucun texte et ne peuvent pas être traduits.
+Subtitles drawn as images (PGS, VobSub) contain no text and can't be translated.
 
-## Vos données
+## Your data
 
-- Vos identifiants restent sur votre appareil, chiffrés par le coffre du système (DPAPI sous Windows, Keystore sous Android), et ne sont envoyés qu'à votre fournisseur.
-- Aucun compte, aucune publicité, aucune mesure d'audience.
-- L'application contacte uniquement votre fournisseur, les classements publics d'Apple pour les tendances de l'accueil et les services dont vous avez saisi la clé.
+- Your login details stay on your device, encrypted by the system vault (DPAPI on Windows, Keystore on Android), and are only sent to your provider.
+- No account, no ads, no analytics.
+- The app only contacts your provider, Apple's public charts for the home screen trends, and the services whose key you've entered.
 
-## Contenu et droits
+## Content and rights
 
-Aero IPTV ne fournit, n'héberge et ne recommande aucun contenu. Vous êtes responsable de ce que vous y ouvrez : utilisez-le uniquement avec des sources que vous avez le droit de regarder. Aucun lien de playlist n'est accepté dans les retours.
+Aero IPTV does not provide, host or recommend any content. You are responsible for what you open with it: only use sources you have the right to watch. Playlist links are not accepted in feedback.
 
-## In English
+## For developers
 
-Aero IPTV is a free IPTV player for Android TV, Fire TV and Windows, with a Frutiger Aero interface. It plays your own M3U playlists and Xtream Codes accounts and does not provide any channels or content. Use the download buttons above. Feedback is welcome in English too, through the buttons above.
+The project is written in Flutter, with media_kit (libmpv) for playback and Drift for the local database. Everything is in the [development guide](docs/DEVELOPPEMENT.md) (in French).
 
-## Pour les développeurs
+## License
 
-Le projet est écrit en Flutter, avec media_kit (libmpv) pour la lecture et Drift pour la base locale. Tout est décrit dans le [guide de développement](docs/DEVELOPPEMENT.md).
-
-## Licence
-
-© 2026 B2TN. Le code d'Aero IPTV est distribué sous [licence GPL v3](LICENSE) : vous pouvez l'utiliser, le modifier et le redistribuer, à condition que vos versions restent ouvertes sous la même licence. Voir aussi les [licences des composants tiers](docs/LICENCES_TIERS.md).
+© 2026 B2TN. Aero IPTV's code is released under the [GPL v3 license](LICENSE): you can use, modify and redistribute it, as long as your versions stay open under the same license. See also the [third-party licenses](docs/LICENCES_TIERS.md) (in French).

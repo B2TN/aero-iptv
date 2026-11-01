@@ -50,7 +50,7 @@ fichier. Il retire les fichiers d'une exécution de débogage et refuse de livre
 un paquet qui en contiendrait.
 
 Si le projet est rangé dans OneDrive, ces deux scripts compilent dans une copie à
-part (`C:\dev\aero_iptv_atelier`, ou le dossier de `AERO_WORKSHOP`), et les paquets
+part (`%USERPROFILE%\aero_iptv_atelier`, ou le dossier de `AERO_WORKSHOP`), et les paquets
 reviennent dans `dist/`. OneDrive marque en effet ses dossiers en lecture seule, ce
 que `flutter gen-l10n` refuse, et il enverrait dans le nuage des gigaoctets de
 fichiers générés. Pour la même raison, lancez les commandes ci-dessous depuis cette
