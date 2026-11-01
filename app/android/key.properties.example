@@ -1,0 +1,7 @@
+# Modèle de configuration de signature.
+# Créez le vrai fichier avec tool/create_keystore.ps1. Il ne doit jamais être
+# versionné : quiconque possède ce fichier et la clé peut publier à votre place.
+storeFile=C:/chemin/vers/aero_iptv_release.jks
+storePassword=
+keyAlias=aero_iptv
+keyPassword=

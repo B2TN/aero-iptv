@@ -1,0 +1,5 @@
+# Le test de charge est exclu de la suite normale.
+# Lancement : dart test --run-skipped -t load
+tags:
+  load:
+    skip: "Test de charge : lancer avec --run-skipped -t load"

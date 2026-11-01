@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="306" height="68" viewBox="0 0 306 68" role="img" aria-label="Donner mon avis">
+  <title>Donner mon avis</title>
+  <defs>
+    <linearGradient id="gel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a8f0a0"/>
+      <stop offset="0.5" stop-color="#3fbf6b"/>
+      <stop offset="1" stop-color="#128a4a"/>
+    </linearGradient>
+    <linearGradient id="reflet" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.75"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.08"/>
+    </linearGradient>
+  </defs>
+  <rect x="1.5" y="1.5" width="303" height="65" rx="32.0" fill="url(#gel)" stroke="#0d6b3a" stroke-width="3"/>
+  <rect x="6" y="5" width="294" height="29.0" rx="15.5" fill="url(#reflet)"/>
+  <g font-family="Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="26" font-weight="600" text-anchor="middle">
+    <text x="153.0" y="44.36" fill="#000000" fill-opacity="0.35">Donner mon avis</text>
+    <text x="153.0" y="43.36" fill="#ffffff">Donner mon avis</text>
+  </g>
+</svg>

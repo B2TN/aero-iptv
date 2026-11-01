@@ -1,0 +1,5 @@
+# Les tests contre un vrai libmpv sont exclus de la suite normale.
+# Lancement : voir test/libmpv/real_engine_test.dart
+tags:
+  libmpv:
+    skip: "Nécessite LIBMPV_PATH : lancer avec --run-skipped -t libmpv"

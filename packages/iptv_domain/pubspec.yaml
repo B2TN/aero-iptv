@@ -1,0 +1,11 @@
+name: iptv_domain
+description: Règles métier du client IPTV, sans dépendance vers Flutter ou SQLite.
+version: 0.1.0
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.10.0
+
+dev_dependencies:
+  test: ^1.25.0

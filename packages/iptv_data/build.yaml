@@ -1,0 +1,12 @@
+# Active FTS5 pour que Drift puisse analyser l'index de recherche.
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          named_parameters: true
+          sql:
+            dialect: sqlite
+            options:
+              version: "3.45"
+              modules: [fts5]

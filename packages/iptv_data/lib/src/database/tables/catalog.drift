@@ -1,0 +1,296 @@
+-- Catalogue local.
+--
+-- Chaque synchronisation écrit un nouveau `catalog_id`. L'application continue
+-- de lire `sources.active_catalog_id`, qui ne bascule qu'à la fin de l'import :
+-- une erreur réseau ne peut donc pas laisser un catalogue à moitié écrit.
+
+CREATE TABLE sources (
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  kind INTEGER NOT NULL,
+  default_country_code TEXT,
+  active_catalog_id INTEGER,
+  last_synced_at INTEGER
+) AS SourceRow;
+
+CREATE TABLE catalogs (
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  source_id INTEGER NOT NULL REFERENCES sources (id) ON DELETE CASCADE,
+  created_at INTEGER NOT NULL
+) AS CatalogRow;
+
+CREATE TABLE channel_groups (
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  catalog_id INTEGER NOT NULL,
+  raw_name TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  grouping_key TEXT NOT NULL,
+  sort_order INTEGER NOT NULL,
+  UNIQUE (catalog_id, raw_name)
+) AS ChannelGroupRow;
+
+-- Une ligne par flux. Les doublons restent en base : la vue regroupée n'est
+-- qu'un GROUP BY, ce qui rend le réglage de regroupement instantané.
+CREATE TABLE live_channels (
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  catalog_id INTEGER NOT NULL,
+  group_id INTEGER NOT NULL,
+  raw_name TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  grouping_key TEXT NOT NULL,
+  country_code TEXT,
+  quality INTEGER NOT NULL,
+  variant_label TEXT NOT NULL,
+  logo_url TEXT,
+  epg_key TEXT,
+  stream_url TEXT,
+  xtream_stream_id INTEGER,
+  container_ext TEXT,
+  user_agent TEXT,
+  referrer TEXT,
+  sort_order INTEGER NOT NULL
+) AS LiveChannelRow;
+
+CREATE INDEX live_channels_browse
+  ON live_channels (catalog_id, country_code, group_id, grouping_key);
+
+CREATE TABLE movies (
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  catalog_id INTEGER NOT NULL,
+  raw_title TEXT NOT NULL,
+  display_title TEXT NOT NULL,
+  title_key TEXT NOT NULL,
+  content_key TEXT NOT NULL,
+  year INTEGER,
+  language_tag TEXT,
+  category TEXT,
+  poster_url TEXT,
+  stream_url TEXT,
+  xtream_stream_id INTEGER,
+  container_ext TEXT,
+  user_agent TEXT,
+  referrer TEXT,
+  sort_order INTEGER NOT NULL
+) AS MovieRow;
+
+CREATE INDEX movies_browse ON movies (catalog_id, sort_order);
+CREATE INDEX movies_title ON movies (catalog_id, title_key);
+
+-- Une ligne par version d'une série. `title_key` identifie le titre ;
+-- `grouping_key` y ajoute l'année lorsque deux séries portent le même nom.
+CREATE TABLE series_entries (
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  catalog_id INTEGER NOT NULL,
+  raw_title TEXT NOT NULL,
+  display_title TEXT NOT NULL,
+  title_key TEXT NOT NULL,
+  grouping_key TEXT NOT NULL,
+  year INTEGER,
+  language_tag TEXT,
+  category TEXT,
+  poster_url TEXT,
+  xtream_series_id INTEGER,
+  tmdb_id TEXT,
+  sort_order INTEGER NOT NULL
+) AS SeriesEntryRow;
+
+CREATE INDEX series_browse ON series_entries (catalog_id, grouping_key);
+CREATE INDEX series_order ON series_entries (catalog_id, sort_order);
+CREATE INDEX series_title ON series_entries (catalog_id, title_key);
+
+CREATE TABLE episodes (
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  catalog_id INTEGER NOT NULL,
+  series_entry_id INTEGER NOT NULL,
+  season INTEGER NOT NULL,
+  number INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  content_key TEXT NOT NULL,
+  stream_url TEXT,
+  xtream_stream_id INTEGER,
+  container_ext TEXT,
+  user_agent TEXT,
+  referrer TEXT
+) AS EpisodeRow;
+
+CREATE INDEX episodes_of_entry ON episodes (series_entry_id, season, number);
+CREATE INDEX episodes_of_catalog ON episodes (catalog_id);
+
+-- Index plein texte des films et séries. `remove_diacritics` rend la recherche
+-- insensible aux accents, `prefix` accélère les suggestions pendant la saisie.
+CREATE VIRTUAL TABLE search_index USING fts5 (
+  title,
+  group_key UNINDEXED,
+  kind UNINDEXED,
+  ref_id UNINDEXED,
+  catalog_id UNINDEXED,
+  poster_url UNINDEXED,
+  tokenize = 'unicode61 remove_diacritics 2',
+  prefix = '2 3'
+);
+
+-- Live TV ---------------------------------------------------------------------
+
+countriesOfSource:
+  SELECT country_code, COUNT(DISTINCT grouping_key) AS channel_count
+  FROM live_channels
+  WHERE catalog_id = (SELECT active_catalog_id FROM sources WHERE id = :source_id)
+  GROUP BY country_code
+  ORDER BY channel_count DESC;
+
+groupsMerged(:country AS TEXT OR NULL):
+  SELECT g.grouping_key AS group_key,
+         MIN(g.display_name) AS display_name,
+         COUNT(DISTINCT c.grouping_key) AS channel_count,
+         MIN(g.sort_order) AS position
+  FROM live_channels c
+  INNER JOIN channel_groups g ON g.id = c.group_id
+  WHERE c.catalog_id = (SELECT active_catalog_id FROM sources WHERE id = :source_id)
+    AND c.country_code IS :country
+  GROUP BY g.grouping_key
+  ORDER BY position;
+
+groupsRaw(:country AS TEXT OR NULL):
+  SELECT g.id AS group_id,
+         g.raw_name AS raw_name,
+         g.grouping_key AS group_key,
+         COUNT(*) AS channel_count
+  FROM live_channels c
+  INNER JOIN channel_groups g ON g.id = c.group_id
+  WHERE c.catalog_id = (SELECT active_catalog_id FROM sources WHERE id = :source_id)
+    AND c.country_code IS :country
+  GROUP BY g.id
+  ORDER BY g.sort_order;
+
+channelsMerged(:country AS TEXT OR NULL):
+  SELECT MIN(c.id) AS channel_id,
+         MIN(c.display_name) AS display_name,
+         c.grouping_key AS channel_key,
+         MAX(c.logo_url) AS logo_url,
+         MAX(c.epg_key) AS epg_key,
+         MIN(c.sort_order) AS position
+  FROM live_channels c
+  INNER JOIN channel_groups g ON g.id = c.group_id
+  WHERE c.catalog_id = (SELECT active_catalog_id FROM sources WHERE id = :source_id)
+    AND c.country_code IS :country
+    AND g.grouping_key = :group_key
+  GROUP BY c.grouping_key
+  ORDER BY position
+  LIMIT :limit OFFSET :offset;
+
+channelsRaw:
+  SELECT * FROM live_channels
+  WHERE group_id = :group_id
+  ORDER BY sort_order
+  LIMIT :limit OFFSET :offset;
+
+streamsOfChannel(:country AS TEXT OR NULL):
+  SELECT * FROM live_channels
+  WHERE catalog_id = (SELECT active_catalog_id FROM sources WHERE id = :source_id)
+    AND country_code IS :country
+    AND grouping_key = :channel_key
+  ORDER BY quality DESC, sort_order;
+
+liveChannelById:
+  SELECT * FROM live_channels WHERE id = :id;
+
+-- Films et séries -------------------------------------------------------------
+
+moviesPage:
+  SELECT * FROM movies
+  WHERE catalog_id = (SELECT active_catalog_id FROM sources WHERE id = :source_id)
+  ORDER BY sort_order
+  LIMIT :limit OFFSET :offset;
+
+movieById:
+  SELECT * FROM movies WHERE id = :id;
+
+moviesInLanguages:
+  SELECT * FROM movies
+  WHERE catalog_id = (SELECT active_catalog_id FROM sources WHERE id = :source_id)
+    AND language_tag IN :tags
+  ORDER BY sort_order
+  LIMIT :limit OFFSET :offset;
+
+moviesWithTitleKeys:
+  SELECT * FROM movies
+  WHERE catalog_id = (SELECT active_catalog_id FROM sources WHERE id = :source_id)
+    AND title_key IN :keys
+  ORDER BY sort_order;
+
+-- Le titre et l'affiche d'une série fusionnée dépendent de la langue de
+-- l'application : ils sont choisis ensuite, parmi ses versions.
+seriesMerged:
+  SELECT grouping_key AS series_key,
+         MIN(sort_order) AS position
+  FROM series_entries
+  WHERE catalog_id = (SELECT active_catalog_id FROM sources WHERE id = :source_id)
+  GROUP BY grouping_key
+  ORDER BY position
+  LIMIT :limit OFFSET :offset;
+
+seriesRaw:
+  SELECT * FROM series_entries
+  WHERE catalog_id = (SELECT active_catalog_id FROM sources WHERE id = :source_id)
+  ORDER BY sort_order
+  LIMIT :limit OFFSET :offset;
+
+seriesMergedWithTitleKeys:
+  SELECT grouping_key AS series_key,
+         MIN(sort_order) AS position
+  FROM series_entries
+  WHERE catalog_id = (SELECT active_catalog_id FROM sources WHERE id = :source_id)
+    AND title_key IN :keys
+  GROUP BY grouping_key
+  ORDER BY position;
+
+seriesRawWithTitleKeys:
+  SELECT * FROM series_entries
+  WHERE catalog_id = (SELECT active_catalog_id FROM sources WHERE id = :source_id)
+    AND title_key IN :keys
+  ORDER BY sort_order;
+
+versionsOfSeries:
+  SELECT * FROM series_entries
+  WHERE catalog_id = (SELECT active_catalog_id FROM sources WHERE id = :source_id)
+    AND grouping_key = :series_key
+  ORDER BY sort_order;
+
+versionsOfSeriesKeys:
+  SELECT * FROM series_entries
+  WHERE catalog_id = (SELECT active_catalog_id FROM sources WHERE id = :source_id)
+    AND grouping_key IN :keys
+  ORDER BY sort_order;
+
+seriesEntryById:
+  SELECT * FROM series_entries WHERE id = :id;
+
+episodeByContentKey:
+  SELECT * FROM episodes
+  WHERE catalog_id = (SELECT active_catalog_id FROM sources WHERE id = :source_id)
+    AND content_key = :content_key
+  LIMIT 1;
+
+movieByContentKey:
+  SELECT * FROM movies
+  WHERE catalog_id = (SELECT active_catalog_id FROM sources WHERE id = :source_id)
+    AND content_key = :content_key
+  LIMIT 1;
+
+episodesForEntry:
+  SELECT * FROM episodes
+  WHERE series_entry_id = :entry_id
+  ORDER BY season, number;
+
+-- Maintenance -----------------------------------------------------------------
+
+orphanCatalogs:
+  SELECT c.id FROM catalogs c
+  WHERE NOT EXISTS (SELECT 1 FROM sources s WHERE s.active_catalog_id = c.id);
+
+catalogsOfSource:
+  SELECT id FROM catalogs WHERE source_id = :source_id;
+
+epgKeysOfCatalog:
+  SELECT DISTINCT epg_key FROM live_channels
+  WHERE catalog_id = :catalog_id AND epg_key IS NOT NULL;

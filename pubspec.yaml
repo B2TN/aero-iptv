@@ -1,0 +1,45 @@
+# Racine du workspace : lockfile unique et résolution commune des dépendances.
+name: aero_iptv_workspace
+description: Racine du workspace du client IPTV Aero.
+publish_to: none
+
+environment:
+  sdk: ^3.10.0
+
+workspace:
+  - app
+  - packages/iptv_domain
+  - packages/iptv_data
+  - packages/iptv_player
+
+dev_dependencies:
+  lints: ^6.0.0
+
+# media_kit est fixé sur un même commit : son correctif des fuites mémoire du
+# 2026-08-30 est postérieur à la dernière version publiée sur pub.dev.
+dependency_overrides:
+  media_kit:
+    git:
+      url: https://github.com/media-kit/media-kit.git
+      ref: c533e446755f51cf53c7e57aea873f2aa5355f81
+      path: media_kit
+  media_kit_video:
+    git:
+      url: https://github.com/media-kit/media-kit.git
+      ref: c533e446755f51cf53c7e57aea873f2aa5355f81
+      path: media_kit_video
+  media_kit_libs_video:
+    git:
+      url: https://github.com/media-kit/media-kit.git
+      ref: c533e446755f51cf53c7e57aea873f2aa5355f81
+      path: libs/universal/media_kit_libs_video
+  media_kit_libs_android_video:
+    git:
+      url: https://github.com/media-kit/media-kit.git
+      ref: c533e446755f51cf53c7e57aea873f2aa5355f81
+      path: libs/android/media_kit_libs_android_video
+  media_kit_libs_windows_video:
+    git:
+      url: https://github.com/media-kit/media-kit.git
+      ref: c533e446755f51cf53c7e57aea873f2aa5355f81
+      path: libs/windows/media_kit_libs_windows_video

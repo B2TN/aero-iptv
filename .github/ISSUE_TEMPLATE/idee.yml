@@ -1,0 +1,22 @@
+name: Proposer une idée
+description: Une fonction ou une amélioration qui vous manque.
+title: "Idée : "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ce formulaire est public. N'écrivez jamais votre identifiant, votre mot de passe ni l'adresse de votre playlist.
+  - type: textarea
+    id: idee
+    attributes:
+      label: Votre idée
+      description: Décrivez ce que vous aimeriez pouvoir faire.
+    validations:
+      required: true
+  - type: textarea
+    id: pourquoi
+    attributes:
+      label: À quoi cela vous servirait ?
+    validations:
+      required: false

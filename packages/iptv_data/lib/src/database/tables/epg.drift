@@ -1,0 +1,26 @@
+import 'catalog.drift';
+
+-- Guide des programmes. Les instants sont stockés en secondes UTC.
+--
+-- La clé primaire suffit à trouver l'émission en cours : elle limite la lecture
+-- aux quelques programmes conservés pour chaque chaîne.
+CREATE TABLE epg_programmes (
+  source_id INTEGER NOT NULL REFERENCES sources (id) ON DELETE CASCADE,
+  epg_key TEXT NOT NULL,
+  start_at INTEGER NOT NULL,
+  stop_at INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT,
+  PRIMARY KEY (source_id, epg_key, start_at)
+) WITHOUT ROWID AS EpgProgrammeRow;
+
+nowPlayingFor:
+  SELECT * FROM epg_programmes
+  WHERE source_id = :source_id
+    AND epg_key IN :keys
+    AND start_at <= :now
+    AND stop_at > :now;
+
+deleteExpiredProgrammes:
+  DELETE FROM epg_programmes
+  WHERE source_id = :source_id AND stop_at < :before;

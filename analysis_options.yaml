@@ -1,0 +1,22 @@
+# Règles communes à tous les membres du workspace.
+include: package:lints/recommended.yaml
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+
+linter:
+  rules:
+    # Détection statique des fuites de ressources.
+    - cancel_subscriptions
+    - close_sinks
+    - unawaited_futures
+    # Typage et immuabilité.
+    - always_declare_return_types
+    - avoid_dynamic_calls
+    - prefer_final_fields
+    - prefer_final_locals

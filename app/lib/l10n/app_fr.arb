@@ -1,0 +1,229 @@
+{
+  "@@locale": "fr",
+  "navHome": "Accueil",
+  "navLive": "Live TV",
+  "navSearch": "Recherche",
+  "navSettings": "Paramètres",
+  "homeContinue": "Continuer à regarder",
+  "homeSeries": "Séries populaires",
+  "homeMovies": "Films populaires",
+  "homePlay": "Lire",
+  "homeOpen": "Ouvrir",
+  "emptyTitle": "Ajoutez votre première playlist",
+  "emptyBody": "Une adresse M3U ou un compte Xtream suffit pour retrouver vos chaînes, films et séries.",
+  "emptyCatalogTitle": "Cette playlist est encore vide",
+  "emptyCatalogBody": "Actualisez-la depuis les paramètres pour charger son contenu.",
+  "actionAddPlaylist": "Ajouter une playlist",
+  "actionOpenSettings": "Ouvrir les paramètres",
+  "loading": "Chargement",
+  "loadErrorTitle": "Le contenu n'a pas pu être chargé",
+  "actionRetry": "Réessayer",
+  "actionBack": "Retour",
+  "liveChooseCountry": "Choisissez un pays",
+  "liveUnknownCountry": "Autres",
+  "liveAllChannels": "Toutes les chaînes",
+  "liveNoChannels": "Aucune chaîne dans ce groupe",
+  "liveChooseStream": "Choisissez un flux",
+  "liveStreamDefault": "Flux {number}",
+  "@liveStreamDefault": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "searchPrompt": "Cherchez un film ou une série",
+  "searchTrending": "Tendances",
+  "searchResults": "Résultats",
+  "searchNoResult": "Aucun résultat pour « {query} »",
+  "@searchNoResult": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "detailChooseVersion": "Choisissez une version",
+  "detailSeason": "Saison {number}",
+  "@detailSeason": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "detailEpisode": "Épisode {number}",
+  "@detailEpisode": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "detailNoEpisodes": "Aucun épisode disponible pour cette version",
+  "playerFailedTitle": "Ce flux ne peut pas être lu",
+  "playerFailedBody": "Il est peut-être hors ligne. Réessayez ou choisissez un autre flux.",
+  "playerPlay": "Lecture",
+  "playerPause": "Pause",
+  "playerAudio": "Audio",
+  "playerSubtitles": "Sous-titres",
+  "playerSubtitlesOff": "Désactiver",
+  "playerTrack": "Piste {number}",
+  "@playerTrack": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "playerLive": "En direct",
+  "settingsTitle": "Paramètres",
+  "settingsGroupSeries": "Regrouper les versions des séries",
+  "settingsGroupChannels": "Regrouper les qualités des chaînes",
+  "settingsDelay": "Retard des chaînes en direct",
+  "settingsDelayValue": "{seconds, plural, =0{Aucun} other{{seconds} s}}",
+  "@settingsDelayValue": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsLanguage": "Langue de l'application",
+  "settingsPlaylists": "Playlists",
+  "settingsPlaylistCount": "{count, plural, =0{Aucune} =1{1 playlist} other{{count} playlists}}",
+  "@settingsPlaylistCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsOn": "Activé",
+  "settingsOff": "Désactivé",
+  "settingsAttribution": "Ce produit utilise l'API TMDB, sans être approuvé ni certifié par TMDB.",
+  "playlistsTitle": "Playlists",
+  "playlistNew": "Nouvelle playlist",
+  "playlistEdit": "Modifier la playlist",
+  "playlistName": "Nom",
+  "playlistType": "Type",
+  "playlistUrl": "Adresse de la playlist",
+  "playlistEpgUrl": "Adresse du guide XMLTV (facultatif)",
+  "playlistServer": "Adresse du serveur",
+  "playlistUsername": "Identifiant",
+  "playlistPassword": "Mot de passe",
+  "playlistCountry": "Pays par défaut",
+  "playlistCountryNone": "Aucun",
+  "playlistEmptyField": "Non renseigné",
+  "playlistSave": "Enregistrer",
+  "playlistRefresh": "Actualiser",
+  "playlistActivate": "Utiliser cette playlist",
+  "playlistActive": "En cours d'utilisation",
+  "playlistDelete": "Supprimer",
+  "playlistDeleteConfirm": "Supprimer « {name} » ?",
+  "@playlistDeleteConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "playlistMissingFields": "Renseignez le nom et l'adresse avant d'enregistrer.",
+  "playlistSynced": "Actualisée",
+  "playlistNotSynced": "Jamais actualisée",
+  "importRunning": "Actualisation : {count} éléments",
+  "@importRunning": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importDone": "Actualisation terminée",
+  "importEpgFailed": "Actualisation terminée, sans le guide des programmes",
+  "importAuthFailed": "Identifiants refusés. Vérifiez-les puis réessayez.",
+  "importAuthRejected": "Accès refusé par le serveur (code {code}). Vérifiez le nom d'utilisateur, le mot de passe et l'adresse.",
+  "@importAuthRejected": {
+    "placeholders": {
+      "code": {
+        "type": "int"
+      }
+    }
+  },
+  "importServerFailed": "Le serveur a renvoyé une erreur (code {code}). Réessayez plus tard ou essayez une autre adresse.",
+  "@importServerFailed": {
+    "placeholders": {
+      "code": {
+        "type": "int"
+      }
+    }
+  },
+  "importNetworkFailed": "Serveur injoignable. Vérifiez l'adresse puis réessayez.",
+  "importFormatFailed": "Le contenu reçu n'est pas une playlist valide.",
+  "entryConfirm": "Valider",
+  "entryShow": "Afficher",
+  "entryHide": "Masquer",
+  "entryCancel": "Annuler",
+  "confirmDelete": "Supprimer",
+  "confirmKeep": "Conserver",
+  "homeResume": "Reprendre",
+  "homeRestart": "Recommencer",
+  "homeRemoveContinue": "Supprimer de Continuer à regarder",
+  "playerVersion": "Version",
+  "playerExternal": "Lecteur externe",
+  "playerExternalMissing": "Aucun lecteur externe trouvé. Installez VLC ou mpv.",
+  "playerNoOtherVersion": "Aucune autre version disponible",
+  "playerVersionMissing": "Cet épisode n'existe pas dans cette version",
+  "playerEndsAt": "Fin à {time}",
+  "playerFullscreen": "Plein écran",
+  "playerExitFullscreen": "Quitter le plein écran",
+  "playerMono": "mono",
+  "playerStereo": "stéréo",
+  "playerSubtitlesDownload": "Télécharger sous-titre",
+  "playerSubtitlesSearching": "Recherche des sous-titres...",
+  "playerSubtitlesLoaded": "Sous-titres chargés",
+  "playerSubtitlesUntranslated": "Sous-titres chargés en anglais : traduction non configurée",
+  "playerSubtitlesNotFound": "Cette source ne contient aucun sous-titre",
+  "playerSubtitlesFailed": "Téléchargement des sous-titres impossible",
+  "@playerEndsAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsDeepL": "Clé DeepL (sous-titres traduits)",
+  "settingsOpenSubtitles": "Clé OpenSubtitles (sous-titres complets)",
+  "settingsKeySet": "Configurée",
+  "settingsKeyUnset": "Non configurée",
+  "settingsKeyReplace": "Remplacer la clé",
+  "settingsKeyRemove": "Supprimer la clé",
+  "versionSubtitled": "sous-titré",
+  "versionDubbed": "doublé",
+  "homeInfo": "Informations",
+  "homeNoOverview": "Aucune description disponible.",
+  "settingsKeyGet": "Obtenir une clé",
+  "settingsKeyScan": "Scannez ce code avec votre téléphone pour ouvrir la page {service}, puis saisissez votre clé ici.",
+  "@settingsKeyScan": {
+    "placeholders": {
+      "service": {"type": "String"}
+    }
+  },
+  "playerServerAnswer": "Réponse du serveur : {answer}",
+  "playerServerSilent": "Le serveur ne répond pas à ce flux.",
+  "@playerServerAnswer": {
+    "placeholders": {
+      "answer": {
+        "type": "String"
+      }
+    }
+  },
+  "playerConnectionsFullTitle": "Toutes vos connexions sont utilisées",
+  "playerConnectionsFullBody": "Votre abonnement limite le nombre de lectures simultanées. Arrêtez la lecture sur vos autres appareils ou applications, puis réessayez.",
+  "playerConnecting": "Connexion occupée, nouvel essai...",
+  "playerClose": "Quitter la lecture",
+  "playerSkipIntro": "Passer l'intro",
+  "playerNextEpisode": "Épisode suivant",
+  "playerSubtitlesLanguage": "Traduire les sous-titres en",
+  "playerSubtitlesImagesOnly": "Les sous-titres de cette source sont des images : ils ne peuvent pas être traduits"
+}

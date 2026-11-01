@@ -1,0 +1,62 @@
+import 'catalog.drift';
+
+-- Données de l'utilisateur. Elles reposent sur `content_key` et non sur les
+-- identifiants de lignes, qui changent à chaque synchronisation.
+
+CREATE TABLE watch_progress (
+  source_id INTEGER NOT NULL REFERENCES sources (id) ON DELETE CASCADE,
+  content_key TEXT NOT NULL,
+  kind INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  poster_url TEXT,
+  position_ms INTEGER NOT NULL,
+  duration_ms INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  stream_url TEXT,
+  xtream_stream_id INTEGER,
+  container_ext TEXT,
+  user_agent TEXT,
+  referrer TEXT,
+  PRIMARY KEY (source_id, content_key)
+) WITHOUT ROWID AS WatchProgressRow;
+
+CREATE INDEX watch_progress_recent ON watch_progress (source_id, updated_at DESC);
+
+CREATE TABLE app_settings (
+  setting_key TEXT NOT NULL PRIMARY KEY,
+  setting_value TEXT NOT NULL
+) AS AppSettingRow;
+
+-- Sous-titres téléchargés : le quota d'OpenSubtitles est limité par jour.
+CREATE TABLE subtitle_cache (
+  content_key TEXT NOT NULL,
+  language TEXT NOT NULL,
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  PRIMARY KEY (content_key, language)
+) WITHOUT ROWID AS SubtitleCacheRow;
+
+CREATE INDEX subtitle_cache_age ON subtitle_cache (created_at);
+
+cachedSubtitle:
+  SELECT * FROM subtitle_cache
+  WHERE content_key = :content_key AND language = :language;
+
+trimSubtitleCache:
+  DELETE FROM subtitle_cache
+  WHERE created_at <= (
+    SELECT created_at FROM subtitle_cache
+    ORDER BY created_at DESC
+    LIMIT 1 OFFSET :keep
+  );
+
+recentProgress:
+  SELECT * FROM watch_progress
+  WHERE source_id = :source_id
+  ORDER BY updated_at DESC
+  LIMIT :limit;
+
+deleteProgress:
+  DELETE FROM watch_progress
+  WHERE source_id = :source_id AND content_key = :content_key;

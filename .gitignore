@@ -1,0 +1,28 @@
+# Dart et Flutter
+.dart_tool/
+build/
+*.g.dart
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Fichiers propres à chaque poste
+.idea/
+.vscode/
+*.iml
+*.log
+app/android/.gradle/
+app/android/.kotlin/
+app/android/local.properties
+app/android/gradle/wrapper/gradle-wrapper.jar
+app/android/gradlew
+app/android/gradlew.bat
+app/windows/flutter/ephemeral/
+
+# Livrables
+dist/
+
+# Secrets locaux
+config/secrets.json
+**/key.properties
+*.jks
+*.keystore

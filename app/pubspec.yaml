@@ -1,0 +1,46 @@
+name: aero_iptv
+description: Client IPTV M3U et Xtream Codes pour Android TV, Fire OS et Windows.
+publish_to: none
+version: 0.1.9+10
+resolution: workspace
+
+environment:
+  sdk: ^3.10.0
+
+dependencies:
+  country_flags: ^4.1.2
+  ffi: ^2.2.0
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  flutter_riverpod: ^3.4.0
+  http: ^1.2.0
+  intl: any
+  iptv_data:
+    path: ../packages/iptv_data
+  iptv_domain:
+    path: ../packages/iptv_domain
+  iptv_player:
+    path: ../packages/iptv_player
+  path: ^1.9.0
+  path_provider: ^2.1.0
+  qr: ^3.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  image: ^4.8.0
+  integration_test:
+    sdk: flutter
+  media_kit: ^1.2.6
+
+flutter:
+  generate: true
+  uses-material-design: true
+  assets:
+    - assets/aero/backgrounds/
+    - assets/aero/chrome/
+    - assets/aero/focus/
+    - assets/aero/icons/
+    - assets/aero/panels/

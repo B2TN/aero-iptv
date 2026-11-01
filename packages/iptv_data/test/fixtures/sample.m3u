@@ -1,0 +1,23 @@
+#EXTM3U url-tvg="http://epg.example/guide.xml.gz"
+#EXTINF:-1 tvg-id="tf1.fr" tvg-name="FR: TF1" tvg-logo="http://logo.example/tf1.png" group-title="FRANCE FHD",FR: TF1 FHD
+http://s.example/live/u/p/1.ts
+#EXTINF:-1 tvg-id="tf1.fr" group-title="FRANCE HD",FR: TF1 HD
+http://s.example/live/u/p/2.ts
+#EXTINF:-1 group-title="FRANCE SD",FR: TF1 SD
+http://s.example/live/u/p/3.ts
+#EXTINF:-1 group-title="FRANCE FHD",#### FRANCE ####
+http://s.example/live/u/p/4.ts
+#EXTINF:-1 tvg-id="bbc1.uk" group-title="UK | ENTERTAINMENT",UK: BBC One HD
+http://s.example/live/u/p/5.ts
+#EXTINF:-1 group-title="VOD FR",FR - Inception (2010) [4K]
+http://s.example/movie/u/p/10.mkv
+#EXTINF:-1 group-title="SERIES FR",FR - Breaking Bad S01 E01
+http://s.example/series/u/p/20.mkv
+#EXTINF:-1 group-title="SERIES FR",FR - Breaking Bad S01 E02
+http://s.example/series/u/p/21.mkv
+#EXTINF:-1 group-title="SERIES EN",EN - Breaking Bad S01 E01
+http://s.example/series/u/p/22.mkv
+#EXTINF:-1 group-title="SERIES FR",FR - The Flash (1990) S01 E01
+http://s.example/series/u/p/23.mkv
+#EXTINF:-1 group-title="SERIES FR",FR - The Flash (2014) S01 E01
+http://s.example/series/u/p/24.mkv

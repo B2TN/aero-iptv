@@ -1,0 +1,43 @@
+name: Donner mon avis
+description: Une impression, ce qui vous plaît, ce qui vous gêne.
+title: "Avis : "
+labels: ["avis"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci de prendre une minute pour ça. Ce formulaire est public. N'écrivez jamais votre identifiant, votre mot de passe ni l'adresse de votre playlist.
+  - type: dropdown
+    id: note
+    attributes:
+      label: Votre impression générale
+      options:
+        - "J'adore"
+        - "C'est bien"
+        - "Peut mieux faire"
+        - "Je n'ai pas aimé"
+    validations:
+      required: true
+  - type: dropdown
+    id: appareil
+    attributes:
+      label: Votre appareil
+      options:
+        - PC Windows
+        - Fire TV Stick
+        - Android TV
+        - Autre
+    validations:
+      required: true
+  - type: textarea
+    id: plait
+    attributes:
+      label: Ce qui vous plaît
+    validations:
+      required: false
+  - type: textarea
+    id: gene
+    attributes:
+      label: Ce qui vous gêne ou manque
+    validations:
+      required: false

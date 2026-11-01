@@ -1,0 +1,65 @@
+name: Signaler un bug
+description: Quelque chose ne fonctionne pas comme prévu.
+title: "Bug : "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ce formulaire est public. N'écrivez jamais votre identifiant, votre mot de passe ni l'adresse de votre playlist. Vérifiez aussi vos captures d'écran avant de les joindre.
+  - type: input
+    id: version
+    attributes:
+      label: Version de l'application
+      description: Le numéro figure dans le nom du fichier téléchargé.
+      placeholder: "0.1.9"
+    validations:
+      required: true
+  - type: dropdown
+    id: appareil
+    attributes:
+      label: Votre appareil
+      options:
+        - PC Windows
+        - Fire TV Stick
+        - Android TV
+        - Autre
+    validations:
+      required: true
+  - type: dropdown
+    id: source
+    attributes:
+      label: Votre type de playlist
+      options:
+        - Xtream Codes
+        - M3U
+        - Sans rapport avec la playlist
+    validations:
+      required: true
+  - type: textarea
+    id: probleme
+    attributes:
+      label: Que s'est-il passé ?
+      description: Recopiez le message d'erreur s'il y en a un. Masquez toute adresse de serveur.
+    validations:
+      required: true
+  - type: textarea
+    id: etapes
+    attributes:
+      label: Comment le reproduire ?
+      placeholder: |
+        1. Ouvrir un film
+        2. Choisir une version
+        3. L'erreur apparaît
+    validations:
+      required: true
+  - type: dropdown
+    id: frequence
+    attributes:
+      label: À quelle fréquence ?
+      options:
+        - À chaque fois
+        - Souvent
+        - Une seule fois
+    validations:
+      required: false
