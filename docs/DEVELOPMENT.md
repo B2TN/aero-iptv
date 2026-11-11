@@ -13,7 +13,7 @@ This guide is for anyone who wants to build or modify the app. To simply install
 
 ## Building and packaging
 
-Requirements: Flutter 3.47, JDK 17, the Android SDK with platform 36 and NDK 28.2, and Visual Studio with desktop C++. The scripts look for these tools in the environment, then in `C:\dev`, and put the packages in `dist/`.
+Requirements: Flutter 3.47, JDK 17, the Android SDK with platform 36 and NDK 28.2, and Visual Studio with desktop C++. The scripts look for these tools in the environment, then in `%USERPROFILE%\aero_outils`, and put the packages in `dist/`.
 
 Android TV and Fire OS:
 

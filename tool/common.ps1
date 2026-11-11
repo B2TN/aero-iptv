@@ -1,7 +1,8 @@
 ﻿# Environnement commun aux scripts de build.
 #
-# Chaque outil est cherché dans l'environnement, puis dans C:\dev : les scripts
-# fonctionnent ainsi sur ce poste comme sur une machine configurée autrement.
+# Chaque outil est cherché dans l'environnement, puis dans le dossier aero_outils
+# du profil : les scripts fonctionnent ainsi sur ce poste comme sur une machine
+# configurée autrement.
 
 $ErrorActionPreference = 'Stop'
 
@@ -10,16 +11,18 @@ $script:AppDir = Join-Path $ProjectRoot 'app'
 $script:DistDir = Join-Path $ProjectRoot 'dist'
 $script:SecretsFile = Join-Path $ProjectRoot 'config\secrets.json'
 
+$script:ToolsDir = Join-Path $env:USERPROFILE 'aero_outils'
+
 if (-not (Get-Command flutter -ErrorAction SilentlyContinue)) {
-    $env:Path = "C:\dev\flutter\bin;$env:Path"
+    $env:Path = "$(Join-Path $ToolsDir 'flutter\bin');$env:Path"
 }
 if (-not $env:JAVA_HOME) {
-    $jdk = Get-ChildItem 'C:\dev' -Directory -Filter 'jdk-17*' -ErrorAction SilentlyContinue |
+    $jdk = Get-ChildItem $ToolsDir -Directory -Filter 'jdk-17*' -ErrorAction SilentlyContinue |
         Select-Object -First 1
     if ($jdk) { $env:JAVA_HOME = $jdk.FullName }
 }
-if (-not $env:ANDROID_HOME -and (Test-Path 'C:\dev\android-sdk')) {
-    $env:ANDROID_HOME = 'C:\dev\android-sdk'
+if (-not $env:ANDROID_HOME -and (Test-Path (Join-Path $ToolsDir 'android-sdk'))) {
+    $env:ANDROID_HOME = Join-Path $ToolsDir 'android-sdk'
 }
 
 # Certains chemins de media_kit dépassent la limite de Windows. L'option vaut
