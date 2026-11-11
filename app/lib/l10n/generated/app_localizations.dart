@@ -602,6 +602,72 @@ abstract class AppLocalizations {
   /// **'Le contenu reçu n\'est pas une playlist valide.'**
   String get importFormatFailed;
 
+  /// No description provided for @importConnecting.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connexion au serveur…'**
+  String get importConnecting;
+
+  /// No description provided for @importReceivingChannels.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réception des chaînes : {count} éléments reçus'**
+  String importReceivingChannels(int count);
+
+  /// No description provided for @importReceivingMovies.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réception des films : {count} éléments reçus'**
+  String importReceivingMovies(int count);
+
+  /// No description provided for @importReceivingSeries.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réception des séries : {count} éléments reçus'**
+  String importReceivingSeries(int count);
+
+  /// No description provided for @importIndexing.
+  ///
+  /// In fr, this message translates to:
+  /// **'Préparation du catalogue…'**
+  String get importIndexing;
+
+  /// No description provided for @importGuide.
+  ///
+  /// In fr, this message translates to:
+  /// **'Catalogue prêt. Réception du guide des programmes…'**
+  String get importGuide;
+
+  /// No description provided for @importPartial.
+  ///
+  /// In fr, this message translates to:
+  /// **'Actualisation incomplète. Non reçu : {sections}.'**
+  String importPartial(String sections);
+
+  /// No description provided for @importSectionChannels.
+  ///
+  /// In fr, this message translates to:
+  /// **'chaînes'**
+  String get importSectionChannels;
+
+  /// No description provided for @importSectionMovies.
+  ///
+  /// In fr, this message translates to:
+  /// **'films'**
+  String get importSectionMovies;
+
+  /// No description provided for @importSectionSeries.
+  ///
+  /// In fr, this message translates to:
+  /// **'séries'**
+  String get importSectionSeries;
+
+  /// No description provided for @importFailedTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'actualisation a échoué'**
+  String get importFailedTitle;
+
   /// No description provided for @entryConfirm.
   ///
   /// In fr, this message translates to:

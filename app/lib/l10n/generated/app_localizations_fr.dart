@@ -302,6 +302,48 @@ class AppLocalizationsFr extends AppLocalizations {
       'Le contenu reçu n\'est pas une playlist valide.';
 
   @override
+  String get importConnecting => 'Connexion au serveur…';
+
+  @override
+  String importReceivingChannels(int count) {
+    return 'Réception des chaînes : $count éléments reçus';
+  }
+
+  @override
+  String importReceivingMovies(int count) {
+    return 'Réception des films : $count éléments reçus';
+  }
+
+  @override
+  String importReceivingSeries(int count) {
+    return 'Réception des séries : $count éléments reçus';
+  }
+
+  @override
+  String get importIndexing => 'Préparation du catalogue…';
+
+  @override
+  String get importGuide =>
+      'Catalogue prêt. Réception du guide des programmes…';
+
+  @override
+  String importPartial(String sections) {
+    return 'Actualisation incomplète. Non reçu : $sections.';
+  }
+
+  @override
+  String get importSectionChannels => 'chaînes';
+
+  @override
+  String get importSectionMovies => 'films';
+
+  @override
+  String get importSectionSeries => 'séries';
+
+  @override
+  String get importFailedTitle => 'L\'actualisation a échoué';
+
+  @override
   String get entryConfirm => 'Valider';
 
   @override

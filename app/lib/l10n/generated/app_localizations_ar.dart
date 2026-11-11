@@ -297,6 +297,47 @@ class AppLocalizationsAr extends AppLocalizations {
   String get importFormatFailed => 'المحتوى المستلم ليس قائمة تشغيل صالحة.';
 
   @override
+  String get importConnecting => 'جارٍ الاتصال بالخادم…';
+
+  @override
+  String importReceivingChannels(int count) {
+    return 'جارٍ استلام القنوات: تم استلام $count عنصرًا';
+  }
+
+  @override
+  String importReceivingMovies(int count) {
+    return 'جارٍ استلام الأفلام: تم استلام $count عنصرًا';
+  }
+
+  @override
+  String importReceivingSeries(int count) {
+    return 'جارٍ استلام المسلسلات: تم استلام $count عنصرًا';
+  }
+
+  @override
+  String get importIndexing => 'جارٍ تجهيز الكتالوج…';
+
+  @override
+  String get importGuide => 'الكتالوج جاهز. جارٍ استلام دليل البرامج…';
+
+  @override
+  String importPartial(String sections) {
+    return 'التحديث غير مكتمل. لم يتم استلام: $sections.';
+  }
+
+  @override
+  String get importSectionChannels => 'القنوات';
+
+  @override
+  String get importSectionMovies => 'الأفلام';
+
+  @override
+  String get importSectionSeries => 'المسلسلات';
+
+  @override
+  String get importFailedTitle => 'فشل التحديث';
+
+  @override
   String get entryConfirm => 'تأكيد';
 
   @override

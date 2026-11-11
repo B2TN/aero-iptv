@@ -70,14 +70,43 @@ class HomeScreen extends ConsumerWidget {
             onAction: () => ref.invalidate(homeFeedProvider),
           ),
           data: (feed) => feed == null || feed.isEmpty
-              ? AeroMessage(
-                  title: l10n.emptyCatalogTitle,
-                  body: l10n.emptyCatalogBody,
-                  actionLabel: l10n.actionOpenSettings,
-                  onAction: openSettings,
-                )
+              ? _EmptyCatalog(onOpenSettings: openSettings)
               : _HomeContent(feed: feed),
         );
+  }
+}
+
+/// Accueil d'une playlist sans contenu : son import est en cours, il a échoué,
+/// ou il n'a jamais eu lieu. Les trois cas ne doivent pas se ressembler.
+class _EmptyCatalog extends ConsumerWidget {
+  const _EmptyCatalog({required this.onOpenSettings});
+
+  final VoidCallback onOpenSettings;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final status = ref.watch(importControllerProvider);
+    if (status.running) {
+      return AeroLoading(label: importMessage(l10n, status) ?? l10n.loading);
+    }
+    final failure = status.failure;
+    final source = ref.watch(activeSourceProvider);
+    if (failure != null && source != null) {
+      return AeroMessage(
+        title: l10n.importFailedTitle,
+        body: importFailureMessage(l10n, failure),
+        actionLabel: l10n.actionRetry,
+        onAction: () =>
+            ref.read(importControllerProvider.notifier).start(source),
+      );
+    }
+    return AeroMessage(
+      title: l10n.emptyCatalogTitle,
+      body: l10n.emptyCatalogBody,
+      actionLabel: l10n.actionOpenSettings,
+      onAction: onOpenSettings,
+    );
   }
 }
 

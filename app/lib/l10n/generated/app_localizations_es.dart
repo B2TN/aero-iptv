@@ -303,6 +303,48 @@ class AppLocalizationsEs extends AppLocalizations {
       'El contenido recibido no es una lista válida.';
 
   @override
+  String get importConnecting => 'Conectando con el servidor…';
+
+  @override
+  String importReceivingChannels(int count) {
+    return 'Recibiendo canales: $count elementos recibidos';
+  }
+
+  @override
+  String importReceivingMovies(int count) {
+    return 'Recibiendo películas: $count elementos recibidos';
+  }
+
+  @override
+  String importReceivingSeries(int count) {
+    return 'Recibiendo series: $count elementos recibidos';
+  }
+
+  @override
+  String get importIndexing => 'Preparando el catálogo…';
+
+  @override
+  String get importGuide =>
+      'Catálogo listo. Recibiendo la guía de programación…';
+
+  @override
+  String importPartial(String sections) {
+    return 'Actualización incompleta. No recibido: $sections.';
+  }
+
+  @override
+  String get importSectionChannels => 'canales';
+
+  @override
+  String get importSectionMovies => 'películas';
+
+  @override
+  String get importSectionSeries => 'series';
+
+  @override
+  String get importFailedTitle => 'La actualización ha fallado';
+
+  @override
   String get entryConfirm => 'Confirmar';
 
   @override

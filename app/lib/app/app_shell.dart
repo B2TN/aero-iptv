@@ -110,9 +110,7 @@ class _TopBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final status = ref.watch(importControllerProvider);
-    final message = status.running || status.failure != null
-        ? importMessage(l10n, status)
-        : null;
+    final message = status.needsAttention ? importMessage(l10n, status) : null;
 
     Widget item(AppTab target, String asset, String label) => _NavItem(
       asset: asset,

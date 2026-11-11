@@ -303,6 +303,47 @@ class AppLocalizationsDe extends AppLocalizations {
       'Der empfangene Inhalt ist keine gültige Playlist.';
 
   @override
+  String get importConnecting => 'Verbindung zum Server…';
+
+  @override
+  String importReceivingChannels(int count) {
+    return 'Sender werden empfangen: $count Einträge empfangen';
+  }
+
+  @override
+  String importReceivingMovies(int count) {
+    return 'Filme werden empfangen: $count Einträge empfangen';
+  }
+
+  @override
+  String importReceivingSeries(int count) {
+    return 'Serien werden empfangen: $count Einträge empfangen';
+  }
+
+  @override
+  String get importIndexing => 'Katalog wird vorbereitet…';
+
+  @override
+  String get importGuide => 'Katalog bereit. Programmführer wird empfangen…';
+
+  @override
+  String importPartial(String sections) {
+    return 'Aktualisierung unvollständig. Nicht empfangen: $sections.';
+  }
+
+  @override
+  String get importSectionChannels => 'Sender';
+
+  @override
+  String get importSectionMovies => 'Filme';
+
+  @override
+  String get importSectionSeries => 'Serien';
+
+  @override
+  String get importFailedTitle => 'Die Aktualisierung ist fehlgeschlagen';
+
+  @override
   String get entryConfirm => 'Bestätigen';
 
   @override
