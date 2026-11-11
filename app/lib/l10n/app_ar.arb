@@ -83,6 +83,7 @@
   "importServerFailed": "أعاد الخادم خطأً (الرمز {code}). أعد المحاولة لاحقًا أو جرّب عنوانًا آخر.",
   "importNetworkFailed": "تعذّر الوصول إلى الخادم. تحقق من العنوان ثم أعد المحاولة.",
   "importFormatFailed": "المحتوى المستلم ليس قائمة تشغيل صالحة.",
+  "importStorageFailed": "تعذّر على الجهاز حفظ الكتالوج. أفرغ بعض مساحة التخزين ثم أعد المحاولة.",
   "importConnecting": "جارٍ الاتصال بالخادم…",
   "importReceivingChannels": "جارٍ استلام القنوات: تم استلام {count} عنصرًا",
   "importReceivingMovies": "جارٍ استلام الأفلام: تم استلام {count} عنصرًا",

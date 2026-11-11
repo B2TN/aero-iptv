@@ -83,6 +83,7 @@
   "importServerFailed": "Der Server hat einen Fehler gemeldet (Code {code}). Versuchen Sie es später erneut oder nutzen Sie eine andere Adresse.",
   "importNetworkFailed": "Server nicht erreichbar. Prüfen Sie die Adresse und versuchen Sie es erneut.",
   "importFormatFailed": "Der empfangene Inhalt ist keine gültige Playlist.",
+  "importStorageFailed": "Das Gerät konnte den Katalog nicht speichern. Geben Sie Speicherplatz frei und versuchen Sie es erneut.",
   "importConnecting": "Verbindung zum Server…",
   "importReceivingChannels": "Sender werden empfangen: {count} Einträge empfangen",
   "importReceivingMovies": "Filme werden empfangen: {count} Einträge empfangen",

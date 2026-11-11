@@ -83,6 +83,7 @@
   "importServerFailed": "The server returned an error (code {code}). Try again later or use another address.",
   "importNetworkFailed": "Server unreachable. Check the address and try again.",
   "importFormatFailed": "The content received isn't a valid playlist.",
+  "importStorageFailed": "The device couldn't save the catalog. Free up some storage space, then try again.",
   "importConnecting": "Connecting to the server…",
   "importReceivingChannels": "Receiving channels: {count} items received",
   "importReceivingMovies": "Receiving movies: {count} items received",

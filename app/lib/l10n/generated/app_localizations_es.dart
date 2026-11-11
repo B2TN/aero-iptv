@@ -303,6 +303,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'El contenido recibido no es una lista válida.';
 
   @override
+  String get importStorageFailed =>
+      'El dispositivo no ha podido guardar el catálogo. Libere espacio de almacenamiento y vuelva a intentarlo.';
+
+  @override
   String get importConnecting => 'Conectando con el servidor…';
 
   @override

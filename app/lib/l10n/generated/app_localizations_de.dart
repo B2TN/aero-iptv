@@ -303,6 +303,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Der empfangene Inhalt ist keine gültige Playlist.';
 
   @override
+  String get importStorageFailed =>
+      'Das Gerät konnte den Katalog nicht speichern. Geben Sie Speicherplatz frei und versuchen Sie es erneut.';
+
+  @override
   String get importConnecting => 'Verbindung zum Server…';
 
   @override

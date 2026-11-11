@@ -301,6 +301,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'The content received isn\'t a valid playlist.';
 
   @override
+  String get importStorageFailed =>
+      'The device couldn\'t save the catalog. Free up some storage space, then try again.';
+
+  @override
   String get importConnecting => 'Connecting to the server…';
 
   @override

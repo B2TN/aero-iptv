@@ -160,6 +160,7 @@
   },
   "importNetworkFailed": "Serveur injoignable. Vérifiez l'adresse puis réessayez.",
   "importFormatFailed": "Le contenu reçu n'est pas une playlist valide.",
+  "importStorageFailed": "L'appareil n'a pas pu enregistrer le catalogue. Libérez de l'espace de stockage, puis réessayez.",
   "importConnecting": "Connexion au serveur…",
   "importReceivingChannels": "Réception des chaînes : {count} éléments reçus",
   "@importReceivingChannels": {"placeholders": {"count": {"type": "int"}}},

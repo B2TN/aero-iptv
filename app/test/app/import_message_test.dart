@@ -30,6 +30,10 @@ void main() {
     expect(message(const ServerFailure('x', status: 503)), contains('503'));
   });
 
+  test('un échec d enregistrement parle du stockage', () {
+    expect(message(const StorageFailure('x')), contains('stockage'));
+  });
+
   test('un compte refusé sans statut garde son message', () {
     expect(message(const AuthFailure('x')), l10n.importAuthFailed);
   });

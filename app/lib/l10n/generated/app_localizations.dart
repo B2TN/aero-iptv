@@ -602,6 +602,12 @@ abstract class AppLocalizations {
   /// **'Le contenu reçu n\'est pas une playlist valide.'**
   String get importFormatFailed;
 
+  /// No description provided for @importStorageFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'appareil n\'a pas pu enregistrer le catalogue. Libérez de l\'espace de stockage, puis réessayez.'**
+  String get importStorageFailed;
+
   /// No description provided for @importConnecting.
   ///
   /// In fr, this message translates to:

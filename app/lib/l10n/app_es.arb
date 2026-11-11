@@ -83,6 +83,7 @@
   "importServerFailed": "El servidor ha devuelto un error (código {code}). Reinténtalo más tarde o prueba otra dirección.",
   "importNetworkFailed": "Servidor inaccesible. Comprueba la dirección y reinténtalo.",
   "importFormatFailed": "El contenido recibido no es una lista válida.",
+  "importStorageFailed": "El dispositivo no ha podido guardar el catálogo. Libere espacio de almacenamiento y vuelva a intentarlo.",
   "importConnecting": "Conectando con el servidor…",
   "importReceivingChannels": "Recibiendo canales: {count} elementos recibidos",
   "importReceivingMovies": "Recibiendo películas: {count} elementos recibidos",

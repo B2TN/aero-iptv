@@ -297,6 +297,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get importFormatFailed => 'المحتوى المستلم ليس قائمة تشغيل صالحة.';
 
   @override
+  String get importStorageFailed =>
+      'تعذّر على الجهاز حفظ الكتالوج. أفرغ بعض مساحة التخزين ثم أعد المحاولة.';
+
+  @override
   String get importConnecting => 'جارٍ الاتصال بالخادم…';
 
   @override

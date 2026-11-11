@@ -145,6 +145,8 @@ class ImportController extends Notifier<ImportStatus> {
           },
           onError: (Object error) {
             _keepAwake(false);
+            // Une erreur sans type vient de l'appareil et non du serveur : la
+            // base n'a pas pu être écrite, faute de place le plus souvent.
             state = ImportStatus(
               failure: error is Failure
                   ? error
@@ -182,6 +184,7 @@ String importFailureMessage(AppLocalizations l10n, Failure failure) =>
       ServerFailure(:final status) => l10n.importServerFailed(status),
       NetworkFailure() => l10n.importNetworkFailed,
       ParseFailure() => l10n.importFormatFailed,
+      StorageFailure() => l10n.importStorageFailed,
       _ => l10n.loadErrorTitle,
     };
 
