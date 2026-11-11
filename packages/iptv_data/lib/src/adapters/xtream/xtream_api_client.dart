@@ -70,6 +70,8 @@ final class XtreamApiClient {
     );
     try {
       yield* decodeJsonObjects(textChunks(response));
+    } on TruncatedJsonException {
+      throw const NetworkFailure('Réponse Xtream interrompue.');
     } on FormatException {
       throw const ParseFailure('Réponse Xtream illisible.');
     }

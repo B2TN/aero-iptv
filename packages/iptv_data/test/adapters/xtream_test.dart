@@ -93,8 +93,52 @@ void main() {
       expect(split(['{}']), isEmpty);
     });
 
+    test('lit un objet indexé comme une liste', () {
+      // PHP encode ainsi un tableau dont les indices ont des trous.
+      expect(split(['{"0":{"a":1},"2":{"b":"}"},"n":3}']), [
+        '{"a":1}',
+        '{"b":"}"}',
+      ]);
+    });
+
+    test('lit un objet indexé coupé au milieu d une clé', () {
+      expect(split(['{"1', '0":{"a"', ':1}}']), ['{"a":1}']);
+    });
+
     test('rejette une page HTML', () {
       expect(() => split(['<html>']), throwsFormatException);
+    });
+
+    test('rejette la réponse de connexion reçue à la place d une liste', () {
+      expect(
+        () => split(['{"user_info":{"auth":0},"server_info":{}}']),
+        throwsFormatException,
+      );
+      expect(
+        () => split(['{"user_', 'info":{"auth":1}}']),
+        throwsFormatException,
+      );
+    });
+
+    test('rejette un message d erreur', () {
+      expect(
+        () => split(['{"status":"error","message":"user_info"}']),
+        throwsFormatException,
+      );
+    });
+
+    test('une valeur ne passe pas pour une clé', () {
+      expect(split(['{"a":"user_info","b":{"c":1}}']), ['{"c":1}']);
+    });
+
+    test('sait si la liste est allée à son terme', () {
+      final cut = JsonArraySplitter()..add('[{"a":1},{"b"');
+      final whole = JsonArraySplitter()..add('[{"a":1}]');
+      final empty = JsonArraySplitter()..add('  ');
+
+      expect(cut.isComplete, isFalse);
+      expect(whole.isComplete, isTrue);
+      expect(empty.isComplete, isFalse);
     });
 
     test('retourne le même résultat quel que soit le découpage', () {
@@ -104,6 +148,35 @@ void main() {
       final json = jsonEncode(objects);
       final bySingleChar = [for (final char in json.split('')) char];
       expect(split(bySingleChar).map(jsonDecode).toList(), objects);
+    });
+  });
+
+  group('decodeJsonObjects', () {
+    test('signale une réponse coupée en route', () {
+      expect(
+        decodeJsonObjects(Stream.fromIterable(['[{"a":1},', '{"b"'])).toList(),
+        throwsA(isA<TruncatedJsonException>()),
+      );
+    });
+
+    test('signale une réponse vide', () {
+      expect(
+        decodeJsonObjects(const Stream<String>.empty()).toList(),
+        throwsA(isA<TruncatedJsonException>()),
+      );
+    });
+
+    test('livre les objets reçus avant la coupure', () async {
+      final received = <Map<String, dynamic>>[];
+      await expectLater(
+        decodeJsonObjects(
+          Stream.fromIterable(['[{"a":1},{"b"']),
+        ).forEach(received.add),
+        throwsA(isA<TruncatedJsonException>()),
+      );
+      expect(received, [
+        {'a': 1},
+      ]);
     });
   });
 
@@ -187,7 +260,11 @@ void main() {
 
     group('erreurs du serveur', () {
       Matcher refusedWith(int status) => throwsA(
-        isA<AuthFailure>().having((failure) => failure.status, 'status', status),
+        isA<AuthFailure>().having(
+          (failure) => failure.status,
+          'status',
+          status,
+        ),
       );
 
       // Statuts relevés sur un vrai panneau, qui refuse sans passer par `auth`.
@@ -286,26 +363,27 @@ void main() {
         final client = MockClient((_) async => http.Response('', 503));
         await expectLater(
           XtreamSourceAdapter(client).fetch(credentials).toList(),
-          throwsA(
-            isA<ServerFailure>().having((f) => f.status, 'status', 503),
-          ),
+          throwsA(isA<ServerFailure>().having((f) => f.status, 'status', 503)),
         );
       });
 
-      test('une erreur après la connexion ne met pas le compte en cause', () async {
-        final client = MockClient((request) async {
-          final action = request.url.queryParameters['action'];
-          return action == 'get_live_streams'
-              ? http.Response('', 513)
-              : panel(request);
-        });
-        await expectLater(
-          XtreamSourceAdapter(client).fetch(credentials).toList(),
-          throwsA(
-            isA<ServerFailure>().having((f) => f.status, 'status', 513),
-          ),
-        );
-      });
+      test(
+        'une erreur après la connexion ne met pas le compte en cause',
+        () async {
+          final client = MockClient((request) async {
+            final action = request.url.queryParameters['action'];
+            return action == 'get_live_streams'
+                ? http.Response('', 513)
+                : panel(request);
+          });
+          await expectLater(
+            XtreamSourceAdapter(client).fetch(credentials).toList(),
+            throwsA(
+              isA<ServerFailure>().having((f) => f.status, 'status', 513),
+            ),
+          );
+        },
+      );
 
       test('l absence de réponse reste une erreur réseau', () async {
         final client = MockClient(
