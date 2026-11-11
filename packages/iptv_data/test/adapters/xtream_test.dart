@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:iptv_data/src/adapters/catalog_batch.dart';
+import 'package:iptv_data/src/adapters/playlist_source_adapter.dart';
 import 'package:iptv_data/src/adapters/xtream/json_array_stream.dart';
 import 'package:iptv_data/src/adapters/xtream/xtream_api_client.dart';
 import 'package:iptv_data/src/adapters/xtream/xtream_dtos.dart';

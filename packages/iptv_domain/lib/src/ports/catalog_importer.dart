@@ -7,7 +7,9 @@ abstract interface class CatalogImporter {
   ///
   /// Le catalogue précédent reste consultable jusqu'au dernier moment : une
   /// erreur laisse donc l'application dans son état d'origine. Le flux se
-  /// termine par une erreur de type [Failure] en cas d'échec.
+  /// termine par une erreur de type [Failure] si rien n'a pu être importé. Une
+  /// section seule en échec n'arrête pas les autres : elle est signalée par
+  /// [ImportProgress.failedSections].
   Stream<ImportProgress> run(
     PlaylistSource source,
     PlaylistCredentials credentials,

@@ -6,6 +6,7 @@ import 'package:iptv_data/src/adapters/catalog_batch.dart';
 import 'package:iptv_data/src/adapters/m3u/m3u_entry_mapper.dart';
 import 'package:iptv_data/src/adapters/m3u/m3u_line_parser.dart';
 import 'package:iptv_data/src/adapters/m3u/m3u_source_adapter.dart';
+import 'package:iptv_data/src/adapters/playlist_source_adapter.dart';
 import 'package:iptv_domain/iptv_domain.dart';
 import 'package:test/test.dart';
 

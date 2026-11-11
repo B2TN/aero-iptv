@@ -20,12 +20,16 @@ final class M3uSourceAdapter implements PlaylistSourceAdapter {
   final M3uEntryMapper _mapper;
 
   @override
-  Stream<CatalogBatch> fetch(PlaylistCredentials credentials) async* {
+  Future<List<SourceSection>> open(PlaylistCredentials credentials) async {
     final uri = Uri.tryParse((credentials as M3uCredentials).playlistUrl);
     if (uri == null || !uri.hasScheme) {
       throw const ParseFailure('Adresse de playlist invalide.');
     }
+    // Un fichier M3U mêle chaînes, films et séries : une seule section.
+    return [SourceSection(null, () => _read(uri))];
+  }
 
+  Stream<CatalogBatch> _read(Uri uri) async* {
     final response = await openGet(
       _client,
       uri,

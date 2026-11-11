@@ -65,6 +65,13 @@ final class CatalogSession {
     });
   });
 
+  /// Oublie ce qu'une section abandonnée avait écrit : ses lignes viennent
+  /// d'être supprimées de la base, et leurs identifiants ne valent plus rien.
+  void forget(ContentKind? kind) {
+    if (kind == null || kind == ContentKind.live) _groupIds.clear();
+    if (kind == null || kind == ContentKind.series) _seriesEntryIds.clear();
+  }
+
   Future<LiveChannelsCompanion> _liveRow(LiveEntry entry) async {
     final parsed = _cleaner.parse(entry.rawName, ContentKind.live);
     final group = _parsedGroup(entry.rawGroup);

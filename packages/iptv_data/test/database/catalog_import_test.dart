@@ -31,6 +31,9 @@ void main() {
   late EpgRepositoryImpl epg;
   late int sourceId;
 
+  /// Attentes demandées entre deux essais : aucune n'est réellement observée.
+  final pauses = <Duration>[];
+
   Future<List<ImportProgress>> runImport(
     PlaylistSourceAdapter adapter, {
     EpgSourceAdapter epgAdapter = const FakeEpgAdapter(),
@@ -39,6 +42,7 @@ void main() {
     catalogAdapter: adapter,
     epgAdapter: epgAdapter,
     clock: () => now,
+    pause: (duration) async => pauses.add(duration),
   ).run(sourceId, m3u).toList();
 
   Future<void> importFixture() async {
@@ -112,6 +116,7 @@ void main() {
   }
 
   setUp(() async {
+    pauses.clear();
     db = AppDatabase(
       DatabaseConnection(
         NativeDatabase.memory(setup: configureConnection),
@@ -631,6 +636,177 @@ void main() {
           );
       await importFixture();
       expect(await count('catalogs'), 1);
+    });
+  });
+
+  group('sections', () {
+    const outage = ServerFailure('panne', status: 503);
+
+    test('une section en échec ne fait pas perdre les autres', () async {
+      final adapter = SectionedCatalogAdapter({
+        ContentKind.live: [fails(outage)],
+        ContentKind.movie: [
+          succeeds([movie('Lagon (2020)')]),
+        ],
+      });
+
+      final progress = await runImport(adapter);
+
+      expect(await count('movies'), 1);
+      expect(await count('live_channels'), 0);
+      expect(progress.last.stage, ImportStage.done);
+      expect(progress.last.failedSections.keys, [ContentKind.live]);
+      expect(progress.last.failedSections[ContentKind.live], outage);
+      expect(
+        (await catalog.movies(
+          sourceId,
+          const PageRequest(),
+        )).items.single.title,
+        'Lagon',
+      );
+    });
+
+    test('reprend une section après une panne passagère', () async {
+      final adapter = SectionedCatalogAdapter({
+        ContentKind.live: [
+          fails(
+            const NetworkFailure('coupure'),
+            after: [live('TF1', 'FRANCE')],
+          ),
+          succeeds([live('TF1', 'FRANCE'), live('M6', 'FRANCE', id: 2)]),
+        ],
+      });
+
+      final progress = await runImport(adapter);
+
+      // Ni chaîne ni groupe en double : le premier essai a été effacé.
+      expect(await count('live_channels'), 2);
+      expect(await count('channel_groups'), 1);
+      expect(adapter.calls[ContentKind.live], 2);
+      expect(pauses, [const Duration(seconds: 4)]);
+      expect(progress.last.failedSections, isEmpty);
+    });
+
+    test('abandonne une section après trois essais', () async {
+      final adapter = SectionedCatalogAdapter({
+        ContentKind.live: [fails(outage)],
+        ContentKind.movie: [
+          succeeds([movie('Lagon (2020)')]),
+        ],
+      });
+
+      await runImport(adapter);
+
+      expect(adapter.calls[ContentKind.live], 3);
+      expect(pauses, [const Duration(seconds: 4), const Duration(seconds: 8)]);
+    });
+
+    test('ne réessaie pas un refus du compte', () async {
+      final adapter = SectionedCatalogAdapter({
+        ContentKind.live: [fails(const AuthFailure('refus', status: 403))],
+        ContentKind.movie: [
+          succeeds([movie('Lagon (2020)')]),
+        ],
+      });
+
+      final progress = await runImport(adapter);
+
+      expect(adapter.calls[ContentKind.live], 1);
+      expect(pauses, isEmpty);
+      expect(progress.last.failedSections.keys, [ContentKind.live]);
+    });
+
+    test('une section en échec garde son contenu précédent', () async {
+      await importFixture();
+      final channels = await count('live_channels');
+      final groups = await count('channel_groups');
+      expect(channels, greaterThan(0));
+
+      await runImport(
+        SectionedCatalogAdapter({
+          ContentKind.live: [fails(outage)],
+          ContentKind.movie: [
+            succeeds([movie('Lagon (2020)')]),
+          ],
+        }),
+      );
+
+      expect(await count('live_channels'), channels);
+      expect(await count('channel_groups'), groups);
+      expect(await count('movies'), 1);
+      expect(await count('catalogs'), 1);
+      final group = (await liveTv.groups(sourceId, 'FR', grouped: true)).first;
+      final page = await liveTv.channels(
+        sourceId,
+        'FR',
+        group,
+        const PageRequest(),
+        grouped: true,
+      );
+      expect(page.items, isNotEmpty);
+    });
+
+    test('si tout échoue, l ancien catalogue reste en place', () async {
+      await importFixture();
+      final channels = await count('live_channels');
+
+      await expectLater(
+        runImport(
+          SectionedCatalogAdapter({
+            ContentKind.live: [fails(outage)],
+            ContentKind.movie: [fails(const NetworkFailure('coupure'))],
+          }),
+        ),
+        throwsA(same(outage)),
+      );
+
+      expect(await count('live_channels'), channels);
+      expect(await count('catalogs'), 1);
+    });
+
+    test('annonce la section en cours, puis le guide', () async {
+      final progress = await runImport(
+        SectionedCatalogAdapter({
+          ContentKind.live: [
+            succeeds([live('TF1', 'FRANCE')]),
+          ],
+          ContentKind.movie: [
+            succeeds([movie('Lagon (2020)')]),
+          ],
+        }),
+      );
+
+      expect(
+        [
+          for (final step in progress)
+            if (step.stage == ImportStage.catalog)
+              (step.section, step.processed),
+        ],
+        [(ContentKind.live, 1), (ContentKind.movie, 2)],
+      );
+      expect(progress.map((step) => step.stage), [
+        ImportStage.connecting,
+        ImportStage.catalog,
+        ImportStage.catalog,
+        ImportStage.indexing,
+        ImportStage.epg,
+        ImportStage.done,
+      ]);
+    });
+
+    test('une source d un seul tenant est aussi reprise', () async {
+      await expectLater(
+        runImport(
+          FakeCatalogAdapter([
+            CatalogBatch([live('Partiel', 'FRANCE')]),
+          ], failure: const NetworkFailure('coupure')),
+        ),
+        throwsA(isA<NetworkFailure>()),
+      );
+
+      expect(pauses, hasLength(2));
+      expect(await count('live_channels'), 0);
+      expect(await count('catalogs'), 0);
     });
   });
 

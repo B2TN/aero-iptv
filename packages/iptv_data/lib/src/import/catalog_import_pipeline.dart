@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:drift/drift.dart';
 import 'package:iptv_domain/iptv_domain.dart';
 
@@ -11,6 +13,15 @@ import 'catalog_session.dart';
 const Duration _epgHistory = Duration(hours: 2);
 const Duration _epgHorizon = Duration(hours: 48);
 
+/// Essais par section. Un panneau surchargé coupe une réponse ou renvoie une
+/// page d'erreur, puis répond normalement quelques secondes plus tard.
+const int _sectionAttempts = 3;
+
+/// Attente avant le deuxième essai, doublée avant le troisième.
+const Duration _retryDelay = Duration(seconds: 4);
+
+Future<void> _wait(Duration duration) => Future<void>.delayed(duration);
+
 /// Enchaîne téléchargement, normalisation, écriture et bascule du catalogue.
 final class CatalogImportPipeline {
   CatalogImportPipeline({
@@ -18,40 +29,84 @@ final class CatalogImportPipeline {
     required PlaylistSourceAdapter catalogAdapter,
     required EpgSourceAdapter epgAdapter,
     DateTime Function() clock = DateTime.now,
+    Future<void> Function(Duration duration) pause = _wait,
   }) : _db = database,
        _catalogAdapter = catalogAdapter,
        _epgAdapter = epgAdapter,
        _clock = clock,
+       _pause = pause,
        _maintenance = CatalogMaintenanceDao(database);
 
   final AppDatabase _db;
   final PlaylistSourceAdapter _catalogAdapter;
   final EpgSourceAdapter _epgAdapter;
   final DateTime Function() _clock;
+  final Future<void> Function(Duration duration) _pause;
   final CatalogMaintenanceDao _maintenance;
 
   /// Exécute la synchronisation de la source [sourceId].
+  ///
+  /// Chaque section est téléchargée à part, et reprise en cas de panne
+  /// passagère. Si l'une d'elles reste en échec, les autres sont tout de même
+  /// activées : elle garde alors son contenu précédent, et le dernier
+  /// avancement la signale.
   Stream<ImportProgress> run(
     int sourceId,
     PlaylistCredentials credentials,
   ) async* {
     yield const ImportProgress(ImportStage.connecting);
     await _maintenance.purgeOrphans();
+    // Un accès refusé s'arrête ici, avant d'avoir réservé quoi que ce soit.
+    final sections = await _catalogAdapter.open(credentials);
 
     final catalogId = await _maintenance.create(sourceId, _clock());
     final session = CatalogSession(_db, catalogId);
+    final failed = <ContentKind, Failure>{};
     var processed = 0;
     String? discoveredEpgUrl;
 
     try {
-      await for (final batch in _catalogAdapter.fetch(credentials)) {
-        await session.write(batch);
-        processed += batch.entries.length;
-        discoveredEpgUrl ??= batch.discoveredEpgUrl;
-        yield ImportProgress(ImportStage.catalog, processed: processed);
+      for (final section in sections) {
+        final kind = section.kind;
+        for (var attempt = 1; ; attempt++) {
+          var received = 0;
+          try {
+            await for (final batch in section.fetch()) {
+              await session.write(batch);
+              received += batch.entries.length;
+              discoveredEpgUrl ??= batch.discoveredEpgUrl;
+              yield ImportProgress(
+                ImportStage.catalog,
+                section: kind,
+                processed: processed + received,
+              );
+            }
+            processed += received;
+            break;
+          } on Failure catch (failure) {
+            // Ce que l'essai a écrit est incomplet : le suivant repart de zéro.
+            await _maintenance.purgeSection(catalogId, kind);
+            session.forget(kind);
+            if (attempt < _sectionAttempts && _isTransient(failure)) {
+              await _pause(_retryDelay * attempt);
+              continue;
+            }
+            // Une source d'un seul tenant n'a rien d'autre à sauver.
+            if (kind == null) rethrow;
+            failed[kind] = failure;
+            break;
+          }
+        }
       }
       if (processed == 0) {
-        throw const ParseFailure('La source ne contient aucune entrée.');
+        throw failed.values.firstOrNull ??
+            const ParseFailure('La source ne contient aucune entrée.');
+      }
+      final shown = await _maintenance.activeCatalogOf(sourceId);
+      if (shown != null) {
+        for (final kind in failed.keys) {
+          await _maintenance.carryOver(shown, catalogId, kind);
+        }
       }
       yield ImportProgress(ImportStage.indexing, processed: processed);
       await _maintenance.separateHomonyms(catalogId);
@@ -65,6 +120,12 @@ final class CatalogImportPipeline {
     final previous = await _maintenance.activate(sourceId, catalogId, _clock());
     if (previous != null) await _maintenance.purge(previous);
 
+    // Le catalogue est déjà consultable : le guide se télécharge ensuite.
+    yield ImportProgress(
+      ImportStage.epg,
+      processed: processed,
+      failedSections: failed,
+    );
     final epgFailed = !await _importEpg(
       sourceId,
       catalogId,
@@ -75,8 +136,16 @@ final class CatalogImportPipeline {
       ImportStage.done,
       processed: processed,
       epgFailed: epgFailed,
+      failedSections: failed,
     );
   }
+
+  /// Une panne passagère mérite un nouvel essai, pas un refus du compte.
+  bool _isTransient(Failure failure) => switch (failure) {
+    NetworkFailure() || ParseFailure() || RateLimitFailure() => true,
+    ServerFailure(:final status) => status >= HttpStatus.internalServerError,
+    _ => false,
+  };
 
   /// Le guide est facultatif : son échec n'annule pas le catalogue déjà activé.
   Future<bool> _importEpg(

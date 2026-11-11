@@ -20,27 +20,50 @@ final class XtreamSourceAdapter implements PlaylistSourceAdapter {
   final XtreamEntryMapper _mapper;
 
   @override
-  Stream<CatalogBatch> fetch(PlaylistCredentials credentials) async* {
+  Future<List<SourceSection>> open(PlaylistCredentials credentials) async {
     final api = XtreamApiClient(_client, credentials as XtreamCredentials);
     await api.authenticate();
+    return [
+      SourceSection(
+        ContentKind.live,
+        () => _section(
+          api,
+          'get_live_categories',
+          'get_live_streams',
+          _mapper.live,
+        ),
+      ),
+      SourceSection(
+        ContentKind.movie,
+        () => _section(
+          api,
+          'get_vod_categories',
+          'get_vod_streams',
+          _mapper.movie,
+        ),
+      ),
+      SourceSection(
+        ContentKind.series,
+        () => _section(
+          api,
+          'get_series_categories',
+          'get_series',
+          _mapper.series,
+        ),
+      ),
+    ];
+  }
 
-    final liveCategories = await api.categories('get_live_categories');
-    yield* _batches(
-      api.objects('get_live_streams'),
-      (json) => _mapper.live(json, liveCategories),
-    );
-
-    final movieCategories = await api.categories('get_vod_categories');
-    yield* _batches(
-      api.objects('get_vod_streams'),
-      (json) => _mapper.movie(json, movieCategories),
-    );
-
-    final seriesCategories = await api.categories('get_series_categories');
-    yield* _batches(
-      api.objects('get_series'),
-      (json) => _mapper.series(json, seriesCategories),
-    );
+  /// Les catégories font partie de la section : sans elles, ses entrées
+  /// n'auraient pas de groupe.
+  Stream<CatalogBatch> _section(
+    XtreamApiClient api,
+    String categoriesAction,
+    String listAction,
+    CatalogEntry? Function(Map<String, dynamic>, Map<String, String>) map,
+  ) async* {
+    final categories = await api.categories(categoriesAction);
+    yield* _batches(api.objects(listAction), (json) => map(json, categories));
   }
 
   Stream<CatalogBatch> _batches(

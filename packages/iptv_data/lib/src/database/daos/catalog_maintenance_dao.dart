@@ -7,6 +7,14 @@ import '../app_database.dart';
 /// s'intercaler entre deux passes.
 const int _purgeChunkSize = 5000;
 
+/// Tables de chaque section, dans l'ordre où les vider : un épisode référence
+/// sa série, et une chaîne son groupe.
+const Map<ContentKind, List<String>> _sectionTables = {
+  ContentKind.series: ['episodes', 'series_entries'],
+  ContentKind.movie: ['movies'],
+  ContentKind.live: ['live_channels', 'channel_groups'],
+};
+
 /// Opérations sur un catalogue entier.
 final class CatalogMaintenanceDao {
   const CatalogMaintenanceDao(this._db);
@@ -117,15 +125,20 @@ final class CatalogMaintenanceDao {
         return source.activeCatalogId;
       });
 
-  /// Supprime un catalogue par petites passes.
-  Future<void> purge(int catalogId) async {
-    const tables = [
-      'episodes',
-      'series_entries',
-      'movies',
-      'live_channels',
-      'channel_groups',
-    ];
+  /// Catalogue affiché pour [sourceId], s'il y en a un.
+  Future<int?> activeCatalogOf(int sourceId) async {
+    final source = await (_db.select(
+      _db.sources,
+    )..where((row) => row.id.equals(sourceId))).getSingleOrNull();
+    return source?.activeCatalogId;
+  }
+
+  /// Vide une section d'un catalogue par petites passes. [kind] à `null` les
+  /// vide toutes.
+  Future<void> purgeSection(int catalogId, ContentKind? kind) async {
+    final tables = kind == null
+        ? _sectionTables.values.expand((tables) => tables)
+        : _sectionTables[kind]!;
     for (final table in tables) {
       int deleted;
       do {
@@ -137,6 +150,26 @@ final class CatalogMaintenanceDao {
         );
       } while (deleted == _purgeChunkSize);
     }
+  }
+
+  /// Fait passer la section [kind] de [fromCatalogId] à [toCatalogId] : une
+  /// section que le serveur refuse garde ainsi son contenu précédent.
+  Future<void> carryOver(
+    int fromCatalogId,
+    int toCatalogId,
+    ContentKind kind,
+  ) async {
+    for (final table in _sectionTables[kind]!) {
+      await _db.customStatement(
+        'UPDATE $table SET catalog_id = ?1 WHERE catalog_id = ?2',
+        [toCatalogId, fromCatalogId],
+      );
+    }
+  }
+
+  /// Supprime un catalogue par petites passes.
+  Future<void> purge(int catalogId) async {
+    await purgeSection(catalogId, null);
     await _db.customStatement(
       'DELETE FROM search_index WHERE catalog_id = ?1',
       [catalogId],

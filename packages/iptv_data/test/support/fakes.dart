@@ -21,7 +21,8 @@ final class MemoryCredentialStore implements CredentialStore {
   }
 }
 
-/// Adapter qui émet des lots prédéfinis, puis échoue si [failure] est renseigné.
+/// Adapter d'un seul tenant, qui émet des lots prédéfinis, puis échoue si
+/// [failure] est renseigné.
 final class FakeCatalogAdapter implements PlaylistSourceAdapter {
   const FakeCatalogAdapter(this.batches, {this.failure});
 
@@ -29,12 +30,57 @@ final class FakeCatalogAdapter implements PlaylistSourceAdapter {
   final Failure? failure;
 
   @override
-  Stream<CatalogBatch> fetch(PlaylistCredentials credentials) async* {
+  Future<List<SourceSection>> open(PlaylistCredentials credentials) async => [
+    SourceSection(null, _fetch),
+  ];
+
+  Stream<CatalogBatch> _fetch() async* {
     yield* Stream.fromIterable(batches);
     final error = failure;
     if (error != null) throw error;
   }
 }
+
+/// Résultat d'un essai de téléchargement : des lots, puis une panne éventuelle.
+typedef Attempt = ({List<CatalogBatch> batches, Failure? failure});
+
+Attempt succeeds(List<CatalogEntry> entries) =>
+    (batches: [CatalogBatch(entries)], failure: null);
+
+Attempt fails(Failure failure, {List<CatalogEntry> after = const []}) =>
+    (batches: [if (after.isNotEmpty) CatalogBatch(after)], failure: failure);
+
+/// Adapter à sections, dont chaque essai est décidé d'avance. Le dernier essai
+/// décrit se répète.
+final class SectionedCatalogAdapter implements PlaylistSourceAdapter {
+  SectionedCatalogAdapter(this.attempts);
+
+  final Map<ContentKind, List<Attempt>> attempts;
+
+  /// Nombre d'essais demandés pour chaque section.
+  final Map<ContentKind, int> calls = {};
+
+  @override
+  Future<List<SourceSection>> open(PlaylistCredentials credentials) async => [
+    for (final kind in attempts.keys) SourceSection(kind, () => _fetch(kind)),
+  ];
+
+  Stream<CatalogBatch> _fetch(ContentKind kind) async* {
+    final planned = attempts[kind]!;
+    final call = calls.update(kind, (count) => count + 1, ifAbsent: () => 1);
+    final attempt =
+        planned[call > planned.length ? planned.length - 1 : call - 1];
+    yield* Stream.fromIterable(attempt.batches);
+    final error = attempt.failure;
+    if (error != null) throw error;
+  }
+}
+
+MovieEntry movie(String name, {String group = 'VOD', int id = 1}) => MovieEntry(
+  rawName: name,
+  rawGroup: group,
+  locator: DirectStream('http://s/movie/$id.mkv'),
+);
 
 /// Guide prédéfini.
 final class FakeEpgAdapter implements EpgSourceAdapter {
