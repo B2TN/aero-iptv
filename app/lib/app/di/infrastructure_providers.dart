@@ -9,6 +9,7 @@ import 'package:iptv_domain/iptv_domain.dart';
 import '../../design_system/components/poster_image.dart';
 import '../platform/api_key_store.dart';
 import '../platform/device_profile.dart';
+import '../platform/screen_awake.dart';
 import '../platform/web_page.dart';
 
 const Duration _connectTimeout = Duration(seconds: 15);
@@ -31,6 +32,7 @@ final apiKeyStoreProvider = Provider<ApiKeyStore>(
 final webPageOpenerProvider = Provider<Future<bool> Function(String url)>(
   (ref) => openWebPage,
 );
+final screenAwakeProvider = Provider<ScreenAwake>((ref) => keepScreenAwake);
 final posterCacheProvider = Provider<PosterCache>(
   (ref) => throw StateError('Cache non injecté.'),
 );

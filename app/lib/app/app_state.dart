@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iptv_domain/iptv_domain.dart';
 
 import '../l10n/generated/app_localizations.dart';
+import 'di/infrastructure_providers.dart';
 import 'di/repository_providers.dart';
 
 /// Onglet affiché.
@@ -101,6 +102,11 @@ class ImportController extends Notifier<ImportStatus> {
     return const ImportStatus();
   }
 
+  /// Un gros catalogue met plusieurs minutes à arriver sur un stick : l'écran
+  /// de veille ne doit pas interrompre l'import.
+  void _keepAwake(bool enabled) =>
+      unawaited(ref.read(screenAwakeProvider)(enabled: enabled));
+
   /// Réimporte une fois le catalogue quand les règles de nettoyage ont changé :
   /// elles ne s'appliquent qu'à l'import, et l'utilisateur n'a pas à y penser.
   Future<void> refreshIfOutdated(PlaylistSource source) async {
@@ -117,6 +123,7 @@ class ImportController extends Notifier<ImportStatus> {
   void start(PlaylistSource source) {
     if (state.running) return;
     state = const ImportStatus(running: true, stage: ImportStage.connecting);
+    _keepAwake(true);
     _subscription = ref
         .read(importPlaylistProvider)
         .call(source)
@@ -132,13 +139,18 @@ class ImportController extends Notifier<ImportStatus> {
               epgFailed: progress.epgFailed,
               failedSections: progress.failedSections,
             );
-            if (done) unawaited(_rememberRules());
+            if (!done) return;
+            _keepAwake(false);
+            unawaited(_rememberRules());
           },
-          onError: (Object error) => state = ImportStatus(
-            failure: error is Failure
-                ? error
-                : const StorageFailure('Import interrompu.'),
-          ),
+          onError: (Object error) {
+            _keepAwake(false);
+            state = ImportStatus(
+              failure: error is Failure
+                  ? error
+                  : const StorageFailure('Import interrompu.'),
+            );
+          },
           cancelOnError: true,
         );
   }

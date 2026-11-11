@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:aero_iptv/app/app_state.dart';
+import 'package:aero_iptv/app/di/infrastructure_providers.dart';
 import 'package:aero_iptv/app/di/repository_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -55,9 +56,17 @@ final class _Importer implements CatalogImporter {
 }
 
 void main() {
+  /// Demandes faites à l'écran : `true` pour le garder allumé.
+  final awake = <bool>[];
+
+  setUp(awake.clear);
+
   ProviderContainer containerWith(_Settings settings, _Importer importer) {
     final container = ProviderContainer(
       overrides: [
+        screenAwakeProvider.overrideWithValue(
+          ({required enabled}) async => awake.add(enabled),
+        ),
         settingsRepositoryProvider.overrideWithValue(settings),
         importPlaylistProvider.overrideWithValue(
           ImportPlaylist(_Vault(), importer),
@@ -84,6 +93,34 @@ void main() {
 
     expect(importer.runs, 1);
     expect(settings.current.catalogRules, catalogRulesVersion);
+  });
+
+  test('garde l écran allumé le temps de l import', () async {
+    final container = containerWith(
+      _Settings(const AppSettings()),
+      _Importer(),
+    );
+
+    container.read(importControllerProvider.notifier).start(_source);
+    expect(awake, [true]);
+    await settle();
+    await settle();
+
+    expect(awake, [true, false]);
+  });
+
+  test('rend l écran à la veille après un échec', () async {
+    final container = containerWith(
+      _Settings(const AppSettings()),
+      _Importer(failure: const NetworkFailure('hors ligne')),
+    );
+
+    container.read(importControllerProvider.notifier).start(_source);
+    await settle();
+    await settle();
+
+    expect(awake, [true, false]);
+    expect(container.read(importControllerProvider).failure, isNotNull);
   });
 
   test('laisse tranquille un catalogue à jour', () async {

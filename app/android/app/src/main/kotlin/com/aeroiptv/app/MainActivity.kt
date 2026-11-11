@@ -11,5 +11,6 @@ class MainActivity : FlutterActivity() {
         DeviceProfileChannel(applicationContext).attach(messenger)
         SecureStoreChannel(applicationContext).attach(messenger)
         ExternalPlayerChannel(applicationContext).attach(messenger)
+        KeepAwakeChannel(this).attach(messenger)
     }
 }
