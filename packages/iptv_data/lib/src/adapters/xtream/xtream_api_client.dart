@@ -69,7 +69,11 @@ final class XtreamApiClient {
       timeout: catalogResponseTimeout,
     );
     try {
-      yield* decodeJsonObjects(textChunks(response));
+      // Pas de `yield*` : il transmettrait les erreurs du décodeur telles
+      // quelles, sans passer par les `on` ci-dessous.
+      await for (final object in decodeJsonObjects(textChunks(response))) {
+        yield object;
+      }
     } on TruncatedJsonException {
       throw const NetworkFailure('Réponse Xtream interrompue.');
     } on FormatException {

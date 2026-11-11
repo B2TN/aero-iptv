@@ -259,6 +259,60 @@ void main() {
       );
     });
 
+    group('listes illisibles', () {
+      Future<List<CatalogEntry>> channelsFrom(String body) {
+        final client = MockClient(
+          (request) async =>
+              request.url.queryParameters['action'] == 'get_live_streams'
+              ? http.Response(body, 200)
+              : panel(request),
+        );
+        return XtreamSourceAdapter(
+          client,
+        ).fetch(credentials).expand((batch) => batch.entries).toList();
+      }
+
+      test('une liste coupée en route est une panne de réseau', () {
+        expect(
+          channelsFrom('[{"name":"A","stream_id":1},{"na'),
+          throwsA(isA<NetworkFailure>()),
+        );
+      });
+
+      test('une réponse vide est une panne de réseau', () {
+        expect(channelsFrom(''), throwsA(isA<NetworkFailure>()));
+      });
+
+      test('une page HTML est une réponse illisible', () {
+        expect(
+          channelsFrom('<html>Erreur 500</html>'),
+          throwsA(isA<ParseFailure>()),
+        );
+      });
+
+      test('la réponse de connexion n est pas une liste vide', () {
+        expect(
+          channelsFrom('{"user_info":{"auth":0}}'),
+          throwsA(isA<ParseFailure>()),
+        );
+      });
+
+      test('un élément mal formé est une réponse illisible', () {
+        expect(
+          channelsFrom('[{"name":"A","stream_id":1},{"name":}]'),
+          throwsA(isA<ParseFailure>()),
+        );
+      });
+
+      test('un objet indexé livre ses chaînes', () async {
+        final entries = await channelsFrom(
+          '{"1":{"name":"A","stream_id":1},"3":{"name":"B","stream_id":2}}',
+        );
+
+        expect(entries.whereType<LiveEntry>(), hasLength(2));
+      });
+    });
+
     group('erreurs du serveur', () {
       Matcher refusedWith(int status) => throwsA(
         isA<AuthFailure>().having(
