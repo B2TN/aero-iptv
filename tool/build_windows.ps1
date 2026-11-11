@@ -42,23 +42,33 @@ try {
     Assert-Success 'compilation Windows'
 } finally { Pop-Location }
 
-if (Test-Path $packageDir) { Remove-Item $packageDir -Recurse -Force }
-New-Item -ItemType Directory -Force -Path $packageDir | Out-Null
-Copy-Item (Join-Path $AppDir 'build\windows\x64\runner\Release\*') $packageDir -Recurse
+# Le paquet est assemblé à côté de la compilation, puis copié dans dist. Un
+# dossier dist synchronisé par OneDrive verrouille ses nouveaux fichiers un
+# instant, ce qui ferait échouer la création de l'archive.
+$stageDir = Join-Path $AppDir "build\package\$packageName"
+if (Test-Path $stageDir) { Remove-Item $stageDir -Recurse -Force }
+New-Item -ItemType Directory -Force -Path $stageDir | Out-Null
+Copy-Item (Join-Path $AppDir 'build\windows\x64\runner\Release\*') $stageDir -Recurse
 
-if (Test-Path (Join-Path $packageDir 'data\flutter_assets\kernel_blob.bin')) {
+if (Test-Path (Join-Path $stageDir 'data\flutter_assets\kernel_blob.bin')) {
     throw 'Code de débogage présent dans le paquet : distribution annulée.'
 }
 
 # Bibliothèques Visual C++ embarquées, pour fonctionner sur un PC qui ne les a
 # pas : c'est le déploiement « application-local » recommandé par Flutter.
 foreach ($library in 'msvcp140.dll', 'vcruntime140.dll', 'vcruntime140_1.dll') {
-    Copy-Item (Join-Path $env:WINDIR "System32\$library") $packageDir
+    Copy-Item (Join-Path $env:WINDIR "System32\$library") $stageDir
 }
 
+$stagedArchive = "$stageDir.zip"
+if (Test-Path $stagedArchive) { Remove-Item $stagedArchive -Force }
+Compress-Archive -Path "$stageDir\*" -DestinationPath $stagedArchive -CompressionLevel Optimal
+
+New-Item -ItemType Directory -Force -Path $DistDir | Out-Null
+if (Test-Path $packageDir) { Remove-Item $packageDir -Recurse -Force }
+Copy-Item $stageDir $packageDir -Recurse
 $archive = "$packageDir.zip"
-if (Test-Path $archive) { Remove-Item $archive -Force }
-Compress-Archive -Path "$packageDir\*" -DestinationPath $archive -CompressionLevel Optimal
+Copy-Item $stagedArchive $archive -Force
 '{0}  {1:N1} Mio' -f $archive, ((Get-Item $archive).Length / 1MB)
 
 $compiler = @(
@@ -68,7 +78,7 @@ $compiler = @(
 ) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
 
 if ($compiler) {
-    & $compiler "/DAppVersion=$version" "/DSourceDir=$packageDir" "/O$DistDir" `
+    & $compiler "/DAppVersion=$version" "/DSourceDir=$stageDir" "/O$DistDir" `
         (Join-Path $PSScriptRoot 'windows_installer.iss')
     Assert-Success 'création de l''installeur'
 } else {
