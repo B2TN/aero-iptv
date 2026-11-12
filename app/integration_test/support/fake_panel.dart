@@ -12,7 +12,8 @@ const List<String> _articles = ['Le', 'The', 'Der', 'El'];
 ///
 /// Il produit ses listes à la volée, sans jamais les garder en mémoire, et sait
 /// reproduire deux pannes de panneau réel : une réponse coupée en route, et la
-/// réponse de connexion renvoyée à la place d'une liste.
+/// réponse de connexion renvoyée à la place d'une liste. Son guide des
+/// programmes s'arrête toujours au milieu d'une balise.
 final class FakePanel {
   FakePanel._(
     this._server, {
@@ -71,6 +72,12 @@ final class FakePanel {
     );
     try {
       switch (action) {
+        case null when request.uri.path.endsWith('xmltv.php'):
+          response.write(
+            '<?xml version="1.0"?><tv><channel id="c0.fr">'
+            '<display-name>Chaîne 0</display-name></channel>'
+            '<programme start="2026',
+          );
         case null:
           response.write(jsonEncode(_login(auth: 1)));
         case 'get_live_streams':
@@ -154,12 +161,19 @@ final class FakePanel {
     };
   }
 
+  /// Une série sur cinq est un remake : même titre que la précédente, autre
+  /// année. Un vrai catalogue en compte toujours, et l'import les départage.
   Map<String, Object?> _show(int i) {
     final language = i % _languages.length;
     final title = i ~/ _languages.length;
+    final remake = title % 5 == 4;
+    final name = remake ? title - 1 : title;
+    final year = remake ? 2021 : 1990 + title % 30;
     return {
       'num': i,
-      'name': '${_languages[language]} - ${_articles[language]} Série $title',
+      'name':
+          '${_languages[language]} - ${_articles[language]} Série $name '
+          '($year)',
       'series_id': i,
       'cover': '',
       'plot':

@@ -45,9 +45,32 @@ void main() {
     await tester.pump();
   }
 
+  /// Attend la fin de l'import en cours. Retourne les messages d'avancement vus
+  /// à l'accueil.
+  Future<Set<String>> settle(
+    WidgetTester tester,
+    ProviderContainer container, {
+    required Duration limit,
+  }) async {
+    final l10n = lookupAppLocalizations(const Locale('fr'));
+    final seen = <String>{};
+    final clock = Stopwatch()..start();
+    while (clock.elapsed < limit) {
+      await wait(tester, 500);
+      final status = container.read(importControllerProvider);
+      final message = importMessage(l10n, status);
+      if (status.running && message != null) {
+        seen.add(message.replaceAll(RegExp(r'\d+'), 'N'));
+      }
+      if (status.finished || status.failure != null) break;
+    }
+    await wait(tester, 2000);
+    return seen;
+  }
+
   /// Lance l'application sur une playlist servie par [panel], puis attend la fin
-  /// de son import. Retourne les messages d'avancement vus à l'accueil.
-  Future<(ProviderContainer, Set<String>)> importFrom(
+  /// de son import. Retourne aussi les messages d'avancement vus à l'accueil.
+  Future<(ProviderContainer, Set<String>, PlaylistSource)> importFrom(
     WidgetTester tester,
     FakePanel panel, {
     required Duration limit,
@@ -87,20 +110,8 @@ void main() {
     // L'ajout déclenche déjà l'import : cet appel est alors sans effet.
     container.read(importControllerProvider.notifier).start(source);
 
-    final l10n = lookupAppLocalizations(const Locale('fr'));
-    final seen = <String>{};
-    final clock = Stopwatch()..start();
-    while (clock.elapsed < limit) {
-      await wait(tester, 500);
-      final status = container.read(importControllerProvider);
-      final message = importMessage(l10n, status);
-      if (status.running && message != null) {
-        seen.add(message.replaceAll(RegExp(r'\d+'), 'N'));
-      }
-      if (status.finished || status.failure != null) break;
-    }
-    await wait(tester, 2000);
-    return (container, seen);
+    final seen = await settle(tester, container, limit: limit);
+    return (container, seen, source);
   }
 
   testWidgets('importe 300 000 titres sans dépasser la mémoire', (
@@ -117,7 +128,7 @@ void main() {
     final before = ProcessInfo.currentRss;
     final clock = Stopwatch()..start();
 
-    final (container, seen) = await importFrom(
+    final (container, seen, _) = await importFrom(
       tester,
       panel,
       limit: const Duration(minutes: 40),
@@ -143,6 +154,49 @@ void main() {
     await tester.runAsync(panel.close);
   }, timeout: const Timeout(Duration(minutes: 45)));
 
+  // Un vrai catalogue compte des remakes, que l'import départage, et il se
+  // réactualise par-dessus le précédent, qu'il faut ensuite retirer.
+  testWidgets('départage les séries homonymes, puis actualise', (tester) async {
+    late FakePanel panel;
+    await tester.runAsync(() async {
+      panel = await FakePanel.start(channels: 300, movies: 1000, series: 6000);
+    });
+    void report(String step, ImportStatus status) {
+      final failure = status.failure;
+      // ignore: avoid_print
+      print(
+        'MESURE homonymes, $step : fini ${status.finished}, échec $failure, '
+        'code ${failure is StorageFailure ? failure.code : null}',
+      );
+    }
+
+    final (container, _, source) = await importFrom(
+      tester,
+      panel,
+      limit: const Duration(minutes: 5),
+    );
+    final first = container.read(importControllerProvider);
+    report('import', first);
+
+    expect(first.failure, isNull);
+    expect(first.finished, isTrue);
+    // Le guide du panneau est coupé : il manque, sans faire échouer le reste.
+    expect(first.epgFailed, isTrue);
+    expect(first.processed, 7300);
+    expect(find.text('Séries populaires'), findsOneWidget);
+
+    container.read(importControllerProvider.notifier).start(source);
+    await settle(tester, container, limit: const Duration(minutes: 5));
+    final second = container.read(importControllerProvider);
+    report('actualisation', second);
+
+    expect(second.failure, isNull);
+    expect(second.finished, isTrue);
+    expect(second.processed, 7300);
+    expect(find.text('Séries populaires'), findsOneWidget);
+    await tester.runAsync(panel.close);
+  }, timeout: const Timeout(Duration(minutes: 12)));
+
   testWidgets('garde le reste quand le panneau refuse une section', (
     tester,
   ) async {
@@ -157,7 +211,7 @@ void main() {
       );
     });
 
-    final (container, _) = await importFrom(
+    final (container, _, _) = await importFrom(
       tester,
       panel,
       limit: const Duration(minutes: 5),
