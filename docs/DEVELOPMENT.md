@@ -40,7 +40,7 @@ powershell -ExecutionPolicy Bypass -File tool\build_windows.ps1
 
 The script produces `aero_iptv-<version>-windows-x64.zip`. The `.exe` doesn't work on its own: it needs its DLLs and the `data` folder, all included in the archive. If Inno Setup 6 is installed, it also produces a single-file installer. It removes files left by a debug run and refuses to ship a package that contains any.
 
-If the project is stored in OneDrive, both scripts build in a separate copy (`%USERPROFILE%\aero_iptv_atelier`, or the folder in `AERO_WORKSHOP`), and the packages come back to `dist/`. OneDrive marks its folders read-only, which `flutter gen-l10n` refuses, and it would upload gigabytes of generated files to the cloud. For the same reason, run the commands below from that copy rather than from OneDrive.
+If the project is stored in OneDrive, both scripts build in a separate copy (`%PUBLIC%\aero_iptv_atelier`, or the folder in `AERO_WORKSHOP`), and the packages come back to `dist/`. That copy lives outside your user profile because the build path ends up inside the binaries, and a profile path contains your Windows account name. OneDrive marks its folders read-only, which `flutter gen-l10n` refuses, and it would upload gigabytes of generated files to the cloud. For the same reason, run the commands below from that copy rather than from OneDrive.
 
 ## Commands
 

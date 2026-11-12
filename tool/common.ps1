@@ -35,9 +35,12 @@ $env:GIT_CONFIG_VALUE_0 = 'true'
 # et enverrait dans le nuage des gigaoctets de fichiers générés. Un projet rangé
 # dans OneDrive se compile donc dans une copie à part, et les paquets reviennent
 # dans dist. Cette copie peut être supprimée à tout moment.
+#
+# Elle est rangée hors du profil : le chemin de compilation est inscrit dans les
+# binaires, et celui du profil contient le nom de la session Windows.
 function Use-Workshop {
     if ($ProjectRoot -notmatch '\\OneDrive') { return }
-    $workshop = if ($env:AERO_WORKSHOP) { $env:AERO_WORKSHOP } else { Join-Path $env:USERPROFILE 'aero_iptv_atelier' }
+    $workshop = if ($env:AERO_WORKSHOP) { $env:AERO_WORKSHOP } else { Join-Path $env:PUBLIC 'aero_iptv_atelier' }
     robocopy $ProjectRoot $workshop /MIR /R:1 /W:1 /NFL /NDL /NJH /NJS /NP `
         /XD build .dart_tool .gradle .kotlin ephemeral dist .git /XF '*.g.dart' | Out-Null
     # Robocopy ne signale une erreur qu'à partir du code 8.
