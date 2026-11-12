@@ -259,6 +259,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get playlistMissingFields => 'أدخل الاسم والعنوان قبل الحفظ.';
 
   @override
+  String get playlistSaveFailedTitle => 'تعذّر الحفظ';
+
+  @override
   String get playlistSynced => 'تم التحديث';
 
   @override
@@ -297,8 +300,32 @@ class AppLocalizationsAr extends AppLocalizations {
   String get importFormatFailed => 'المحتوى المستلم ليس قائمة تشغيل صالحة.';
 
   @override
-  String get importStorageFailed =>
-      'تعذّر على الجهاز حفظ الكتالوج. أفرغ بعض مساحة التخزين ثم أعد المحاولة.';
+  String get importSecureFailed =>
+      'رُفض الاتصال الآمن (https) بالخادم. تحقّق من تاريخ الجهاز ووقته ثم أعد المحاولة.';
+
+  @override
+  String importLastStep(String step) {
+    return 'آخر مرحلة: $step';
+  }
+
+  @override
+  String importVaultFailed(String cause) {
+    return 'خزنة الجهاز المشفّرة لا تعمل (خطأ $cause): تعذّر حفظ بيانات الدخول لقائمة التشغيل أو قراءتها.';
+  }
+
+  @override
+  String get importStorageFull =>
+      'لم تعد في الجهاز مساحة كافية لحفظ الكتالوج. أفرغ بعض مساحة التخزين ثم أعد المحاولة.';
+
+  @override
+  String importStorageFailed(int code) {
+    return 'تعذّر على الجهاز حفظ الكتالوج (خطأ SQLite $code). أعد المحاولة، وإذا تكرّر الخطأ فأبلغ عنه مع هذا الرمز.';
+  }
+
+  @override
+  String importUnexpected(String kind) {
+    return 'توقّف الاستيراد بسبب خطأ غير متوقّع ($kind). أعد المحاولة، وإذا تكرّر الخطأ فأبلغ عنه مع هذا الاسم.';
+  }
 
   @override
   String get importConnecting => 'جارٍ الاتصال بالخادم…';

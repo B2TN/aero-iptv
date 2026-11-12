@@ -263,6 +263,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Geben Sie vor dem Speichern Name und Adresse ein.';
 
   @override
+  String get playlistSaveFailedTitle => 'Speichern fehlgeschlagen';
+
+  @override
   String get playlistSynced => 'Aktualisiert';
 
   @override
@@ -303,8 +306,32 @@ class AppLocalizationsDe extends AppLocalizations {
       'Der empfangene Inhalt ist keine gültige Playlist.';
 
   @override
-  String get importStorageFailed =>
-      'Das Gerät konnte den Katalog nicht speichern. Geben Sie Speicherplatz frei und versuchen Sie es erneut.';
+  String get importSecureFailed =>
+      'Die sichere Verbindung (https) zum Server wurde abgelehnt. Prüfen Sie Datum und Uhrzeit des Geräts und versuchen Sie es erneut.';
+
+  @override
+  String importLastStep(String step) {
+    return 'Letzter Schritt: $step';
+  }
+
+  @override
+  String importVaultFailed(String cause) {
+    return 'Der verschlüsselte Tresor des Geräts funktioniert nicht (Fehler $cause): Die Zugangsdaten der Playlist konnten nicht gespeichert oder gelesen werden.';
+  }
+
+  @override
+  String get importStorageFull =>
+      'Auf dem Gerät ist nicht mehr genug Platz, um den Katalog zu speichern. Geben Sie Speicherplatz frei und versuchen Sie es erneut.';
+
+  @override
+  String importStorageFailed(int code) {
+    return 'Das Gerät konnte den Katalog nicht speichern (SQLite-Fehler $code). Versuchen Sie es erneut. Tritt der Fehler wieder auf, melden Sie ihn mit diesem Code.';
+  }
+
+  @override
+  String importUnexpected(String kind) {
+    return 'Der Import wurde durch einen unerwarteten Fehler abgebrochen ($kind). Versuchen Sie es erneut. Tritt der Fehler wieder auf, melden Sie ihn mit diesem Namen.';
+  }
 
   @override
   String get importConnecting => 'Verbindung zum Server…';

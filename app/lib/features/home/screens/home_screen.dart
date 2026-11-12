@@ -95,7 +95,10 @@ class _EmptyCatalog extends ConsumerWidget {
     if (failure != null && source != null) {
       return AeroMessage(
         title: l10n.importFailedTitle,
-        body: importFailureMessage(l10n, failure),
+        body: [
+          importFailureMessage(l10n, failure),
+          ?importFailureStep(l10n, status),
+        ].join('\n'),
         actionLabel: l10n.actionRetry,
         onAction: () =>
             ref.read(importControllerProvider.notifier).start(source),

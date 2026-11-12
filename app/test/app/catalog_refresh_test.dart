@@ -123,6 +123,21 @@ void main() {
     expect(container.read(importControllerProvider).failure, isNotNull);
   });
 
+  test('un échec garde l étape atteinte', () async {
+    final container = containerWith(
+      _Settings(const AppSettings()),
+      _Importer(failure: const NetworkFailure('hors ligne')),
+    );
+
+    container.read(importControllerProvider.notifier).start(_source);
+    await settle();
+    await settle();
+
+    final status = container.read(importControllerProvider);
+    expect(status.running, isFalse);
+    expect(status.stage, ImportStage.connecting);
+  });
+
   test('laisse tranquille un catalogue à jour', () async {
     final importer = _Importer();
     final container = containerWith(

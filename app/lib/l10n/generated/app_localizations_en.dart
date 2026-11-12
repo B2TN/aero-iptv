@@ -262,6 +262,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enter the name and address before saving.';
 
   @override
+  String get playlistSaveFailedTitle => 'Saving failed';
+
+  @override
   String get playlistSynced => 'Refreshed';
 
   @override
@@ -301,8 +304,32 @@ class AppLocalizationsEn extends AppLocalizations {
       'The content received isn\'t a valid playlist.';
 
   @override
-  String get importStorageFailed =>
-      'The device couldn\'t save the catalog. Free up some storage space, then try again.';
+  String get importSecureFailed =>
+      'The secure (https) connection to the server was refused. Check the device\'s date and time, then try again.';
+
+  @override
+  String importLastStep(String step) {
+    return 'Last step: $step';
+  }
+
+  @override
+  String importVaultFailed(String cause) {
+    return 'The device\'s encrypted vault isn\'t working ($cause error): the playlist\'s credentials couldn\'t be saved or read back.';
+  }
+
+  @override
+  String get importStorageFull =>
+      'The device has run out of space to save the catalog. Free up some storage space, then try again.';
+
+  @override
+  String importStorageFailed(int code) {
+    return 'The device couldn\'t save the catalog (SQLite error $code). Try again. If the error comes back, report it with this code.';
+  }
+
+  @override
+  String importUnexpected(String kind) {
+    return 'The import stopped on an unexpected error ($kind). Try again. If the error comes back, report it with this name.';
+  }
 
   @override
   String get importConnecting => 'Connecting to the server…';

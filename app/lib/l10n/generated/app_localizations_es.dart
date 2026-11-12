@@ -263,6 +263,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'Indica el nombre y la dirección antes de guardar.';
 
   @override
+  String get playlistSaveFailedTitle => 'No se ha podido guardar';
+
+  @override
   String get playlistSynced => 'Actualizada';
 
   @override
@@ -303,8 +306,32 @@ class AppLocalizationsEs extends AppLocalizations {
       'El contenido recibido no es una lista válida.';
 
   @override
-  String get importStorageFailed =>
-      'El dispositivo no ha podido guardar el catálogo. Libere espacio de almacenamiento y vuelva a intentarlo.';
+  String get importSecureFailed =>
+      'Se ha rechazado la conexión segura (https) con el servidor. Compruebe la fecha y la hora del dispositivo y vuelva a intentarlo.';
+
+  @override
+  String importLastStep(String step) {
+    return 'Último paso: $step';
+  }
+
+  @override
+  String importVaultFailed(String cause) {
+    return 'El almacén cifrado del dispositivo no funciona (error $cause): las credenciales de la lista no se han podido guardar ni recuperar.';
+  }
+
+  @override
+  String get importStorageFull =>
+      'El dispositivo no tiene espacio suficiente para guardar el catálogo. Libere espacio de almacenamiento y vuelva a intentarlo.';
+
+  @override
+  String importStorageFailed(int code) {
+    return 'El dispositivo no ha podido guardar el catálogo (error SQLite $code). Vuelva a intentarlo. Si el error se repite, comuníquelo con este código.';
+  }
+
+  @override
+  String importUnexpected(String kind) {
+    return 'La importación se ha detenido por un error inesperado ($kind). Vuelva a intentarlo. Si el error se repite, comuníquelo con este nombre.';
+  }
 
   @override
   String get importConnecting => 'Conectando con el servidor…';

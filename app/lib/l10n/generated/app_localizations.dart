@@ -542,6 +542,12 @@ abstract class AppLocalizations {
   /// **'Renseignez le nom et l\'adresse avant d\'enregistrer.'**
   String get playlistMissingFields;
 
+  /// No description provided for @playlistSaveFailedTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'enregistrement a échoué'**
+  String get playlistSaveFailedTitle;
+
   /// No description provided for @playlistSynced.
   ///
   /// In fr, this message translates to:
@@ -602,11 +608,41 @@ abstract class AppLocalizations {
   /// **'Le contenu reçu n\'est pas une playlist valide.'**
   String get importFormatFailed;
 
+  /// No description provided for @importSecureFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'La connexion sécurisée (https) au serveur a été refusée. Vérifiez la date et l\'heure de l\'appareil, puis réessayez.'**
+  String get importSecureFailed;
+
+  /// No description provided for @importLastStep.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dernière étape : {step}'**
+  String importLastStep(String step);
+
+  /// No description provided for @importVaultFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le coffre chiffré de l\'appareil ne fonctionne pas (erreur {cause}) : les identifiants de la playlist n\'ont pas pu être enregistrés ou relus.'**
+  String importVaultFailed(String cause);
+
+  /// No description provided for @importStorageFull.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'appareil n\'a plus assez de place pour enregistrer le catalogue. Libérez de l\'espace de stockage, puis réessayez.'**
+  String get importStorageFull;
+
   /// No description provided for @importStorageFailed.
   ///
   /// In fr, this message translates to:
-  /// **'L\'appareil n\'a pas pu enregistrer le catalogue. Libérez de l\'espace de stockage, puis réessayez.'**
-  String get importStorageFailed;
+  /// **'L\'appareil n\'a pas pu enregistrer le catalogue (erreur SQLite {code}). Réessayez. Si l\'erreur revient, signalez-la avec ce code.'**
+  String importStorageFailed(int code);
+
+  /// No description provided for @importUnexpected.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'import s\'est arrêté sur une erreur inattendue ({kind}). Réessayez. Si l\'erreur revient, signalez-la avec ce nom.'**
+  String importUnexpected(String kind);
 
   /// No description provided for @importConnecting.
   ///

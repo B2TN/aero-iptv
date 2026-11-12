@@ -262,6 +262,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Renseignez le nom et l\'adresse avant d\'enregistrer.';
 
   @override
+  String get playlistSaveFailedTitle => 'L\'enregistrement a échoué';
+
+  @override
   String get playlistSynced => 'Actualisée';
 
   @override
@@ -302,8 +305,32 @@ class AppLocalizationsFr extends AppLocalizations {
       'Le contenu reçu n\'est pas une playlist valide.';
 
   @override
-  String get importStorageFailed =>
-      'L\'appareil n\'a pas pu enregistrer le catalogue. Libérez de l\'espace de stockage, puis réessayez.';
+  String get importSecureFailed =>
+      'La connexion sécurisée (https) au serveur a été refusée. Vérifiez la date et l\'heure de l\'appareil, puis réessayez.';
+
+  @override
+  String importLastStep(String step) {
+    return 'Dernière étape : $step';
+  }
+
+  @override
+  String importVaultFailed(String cause) {
+    return 'Le coffre chiffré de l\'appareil ne fonctionne pas (erreur $cause) : les identifiants de la playlist n\'ont pas pu être enregistrés ou relus.';
+  }
+
+  @override
+  String get importStorageFull =>
+      'L\'appareil n\'a plus assez de place pour enregistrer le catalogue. Libérez de l\'espace de stockage, puis réessayez.';
+
+  @override
+  String importStorageFailed(int code) {
+    return 'L\'appareil n\'a pas pu enregistrer le catalogue (erreur SQLite $code). Réessayez. Si l\'erreur revient, signalez-la avec ce code.';
+  }
+
+  @override
+  String importUnexpected(String kind) {
+    return 'L\'import s\'est arrêté sur une erreur inattendue ($kind). Réessayez. Si l\'erreur revient, signalez-la avec ce nom.';
+  }
 
   @override
   String get importConnecting => 'Connexion au serveur…';

@@ -7,6 +7,7 @@ import 'package:iptv_domain/iptv_domain.dart';
 import '../adapters/adapter_resolver.dart';
 import '../database/app_database.dart';
 import 'catalog_import_pipeline.dart';
+import 'import_failure.dart';
 
 /// Lance l'import dans un isolate, pour que le parsing ne touche jamais au
 /// thread de l'interface.
@@ -28,19 +29,19 @@ final class IsolateCatalogImporter implements CatalogImporter {
     final subscription = port.cast<ImportProgress>().listen(controller.add);
 
     unawaited(
-      _spawn(
-        _database,
-        port.sendPort,
-        source.id,
-        credentials,
-      ).catchError(controller.addError).whenComplete(() async {
-        // Les derniers messages de l'isolate précèdent sa fin : le port
-        // les a déjà reçus lorsque ce rappel s'exécute.
-        await Future<void>.delayed(Duration.zero);
-        await subscription.cancel();
-        port.close();
-        await controller.close();
-      }),
+      _spawn(_database, port.sendPort, source.id, credentials)
+          .catchError(
+            (Object error, StackTrace stack) =>
+                controller.addError(importFailureOf(error), stack),
+          )
+          .whenComplete(() async {
+            // Les derniers messages de l'isolate précèdent sa fin : le port
+            // les a déjà reçus lorsque ce rappel s'exécute.
+            await Future<void>.delayed(Duration.zero);
+            await subscription.cancel();
+            port.close();
+            await controller.close();
+          }),
     );
     return controller.stream;
   }
@@ -73,6 +74,10 @@ final class IsolateCatalogImporter implements CatalogImporter {
         epgAdapter: adapters.epgFor(credentials),
       );
       await pipeline.run(sourceId, credentials).forEach(progress.send);
+    } on Object catch (error, stack) {
+      // Converti ici, où l'erreur est encore intacte : toutes ne survivent pas
+      // au passage entre isolates.
+      Error.throwWithStackTrace(importFailureOf(error), stack);
     } finally {
       client.close();
     }

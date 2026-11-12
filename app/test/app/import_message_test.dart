@@ -30,8 +30,60 @@ void main() {
     expect(message(const ServerFailure('x', status: 503)), contains('503'));
   });
 
-  test('un échec d enregistrement parle du stockage', () {
-    expect(message(const StorageFailure('x')), contains('stockage'));
+  group('échec d enregistrement', () {
+    test('ne demande de libérer de la place que si elle manque', () {
+      // 13 : stockage plein. 6410 : dossier temporaire introuvable.
+      expect(message(const StorageFailure('x', code: 13)), contains('place'));
+      expect(
+        message(const StorageFailure('x', code: 6410)),
+        isNot(contains('place')),
+      );
+    });
+
+    test('affiche le code de la base', () {
+      expect(message(const StorageFailure('x', code: 6410)), contains('6410'));
+    });
+
+    test('nomme une erreur inattendue', () {
+      expect(
+        message(const UnexpectedFailure('x', kind: 'StateError')),
+        contains('StateError'),
+      );
+      expect(message(const StorageFailure('x')), contains('StorageFailure'));
+    });
+  });
+
+  test('une connexion chiffrée refusée ne se dit pas injoignable', () {
+    final text = message(const SecureConnectionFailure('x'));
+
+    expect(text, contains('https'));
+    expect(text, isNot(contains('injoignable')));
+  });
+
+  test('un coffre en panne se nomme, sans accuser le stockage', () {
+    final text = message(const VaultFailure('x', cause: 'ProviderException'));
+
+    expect(text, contains('ProviderException'));
+    expect(text, contains('coffre'));
+    expect(text, isNot(contains('stockage')));
+  });
+
+  test('un échec dit à quelle étape il est arrivé', () {
+    const status = ImportStatus(
+      failure: UnexpectedFailure('x', kind: 'StateError'),
+      stage: ImportStage.catalog,
+      section: ContentKind.series,
+      processed: 1200,
+    );
+
+    expect(
+      importFailureStep(l10n, status),
+      allOf(contains('séries'), contains('1200')),
+    );
+    expect(
+      importFailureStep(l10n, const ImportStatus(failure: NetworkFailure('x'))),
+      isNull,
+    );
   });
 
   test('un compte refusé sans statut garde son message', () {

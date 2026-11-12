@@ -145,12 +145,20 @@ class ImportController extends Notifier<ImportStatus> {
           },
           onError: (Object error) {
             _keepAwake(false);
-            // Une erreur sans type vient de l'appareil et non du serveur : la
-            // base n'a pas pu être écrite, faute de place le plus souvent.
+            // L'étape atteinte reste connue : elle situe la panne.
+            final reached = state;
             state = ImportStatus(
+              stage: reached.stage,
+              section: reached.section,
+              processed: reached.processed,
+              // L'import range déjà ses erreurs parmi les échecs : le nom du
+              // type suffit pour celles qui lui auraient échappé.
               failure: error is Failure
                   ? error
-                  : const StorageFailure('Import interrompu.'),
+                  : UnexpectedFailure(
+                      'Import interrompu.',
+                      kind: '${error.runtimeType}',
+                    ),
             );
           },
           cancelOnError: true,
@@ -183,10 +191,23 @@ String importFailureMessage(AppLocalizations l10n, Failure failure) =>
       AuthFailure() => l10n.importAuthFailed,
       ServerFailure(:final status) => l10n.importServerFailed(status),
       NetworkFailure() => l10n.importNetworkFailed,
+      SecureConnectionFailure() => l10n.importSecureFailed,
       ParseFailure() => l10n.importFormatFailed,
-      StorageFailure() => l10n.importStorageFailed,
+      // Libérer de la place n'aide que si l'appareil en manque vraiment.
+      StorageFailure(isFull: true) => l10n.importStorageFull,
+      StorageFailure(:final int code) => l10n.importStorageFailed(code),
+      StorageFailure() => l10n.importUnexpected('$StorageFailure'),
+      VaultFailure(:final cause) => l10n.importVaultFailed(cause),
+      UnexpectedFailure(:final kind) => l10n.importUnexpected(kind),
       _ => l10n.loadErrorTitle,
     };
+
+/// Étape où un import en échec s'est arrêté, ou `null` s'il n'a pas commencé.
+/// Avec la cause, elle suffit à situer une panne sur une simple photo.
+String? importFailureStep(AppLocalizations l10n, ImportStatus status) =>
+    status.failure == null || status.stage == null
+    ? null
+    : l10n.importLastStep(_runningMessage(l10n, status));
 
 /// Un import dure plusieurs minutes sur un stick : dire où il en est évite de
 /// le croire bloqué.

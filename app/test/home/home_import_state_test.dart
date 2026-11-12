@@ -101,6 +101,22 @@ void main() {
     expect(import.started, [_source]);
   });
 
+  testWidgets('un échec imprévu se nomme et dit son étape', (tester) async {
+    await _pump(
+      tester,
+      const ImportStatus(
+        failure: StorageFailure('x', code: 6410),
+        stage: ImportStage.indexing,
+        processed: 9000,
+      ),
+    );
+
+    expect(find.textContaining('6410'), findsOneWidget);
+    expect(find.textContaining('Dernière étape'), findsOneWidget);
+    expect(find.textContaining('Préparation du catalogue'), findsOneWidget);
+    expect(find.textContaining('stockage, puis'), findsNothing);
+  });
+
   testWidgets('le bouton de relance a le focus de la télécommande', (
     tester,
   ) async {
