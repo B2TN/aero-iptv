@@ -8,6 +8,7 @@ import '../database/app_database.dart';
 import '../database/daos/catalog_maintenance_dao.dart';
 import '../epg/epg_source_adapter.dart';
 import 'catalog_session.dart';
+import 'import_failure.dart';
 
 /// Fenêtre de guide conservée autour de l'instant de synchronisation.
 const Duration _epgHistory = Duration(hours: 2);
@@ -83,7 +84,9 @@ final class CatalogImportPipeline {
             }
             processed += received;
             break;
-          } on Failure catch (failure) {
+          } on Object catch (error, stack) {
+            // Même imprévue, l'erreur d'une section ne coûte pas les autres.
+            final failure = importFailureOf(error);
             // Ce que l'essai a écrit est incomplet : le suivant repart de zéro.
             await _maintenance.purgeSection(catalogId, kind);
             session.forget(kind);
@@ -92,7 +95,7 @@ final class CatalogImportPipeline {
               continue;
             }
             // Une source d'un seul tenant n'a rien d'autre à sauver.
-            if (kind == null) rethrow;
+            if (kind == null) Error.throwWithStackTrace(failure, stack);
             failed[kind] = failure;
             break;
           }
@@ -142,7 +145,10 @@ final class CatalogImportPipeline {
 
   /// Une panne passagère mérite un nouvel essai, pas un refus du compte.
   bool _isTransient(Failure failure) => switch (failure) {
-    NetworkFailure() || ParseFailure() || RateLimitFailure() => true,
+    NetworkFailure() ||
+    SecureConnectionFailure() ||
+    ParseFailure() ||
+    RateLimitFailure() => true,
     ServerFailure(:final status) => status >= HttpStatus.internalServerError,
     _ => false,
   };

@@ -131,6 +131,31 @@ void main() {
       expect(programmes, hasLength(2));
     });
 
+    test('un guide coupé en route garde ce qui précède', () async {
+      // Coupé au milieu d'une balise, après la première émission.
+      final cut = guide.substring(0, guide.indexOf('channel="other.fr"'));
+      final adapter = XmltvEpgAdapter(
+        MockClient((_) async => http.Response.bytes(utf8.encode(cut), 200)),
+      );
+      final received = <EpgProgramme>[];
+
+      await expectLater(
+        adapter
+            .fetch(requestFor({'tf1.fr', 'france2'}))
+            .forEach(received.addAll),
+        throwsA(isA<ParseFailure>()),
+      );
+
+      expect(received.map((p) => p.title), ['Le & journal']);
+    });
+
+    test('une balise mal formée est un guide illisible', () {
+      expect(
+        fetch(http.Response('<tv><programme start=20261031 ></tv>', 200)),
+        throwsA(isA<ParseFailure>()),
+      );
+    });
+
     test('ne fait rien sans adresse de guide', () async {
       final adapter = XmltvEpgAdapter(
         MockClient((_) async => fail('aucune requête attendue')),

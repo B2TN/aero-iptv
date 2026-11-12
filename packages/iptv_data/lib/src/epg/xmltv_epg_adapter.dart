@@ -30,30 +30,37 @@ final class XmltvEpgAdapter implements EpgSourceAdapter {
     final matcher = _ChannelMatcher(request.knownKeys);
     var programmes = <EpgProgramme>[];
 
-    await for (final item in parseXmltv(textChunks(response))) {
-      switch (item) {
-        case XmltvChannel():
-          matcher.register(item);
-        case XmltvProgramme():
-          final key = matcher.keyFor(item.channelId);
-          final inWindow =
-              item.stop.isAfter(request.from) &&
-              item.start.isBefore(request.to);
-          if (key == null || !inWindow) continue;
-          programmes.add(
-            EpgProgramme(
-              epgKey: key,
-              title: item.title,
-              description: item.description,
-              start: item.start,
-              stop: item.stop,
-            ),
-          );
-          if (programmes.length >= epgBatchSize) {
-            yield programmes;
-            programmes = [];
-          }
+    try {
+      await for (final item in parseXmltv(textChunks(response))) {
+        switch (item) {
+          case XmltvChannel():
+            matcher.register(item);
+          case XmltvProgramme():
+            final key = matcher.keyFor(item.channelId);
+            final inWindow =
+                item.stop.isAfter(request.from) &&
+                item.start.isBefore(request.to);
+            if (key == null || !inWindow) continue;
+            programmes.add(
+              EpgProgramme(
+                epgKey: key,
+                title: item.title,
+                description: item.description,
+                start: item.start,
+                stop: item.stop,
+              ),
+            );
+            if (programmes.length >= epgBatchSize) {
+              yield programmes;
+              programmes = [];
+            }
+        }
       }
+    } on FormatException {
+      // Guide coupé en route, mal formé ou mal compressé : les erreurs du
+      // lecteur XML sont des `FormatException`. Ce qui précède est gardé.
+      if (programmes.isNotEmpty) yield programmes;
+      throw const ParseFailure('Guide XMLTV illisible.');
     }
     if (programmes.isNotEmpty) yield programmes;
   }

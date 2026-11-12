@@ -63,6 +63,9 @@ Future<http.StreamedResponse> sendRequest(
     throw const NetworkFailure('Connexion impossible.');
   } on SocketException {
     throw const NetworkFailure('Connexion impossible.');
+  } on TlsException {
+    // Le paquet http ne convertit pas cette erreur-ci.
+    throw const SecureConnectionFailure('Connexion chiffrée refusée.');
   }
 }
 
@@ -78,7 +81,8 @@ Never _rethrowAsFailure(Object error) => throw switch (error) {
   TimeoutException() => const NetworkFailure('Téléchargement interrompu.'),
   http.ClientException() ||
   SocketException() ||
-  HttpException() => const NetworkFailure('Téléchargement interrompu.'),
+  HttpException() ||
+  TlsException() => const NetworkFailure('Téléchargement interrompu.'),
   _ => error,
 };
 

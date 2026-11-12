@@ -116,8 +116,9 @@ final class XtreamApiClient {
   Future<Object?> _getJson(Uri uri) async {
     final response = await openGet(_client, uri);
     final buffer = StringBuffer();
-    await textChunks(response).forEach(buffer.write);
     try {
+      // Une réponse compressée abîmée échoue dès sa lecture.
+      await textChunks(response).forEach(buffer.write);
       return jsonDecode(buffer.toString());
     } on FormatException {
       throw const ParseFailure('Réponse Xtream illisible.');

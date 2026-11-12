@@ -259,6 +259,17 @@ void main() {
       );
     });
 
+    test('une connexion chiffrée refusée porte son nom', () {
+      final client = MockClient(
+        (_) async => throw const HandshakeException('certificat refusé'),
+      );
+
+      expect(
+        XtreamSourceAdapter(client).open(credentials),
+        throwsA(isA<SecureConnectionFailure>()),
+      );
+    });
+
     group('listes illisibles', () {
       Future<List<CatalogEntry>> channelsFrom(String body) {
         final client = MockClient(

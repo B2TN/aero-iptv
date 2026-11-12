@@ -666,6 +666,25 @@ void main() {
       );
     });
 
+    test('une erreur imprévue ne coûte pas les autres sections', () async {
+      final adapter = SectionedCatalogAdapter({
+        ContentKind.series: [fails(StateError('défaut'))],
+        ContentKind.movie: [
+          succeeds([movie('Lagon (2020)')]),
+        ],
+      });
+
+      final progress = await runImport(adapter);
+
+      expect(await count('movies'), 1);
+      expect(progress.last.stage, ImportStage.done);
+      final failure = progress.last.failedSections[ContentKind.series];
+      expect(failure, isA<UnexpectedFailure>());
+      expect((failure! as UnexpectedFailure).kind, 'StateError');
+      // Un défaut de l'application ne se répare pas en réessayant.
+      expect(adapter.calls[ContentKind.series], 1);
+    });
+
     test('reprend une section après une panne passagère', () async {
       final adapter = SectionedCatalogAdapter({
         ContentKind.live: [

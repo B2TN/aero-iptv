@@ -53,6 +53,8 @@ final class HttpStreamProbe implements StreamProbe {
       return const StreamProbeResult();
     } on SocketException {
       return const StreamProbeResult();
+    } on TlsException {
+      return const StreamProbeResult();
     } finally {
       client.close();
     }

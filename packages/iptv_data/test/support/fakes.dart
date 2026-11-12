@@ -41,13 +41,14 @@ final class FakeCatalogAdapter implements PlaylistSourceAdapter {
   }
 }
 
-/// Résultat d'un essai de téléchargement : des lots, puis une panne éventuelle.
-typedef Attempt = ({List<CatalogBatch> batches, Failure? failure});
+/// Résultat d'un essai de téléchargement : des lots, puis une panne éventuelle,
+/// prévue ou non.
+typedef Attempt = ({List<CatalogBatch> batches, Object? failure});
 
 Attempt succeeds(List<CatalogEntry> entries) =>
     (batches: [CatalogBatch(entries)], failure: null);
 
-Attempt fails(Failure failure, {List<CatalogEntry> after = const []}) =>
+Attempt fails(Object failure, {List<CatalogEntry> after = const []}) =>
     (batches: [if (after.isNotEmpty) CatalogBatch(after)], failure: failure);
 
 /// Adapter à sections, dont chaque essai est décidé d'avance. Le dernier essai
