@@ -35,7 +35,13 @@ final class PlaylistRepositoryImpl implements PlaylistRepository {
             defaultCountryCode: Value(defaultCountryCode),
           ),
         );
-    await _credentials.write(id, credentials);
+    try {
+      await _credentials.write(id, credentials);
+    } on Failure catch (failure) {
+      // Sans identifiants, la source ne pourrait jamais être importée.
+      await (_db.delete(_db.sources)..where((row) => row.id.equals(id))).go();
+      return Err(failure);
+    }
     return Ok(
       PlaylistSource(
         id: id,
@@ -63,7 +69,13 @@ final class PlaylistRepositoryImpl implements PlaylistRepository {
     if (updated == 0) {
       return const Err(NotFoundFailure('Source introuvable.'));
     }
-    if (credentials != null) await _credentials.write(source.id, credentials);
+    if (credentials != null) {
+      try {
+        await _credentials.write(source.id, credentials);
+      } on Failure catch (failure) {
+        return Err(failure);
+      }
+    }
     return const Ok(null);
   }
 

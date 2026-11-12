@@ -10,6 +10,7 @@ import '../../../app/di/repository_providers.dart';
 import '../../../design_system/components/aero_button.dart';
 import '../../../design_system/components/aero_canvas.dart';
 import '../../../design_system/components/aero_menu.dart';
+import '../../../design_system/components/aero_states.dart';
 import '../../../design_system/components/text_entry.dart';
 import '../../../design_system/glass/glass_panel.dart';
 import '../../../design_system/tokens/aero_tokens.dart';
@@ -164,7 +165,10 @@ class _PlaylistEditorScreenState extends ConsumerState<PlaylistEditorScreen> {
         credentials: credentials,
         defaultCountryCode: _country,
       );
-      return result is Ok<PlaylistSource> ? result.value : null;
+      return switch (result) {
+        Ok(:final value) => value,
+        Err(:final failure) => _reject(failure),
+      };
     }
     final saved = PlaylistSource(
       id: existing.id,
@@ -173,8 +177,29 @@ class _PlaylistEditorScreenState extends ConsumerState<PlaylistEditorScreen> {
       defaultCountryCode: _country,
       lastSyncedAt: existing.lastSyncedAt,
     );
-    await repository.update(saved, credentials: credentials);
-    return saved;
+    final result = await repository.update(saved, credentials: credentials);
+    return result is Err<void> ? _reject(result.failure) : saved;
+  }
+
+  /// Un enregistrement refusé se dit : sinon l'écran resterait muet, et
+  /// l'import partirait sans identifiants. La cause tient sur plusieurs lignes,
+  /// que le formulaire n'a pas la place d'afficher.
+  PlaylistSource? _reject(Failure failure) {
+    if (!mounted) return null;
+    final l10n = context.l10n;
+    unawaited(
+      showAeroOverlay<void>(
+        context,
+        label: l10n.playlistSaveFailedTitle,
+        builder: (context) => AeroMessage(
+          title: l10n.playlistSaveFailedTitle,
+          body: importFailureMessage(l10n, failure),
+          actionLabel: l10n.actionBack,
+          onAction: () => Navigator.of(context).pop(),
+        ),
+      ),
+    );
+    return null;
   }
 
   void _setActive(PlaylistSource source) => updateSettings(

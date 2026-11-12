@@ -19,7 +19,8 @@ import javax.crypto.spec.GCMParameterSpec
  *
  * Les données sont chiffrées en AES-GCM avec une clé du Keystore Android, qui ne
  * quitte jamais le système. Seul le texte chiffré est écrit sur le stockage. Les
- * messages d'erreur ne citent aucune valeur.
+ * messages d'erreur ne citent aucune valeur : seul le nom de l'erreur remonte,
+ * pour qu'une panne du Keystore se reconnaisse sur l'écran.
  */
 class SecureStoreChannel(context: Context) {
     private val preferences =
@@ -40,10 +41,12 @@ class SecureStoreChannel(context: Context) {
                     }
                     else -> result.notImplemented()
                 }
-            } catch (_: GeneralSecurityException) {
-                result.error("vault", "Coffre indisponible.", null)
-            } catch (_: IllegalArgumentException) {
-                result.error("vault", "Entrée du coffre illisible.", null)
+            } catch (error: GeneralSecurityException) {
+                result.error("vault", "Coffre indisponible.", error.javaClass.simpleName)
+            } catch (error: RuntimeException) {
+                // Une entrée illisible, ou un Keystore en panne : certains
+                // appareils la signalent par une ProviderException.
+                result.error("vault", "Coffre indisponible.", error.javaClass.simpleName)
             }
         }
     }

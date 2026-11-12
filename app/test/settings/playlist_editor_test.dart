@@ -28,14 +28,20 @@ final class _Vault implements CredentialStore {
     password: 'ancien',
   );
 
+  /// Panne à simuler à chaque écriture.
+  Failure? failure;
+
   String get password => (stored! as XtreamCredentials).password;
 
   @override
   Future<PlaylistCredentials?> read(int sourceId) async => stored;
 
   @override
-  Future<void> write(int sourceId, PlaylistCredentials credentials) async =>
-      stored = credentials;
+  Future<void> write(int sourceId, PlaylistCredentials credentials) async {
+    final error = failure;
+    if (error != null) throw error;
+    stored = credentials;
+  }
 
   @override
   Future<void> delete(int sourceId) async => stored = null;
@@ -61,7 +67,11 @@ final class _Repository implements PlaylistRepository {
     PlaylistSource source, {
     PlaylistCredentials? credentials,
   }) async {
-    if (credentials != null) await _vault.write(source.id, credentials);
+    try {
+      if (credentials != null) await _vault.write(source.id, credentials);
+    } on Failure catch (failure) {
+      return Err(failure);
+    }
     return const Ok(null);
   }
 
@@ -226,6 +236,21 @@ void main() {
     expect(vault.password, 'nouveau');
     expect(importer.received, hasLength(1));
     expect((importer.received.single as XtreamCredentials).password, 'nouveau');
+  });
+
+  testWidgets('un coffre en panne se dit, et rien n est actualisé', (
+    tester,
+  ) async {
+    final vault = _Vault()
+      ..failure = const VaultFailure('x', cause: 'ProviderException');
+    final importer = _Importer();
+    await _pumpEditor(tester, vault, importer);
+
+    await _press(tester, 'Actualiser');
+
+    expect(find.textContaining('ProviderException'), findsOneWidget);
+    expect(importer.received, isEmpty);
+    expect(find.byType(PlaylistEditorScreen), findsOneWidget);
   });
 
   testWidgets('un champ masqué repart de zéro', (tester) async {

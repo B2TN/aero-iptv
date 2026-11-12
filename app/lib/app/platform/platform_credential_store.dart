@@ -26,8 +26,11 @@ final class AndroidCredentialStore implements CredentialStore {
   Future<T> _guarded<T>(Future<T> Function() operation) async {
     try {
       return await operation();
-    } on PlatformException {
-      throw const StorageFailure('Coffre Android indisponible.');
+    } on PlatformException catch (error) {
+      throw VaultFailure(
+        'Coffre Android indisponible.',
+        cause: vaultCauseOf(error.details),
+      );
     }
   }
 
@@ -49,6 +52,13 @@ final class AndroidCredentialStore implements CredentialStore {
   Future<void> delete(int sourceId) =>
       _guarded(() => _channel.invokeMethod<void>('delete', _key(sourceId)));
 }
+
+/// Nom d'erreur transmis par le canal natif. Tout autre contenu est écarté :
+/// seul un nom de classe est sûr à afficher.
+String vaultCauseOf(Object? details) =>
+    details is String && _className.hasMatch(details) ? details : 'Keystore';
+
+final RegExp _className = RegExp(r'^[A-Za-z][A-Za-z0-9_]{0,59}$');
 
 /// Coffre Windows : DPAPI chiffre les données avec la session de l'utilisateur.
 ///
@@ -160,7 +170,10 @@ Uint8List _transform(List<int> input, _Crypt operation) {
       outputBlob,
     );
     if (succeeded == 0) {
-      throw const StorageFailure('Le coffre Windows a refusé l’opération.');
+      throw const VaultFailure(
+        'Le coffre Windows a refusé l’opération.',
+        cause: 'DPAPI',
+      );
     }
     final output = outputBlob.ref;
     final result = Uint8List.fromList(output.data.asTypedList(output.size));
