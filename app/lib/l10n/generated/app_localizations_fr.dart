@@ -118,6 +118,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get detailNoEpisodes => 'Aucun épisode disponible pour cette version';
 
   @override
+  String detailResumeEpisode(int season, int episode) {
+    return 'Saison $season, épisode $episode';
+  }
+
+  @override
+  String get detailResume => 'Reprendre';
+
+  @override
+  String get detailPlay => 'Lecture';
+
+  @override
+  String get detailPlayFromStart => 'Lecture depuis le début';
+
+  @override
   String get playerFailedTitle => 'Ce flux ne peut pas être lu';
 
   @override

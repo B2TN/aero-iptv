@@ -12,6 +12,7 @@ import '../../../design_system/components/poster_card.dart';
 import '../../../design_system/tokens/aero_tokens.dart';
 import '../../../focus/dpad_collection.dart';
 import '../../../focus/focus_memory.dart';
+import '../../media_detail/open_continued.dart';
 import '../../media_detail/open_movie.dart';
 import '../../media_detail/open_series.dart';
 import '../../player/player_target.dart';
@@ -172,10 +173,8 @@ class _HomeContent extends ConsumerWidget {
               memoryKey: 'home.continue',
               itemCount: feed.continueWatching.length,
               withProgress: true,
-              onSelect: (index) => openPlayer(
-                context,
-                PlayerTarget.resume(feed.continueWatching[index]),
-              ),
+              onSelect: (index) =>
+                  openContinued(context, ref, feed.continueWatching[index]),
               onLongSelect: (index) =>
                   _showContinueMenu(context, ref, feed.continueWatching[index]),
               itemBuilder: (context, index, focused) {

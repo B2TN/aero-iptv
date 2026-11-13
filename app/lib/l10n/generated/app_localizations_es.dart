@@ -119,6 +119,20 @@ class AppLocalizationsEs extends AppLocalizations {
       'No hay episodios disponibles para esta versión';
 
   @override
+  String detailResumeEpisode(int season, int episode) {
+    return 'Temporada $season, episodio $episode';
+  }
+
+  @override
+  String get detailResume => 'Reanudar';
+
+  @override
+  String get detailPlay => 'Reproducir';
+
+  @override
+  String get detailPlayFromStart => 'Reproducir desde el principio';
+
+  @override
   String get playerFailedTitle => 'No se puede reproducir esta emisión';
 
   @override

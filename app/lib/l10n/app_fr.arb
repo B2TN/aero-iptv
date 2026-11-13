@@ -61,6 +61,11 @@
     }
   },
   "detailNoEpisodes": "Aucun épisode disponible pour cette version",
+  "detailResumeEpisode": "Saison {season}, épisode {episode}",
+  "@detailResumeEpisode": {"placeholders": {"season": {"type": "int"}, "episode": {"type": "int"}}},
+  "detailResume": "Reprendre",
+  "detailPlay": "Lecture",
+  "detailPlayFromStart": "Lecture depuis le début",
   "playerFailedTitle": "Ce flux ne peut pas être lu",
   "playerFailedBody": "Il est peut-être hors ligne. Réessayez ou choisissez un autre flux.",
   "playerPlay": "Lecture",

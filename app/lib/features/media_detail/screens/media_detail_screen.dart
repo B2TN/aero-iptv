@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iptv_domain/iptv_domain.dart';
@@ -21,12 +22,16 @@ final _seasonsProvider = FutureProvider.autoDispose
           .seasonsOf(key.sourceId, key.entryId),
     );
 
+/// Épisode à reprendre, et la position où la lecture s'était arrêtée.
+typedef EpisodeResume = ({Episode episode, Duration position});
+
 /// Saisons et épisodes d'une version de série.
 class MediaDetailScreen extends ConsumerStatefulWidget {
   const MediaDetailScreen({
     required this.sourceId,
     required this.series,
     required this.seriesEntryId,
+    this.resume,
     super.key,
   });
 
@@ -34,13 +39,20 @@ class MediaDetailScreen extends ConsumerStatefulWidget {
   final Series series;
   final int seriesEntryId;
 
+  /// Ouverte depuis « Continuer à regarder » : la fiche propose de reprendre,
+  /// et s'ouvre sur la saison et l'épisode en cours.
+  final EpisodeResume? resume;
+
   @override
   ConsumerState<MediaDetailScreen> createState() => _MediaDetailScreenState();
 }
 
 class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
   final FocusNode _backNode = FocusNode(debugLabel: 'DetailBack');
-  int _season = 0;
+
+  /// `null` tant que les saisons ne sont pas connues : la première est alors
+  /// celle de l'épisode à reprendre.
+  int? _season;
 
   @override
   void dispose() {
@@ -107,6 +119,31 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    if (widget.resume case final resume?) ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        l10n.detailResumeEpisode(
+                          resume.episode.season,
+                          resume.episode.number,
+                        ),
+                        style: AeroText.caption,
+                      ),
+                      const SizedBox(height: 8),
+                      AeroButton(
+                        label: l10n.detailResume,
+                        icon: Icons.play_arrow,
+                        tone: AeroTone.green,
+                        autofocus: true,
+                        onSelect: () => openPlayer(
+                          context,
+                          PlayerTarget.episode(
+                            widget.sourceId,
+                            widget.series,
+                            resume.episode,
+                          ).resumingAt(resume.position),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -134,7 +171,17 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
     if (seasons.isEmpty) {
       return AeroMessage(title: l10n.detailNoEpisodes, autofocus: false);
     }
-    final season = seasons[_season.clamp(0, seasons.length - 1)];
+    final resumed = widget.resume?.episode;
+    final selected = (_season ??= _seasonOf(
+      seasons,
+      resumed,
+    )).clamp(0, seasons.length - 1);
+    final season = seasons[selected];
+    final resumedIndex = resumed == null
+        ? -1
+        : season.episodes.indexWhere(
+            (episode) => episode.contentKey == resumed.contentKey,
+          );
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -148,10 +195,11 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
               padding: const EdgeInsets.all(4),
               onIndexChanged: (index) => setState(() => _season = index),
               onSelect: (index) => setState(() => _season = index),
+              initialIndex: selected,
               itemBuilder: (context, index, focused) => _Line(
                 text: l10n.detailSeason(seasons[index].number),
                 focused: focused,
-                selected: index == _season,
+                selected: index == selected,
               ),
             ),
           ),
@@ -162,7 +210,9 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
             padding: const EdgeInsets.all(12),
             child: DpadCollection.vertical(
               key: ValueKey(season.number),
-              autofocus: true,
+              // Le bouton de reprise a le focus quand la fiche en propose un.
+              autofocus: widget.resume == null,
+              initialIndex: resumedIndex < 0 ? 0 : resumedIndex,
               itemCount: season.episodes.length,
               itemExtent: 56,
               padding: const EdgeInsets.all(4),
@@ -190,6 +240,13 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
       ],
     );
   }
+}
+
+/// Index de la saison de [episode], ou la première.
+int _seasonOf(List<Season> seasons, Episode? episode) {
+  if (episode == null) return 0;
+  final index = seasons.indexWhere((season) => season.number == episode.season);
+  return index < 0 ? 0 : index;
 }
 
 class _Line extends StatelessWidget {

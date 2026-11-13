@@ -41,6 +41,7 @@ class DpadCollection extends ConsumerStatefulWidget {
     this.spacing = 16,
     this.padding = EdgeInsets.zero,
     this.memoryKey,
+    this.initialIndex = 0,
     this.autofocus = false,
     this.focusNode,
     this.onIndexChanged,
@@ -62,6 +63,7 @@ class DpadCollection extends ConsumerStatefulWidget {
     this.spacing = 8,
     this.padding = EdgeInsets.zero,
     this.memoryKey,
+    this.initialIndex = 0,
     this.autofocus = false,
     this.focusNode,
     this.onIndexChanged,
@@ -85,6 +87,7 @@ class DpadCollection extends ConsumerStatefulWidget {
     this.spacing = 12,
     this.padding = EdgeInsets.zero,
     this.memoryKey,
+    this.initialIndex = 0,
     this.autofocus = false,
     this.focusNode,
     this.onIndexChanged,
@@ -113,8 +116,11 @@ class DpadCollection extends ConsumerStatefulWidget {
   final double spacing;
   final EdgeInsets padding;
 
-  /// Clé de `FocusMemory`. Sans clé, la liste repart du premier élément.
+  /// Clé de `FocusMemory`. Sans clé, la liste repart de [initialIndex].
   final String? memoryKey;
+
+  /// Élément actif à l'ouverture, quand aucune position n'est mémorisée.
+  final int initialIndex;
 
   /// La liste prend le focus dès son apparition. Contrairement à
   /// `Focus.autofocus`, cela fonctionne si un autre élément l'a déjà, par
@@ -156,7 +162,9 @@ class _DpadCollectionState extends ConsumerState<DpadCollection> {
   void initState() {
     super.initState();
     final key = widget.memoryKey;
-    if (key != null) _index = ref.read(focusMemoryProvider).read(key);
+    _index = key == null
+        ? widget.initialIndex
+        : ref.read(focusMemoryProvider).read(key);
     _index = _clamp(_index);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;

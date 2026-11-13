@@ -119,6 +119,20 @@ class AppLocalizationsDe extends AppLocalizations {
       'Für diese Version sind keine Folgen verfügbar';
 
   @override
+  String detailResumeEpisode(int season, int episode) {
+    return 'Staffel $season, Folge $episode';
+  }
+
+  @override
+  String get detailResume => 'Fortsetzen';
+
+  @override
+  String get detailPlay => 'Abspielen';
+
+  @override
+  String get detailPlayFromStart => 'Von vorne abspielen';
+
+  @override
   String get playerFailedTitle => 'Dieser Stream kann nicht abgespielt werden';
 
   @override

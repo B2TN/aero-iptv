@@ -117,6 +117,20 @@ class AppLocalizationsAr extends AppLocalizations {
   String get detailNoEpisodes => 'لا توجد حلقات متاحة لهذه النسخة';
 
   @override
+  String detailResumeEpisode(int season, int episode) {
+    return 'الموسم $season، الحلقة $episode';
+  }
+
+  @override
+  String get detailResume => 'استئناف';
+
+  @override
+  String get detailPlay => 'تشغيل';
+
+  @override
+  String get detailPlayFromStart => 'تشغيل من البداية';
+
+  @override
   String get playerFailedTitle => 'يتعذّر تشغيل هذا البث';
 
   @override

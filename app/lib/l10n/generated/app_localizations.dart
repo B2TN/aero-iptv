@@ -302,6 +302,30 @@ abstract class AppLocalizations {
   /// **'Aucun épisode disponible pour cette version'**
   String get detailNoEpisodes;
 
+  /// No description provided for @detailResumeEpisode.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saison {season}, épisode {episode}'**
+  String detailResumeEpisode(int season, int episode);
+
+  /// No description provided for @detailResume.
+  ///
+  /// In fr, this message translates to:
+  /// **'Reprendre'**
+  String get detailResume;
+
+  /// No description provided for @detailPlay.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lecture'**
+  String get detailPlay;
+
+  /// No description provided for @detailPlayFromStart.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lecture depuis le début'**
+  String get detailPlayFromStart;
+
   /// No description provided for @playerFailedTitle.
   ///
   /// In fr, this message translates to:
