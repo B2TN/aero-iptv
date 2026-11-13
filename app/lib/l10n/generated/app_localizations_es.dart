@@ -119,6 +119,45 @@ class AppLocalizationsEs extends AppLocalizations {
       'No hay episodios disponibles para esta versión';
 
   @override
+  String detailSeasonCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count temporadas',
+      one: '1 temporada',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get detailRunning => 'En emisión';
+
+  @override
+  String get detailUpcoming => 'Próximos episodios';
+
+  @override
+  String detailUpcomingEpisode(int season, int number, String title) {
+    return 'T$season E$number, $title';
+  }
+
+  @override
+  String get detailUntitled => 'Título no anunciado';
+
+  @override
+  String get detailUpcomingNote =>
+      'Fechas de estreno en el país de origen, según TVmaze. El episodio llega a tu proveedor un poco más tarde.';
+
+  @override
+  String detailRuntimeMinutes(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String detailRuntimeHours(int hours, String minutes) {
+    return '$hours h $minutes min';
+  }
+
+  @override
   String detailResumeEpisode(int season, int episode) {
     return 'Temporada $season, episodio $episode';
   }

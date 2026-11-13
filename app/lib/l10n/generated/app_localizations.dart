@@ -302,6 +302,54 @@ abstract class AppLocalizations {
   /// **'Aucun épisode disponible pour cette version'**
   String get detailNoEpisodes;
 
+  /// No description provided for @detailSeasonCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 saison} other{{count} saisons}}'**
+  String detailSeasonCount(int count);
+
+  /// No description provided for @detailRunning.
+  ///
+  /// In fr, this message translates to:
+  /// **'En cours de diffusion'**
+  String get detailRunning;
+
+  /// No description provided for @detailUpcoming.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prochains épisodes'**
+  String get detailUpcoming;
+
+  /// No description provided for @detailUpcomingEpisode.
+  ///
+  /// In fr, this message translates to:
+  /// **'S{season} É{number}, {title}'**
+  String detailUpcomingEpisode(int season, int number, String title);
+
+  /// No description provided for @detailUntitled.
+  ///
+  /// In fr, this message translates to:
+  /// **'Titre non annoncé'**
+  String get detailUntitled;
+
+  /// No description provided for @detailUpcomingNote.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dates de première diffusion dans le pays d\'origine, d\'après TVmaze. L\'épisode arrive chez votre fournisseur un peu plus tard.'**
+  String get detailUpcomingNote;
+
+  /// No description provided for @detailRuntimeMinutes.
+  ///
+  /// In fr, this message translates to:
+  /// **'{minutes} min'**
+  String detailRuntimeMinutes(int minutes);
+
+  /// No description provided for @detailRuntimeHours.
+  ///
+  /// In fr, this message translates to:
+  /// **'{hours} h {minutes}'**
+  String detailRuntimeHours(int hours, String minutes);
+
   /// No description provided for @detailResumeEpisode.
   ///
   /// In fr, this message translates to:

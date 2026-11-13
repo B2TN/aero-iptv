@@ -84,6 +84,20 @@ final class _Catalog extends Fake implements CatalogRepository {
   @override
   Future<String?> tmdbIdOfEpisode(int sourceId, String contentKey) async =>
       null;
+
+  @override
+  Future<TitleDetails> movieDetails(int sourceId, int movieId) async =>
+      TitleDetails.none;
+
+  @override
+  Future<TitleDetails> seriesDetails(int sourceId, int seriesEntryId) async =>
+      TitleDetails.none;
+}
+
+/// Pas de calendrier : la fiche ne sort pas sur le réseau pendant le test.
+final class _NoSchedule implements ScheduleRepository {
+  @override
+  Future<ShowSchedule?> scheduleOf(String title, {int? year}) async => null;
 }
 
 final class _Engine extends Fake implements PlaybackEngine {
@@ -130,6 +144,7 @@ Future<_Engine> _open(
         activeSourceProvider.overrideWithValue(_source),
         settingsProvider.overrideWithValue(const AppSettings()),
         catalogRepositoryProvider.overrideWithValue(catalog ?? _Catalog()),
+        scheduleRepositoryProvider.overrideWithValue(_NoSchedule()),
         playbackEngineFactoryProvider.overrideWithValue(() => engine),
         videoSurfaceBuilderProvider.overrideWithValue(
           (_) => const SizedBox.expand(),

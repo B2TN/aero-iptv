@@ -117,6 +117,48 @@ class AppLocalizationsAr extends AppLocalizations {
   String get detailNoEpisodes => 'لا توجد حلقات متاحة لهذه النسخة';
 
   @override
+  String detailSeasonCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count موسم',
+      many: '$count موسمًا',
+      few: '$count مواسم',
+      two: 'موسمان',
+      one: 'موسم واحد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get detailRunning => 'يُعرض حاليًا';
+
+  @override
+  String get detailUpcoming => 'الحلقات القادمة';
+
+  @override
+  String detailUpcomingEpisode(int season, int number, String title) {
+    return 'م$season ح$number، $title';
+  }
+
+  @override
+  String get detailUntitled => 'عنوان غير معلن';
+
+  @override
+  String get detailUpcomingNote =>
+      'تواريخ العرض الأول في بلد الإنتاج، وفقًا لـ TVmaze. تصل الحلقة إلى مزوّدك بعد ذلك بقليل.';
+
+  @override
+  String detailRuntimeMinutes(int minutes) {
+    return '$minutes د';
+  }
+
+  @override
+  String detailRuntimeHours(int hours, String minutes) {
+    return '$hours س $minutes د';
+  }
+
+  @override
   String detailResumeEpisode(int season, int episode) {
     return 'الموسم $season، الحلقة $episode';
   }

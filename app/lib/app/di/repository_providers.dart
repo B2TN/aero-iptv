@@ -106,6 +106,11 @@ final segmentRepositoryProvider = Provider<SegmentRepository>((ref) {
   );
 });
 
+/// Gardé pour toute la session : il se souvient des calendriers déjà lus.
+final scheduleRepositoryProvider = Provider<ScheduleRepository>(
+  (ref) => ScheduleRepositoryImpl(TvMazeClient(ref.watch(httpClientProvider))),
+);
+
 final findMediaSegmentsProvider = Provider<FindMediaSegments>(
   (ref) => FindMediaSegments(ref.watch(segmentRepositoryProvider)),
 );
