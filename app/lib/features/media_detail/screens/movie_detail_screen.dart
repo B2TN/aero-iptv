@@ -67,6 +67,8 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
   }
 
   Future<void> _loadVersions() async {
+    // Sans regroupement, chaque version est un film à part.
+    if (!ref.read(settingsProvider).groupMovies) return;
     final movies = await ref.read(catalogRepositoryProvider).moviesByTitleKeys(
       widget.sourceId,
       {GroupingKey.of(_movie.title)},

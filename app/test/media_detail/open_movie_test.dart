@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:aero_iptv/app/app_state.dart';
 import 'package:aero_iptv/app/di/repository_providers.dart';
 import 'package:aero_iptv/features/media_detail/open_movie.dart';
+import 'package:aero_iptv/features/media_detail/screens/movie_detail_screen.dart';
 import 'package:aero_iptv/focus/dpad_shortcuts.dart';
 import 'package:aero_iptv/l10n/generated/app_localizations.dart';
 import 'package:flutter/widgets.dart';
@@ -33,7 +34,15 @@ final class _Catalog extends Fake implements CatalogRepository {
   @override
   Future<List<Movie>> moviesByTitleKeys(int sourceId, Set<String> keys) async =>
       versions;
+
+  @override
+  Future<TitleDetails> movieDetails(int sourceId, int movieId) async =>
+      TitleDetails.none;
 }
+
+/// Façon d'ouvrir le film : sa fiche, ou directement le lecteur.
+typedef _Opener =
+    Future<void> Function(BuildContext context, WidgetRef ref, Movie movie);
 
 final class _Engine extends Fake implements PlaybackEngine {
   final StreamController<PlaybackState> _states =
@@ -68,6 +77,7 @@ Future<_Engine> _open(
   WidgetTester tester,
   List<Movie> movies, {
   AppSettings settings = const AppSettings(),
+  _Opener opener = playMovie,
 }) async {
   final engine = _Engine();
   await tester.pumpWidget(
@@ -97,7 +107,7 @@ Future<_Engine> _open(
         ),
         home: Consumer(
           builder: (context, ref, _) => GestureDetector(
-            onTap: () => openMovie(context, ref, movies.first),
+            onTap: () => opener(context, ref, movies.first),
             child: const Text('Ouvrir'),
           ),
         ),
@@ -140,6 +150,46 @@ void main() {
 
     expect(find.text('Français'), findsNothing);
     expect(engine.opened, ['http://s/1.mkv']);
+    await _leave(tester);
+  });
+
+  testWidgets('la fiche s ouvre sur la version de la langue', (tester) async {
+    final engine = await _open(tester, [
+      _movie(1, 'EN'),
+      _movie(2, 'FR'),
+    ], opener: openMovie);
+
+    final page = tester.widget<MovieDetailScreen>(
+      find.byType(MovieDetailScreen),
+    );
+    expect(page.movie.languageTag, 'FR');
+    expect(engine.opened, isEmpty);
+    expect(find.text('Version'), findsOneWidget);
+
+    await tester.tap(find.text('Lecture'));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
+
+    expect(engine.opened, ['http://s/2.mkv']);
+    await _leave(tester);
+  });
+
+  testWidgets('sans regroupement, la fiche ne propose pas d autre version', (
+    tester,
+  ) async {
+    await _open(
+      tester,
+      [_movie(1, 'EN'), _movie(2, 'FR')],
+      settings: const AppSettings(groupMovies: false),
+      opener: openMovie,
+    );
+
+    final page = tester.widget<MovieDetailScreen>(
+      find.byType(MovieDetailScreen),
+    );
+    expect(page.movie.languageTag, 'EN');
+    expect(find.text('Version'), findsNothing);
     await _leave(tester);
   });
 

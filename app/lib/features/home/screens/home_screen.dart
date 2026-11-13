@@ -160,7 +160,7 @@ class _HomeContent extends ConsumerWidget {
                 final movie = item.movie;
                 final series = item.series;
                 if (movie != null) {
-                  openMovie(context, ref, movie);
+                  playMovie(context, ref, movie);
                 } else if (series != null) {
                   openSeries(context, ref, series);
                 }

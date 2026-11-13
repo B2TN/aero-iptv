@@ -7,9 +7,43 @@ import '../../app/di/repository_providers.dart';
 import '../../design_system/components/aero_menu.dart';
 import '../../l10n/version_names.dart';
 import '../player/player_target.dart';
+import 'screens/movie_detail_screen.dart';
 
-/// Ouvre un film. Si plusieurs versions existent, le sélecteur s'affiche d'abord.
+/// Ouvre la fiche d'un film. Avec le regroupement, elle montre la version dans
+/// la langue de l'application, et son bouton « Version » propose les autres.
 Future<void> openMovie(BuildContext context, WidgetRef ref, Movie movie) async {
+  final source = ref.read(activeSourceProvider);
+  if (source == null) return;
+  final settings = ref.read(settingsProvider);
+  final navigator = Navigator.of(context);
+  var shown = movie;
+  if (settings.groupMovies) {
+    final movies = await ref.read(catalogRepositoryProvider).moviesByTitleKeys(
+      source.id,
+      {GroupingKey.of(movie.title)},
+    );
+    if (!context.mounted) return;
+    if (movies.isNotEmpty) {
+      shown = versionsByLanguage(
+        movies,
+        (version) => version.languageTag ?? version.rawTitle,
+        settings.languageCode,
+      ).first;
+    }
+  }
+  await navigator.push(
+    PageRouteBuilder<void>(
+      transitionDuration: Duration.zero,
+      reverseTransitionDuration: Duration.zero,
+      pageBuilder: (context, _, _) =>
+          MovieDetailScreen(sourceId: source.id, movie: shown),
+    ),
+  );
+}
+
+/// Lance un film sans passer par sa fiche, comme le bouton « Lire » de
+/// l'accueil. Si plusieurs versions existent, le sélecteur s'affiche d'abord.
+Future<void> playMovie(BuildContext context, WidgetRef ref, Movie movie) async {
   final source = ref.read(activeSourceProvider);
   if (source == null) return;
   final l10n = context.l10n;
