@@ -19,25 +19,13 @@ abstract final class AeroAssets {
   static const double scale = 2;
 
   static const String background = 'assets/aero/backgrounds/abyss.jpg';
-  static const String glassPanel = 'assets/aero/panels/glass_panel.png';
-  static const String navBar = 'assets/aero/panels/nav_bar.png';
   static const String focusHalo = 'assets/aero/focus/focus_halo.png';
   static const String focusPill = 'assets/aero/focus/focus_pill.png';
-  static const String pillBlue = 'assets/aero/chrome/pill_blue.png';
-  static const String pillBlueFocus = 'assets/aero/chrome/pill_blue_focus.png';
-  static const String pillGreen = 'assets/aero/chrome/pill_green.png';
-  static const String pillGreenFocus =
-      'assets/aero/chrome/pill_green_focus.png';
   static const String cardFrame = 'assets/aero/chrome/card_frame.png';
   static const String cardGhost = 'assets/aero/chrome/card_ghost.png';
   static const String heroFrame = 'assets/aero/chrome/hero_frame.png';
   static const String heroGloss = 'assets/aero/chrome/hero_gloss.png';
   static const String edgeFlare = 'assets/aero/chrome/edge_flare.png';
-  static const String navActive = 'assets/aero/chrome/nav_active.png';
-  static const String navHome = 'assets/aero/icons/nav_home.png';
-  static const String navLive = 'assets/aero/icons/nav_live.png';
-  static const String navSearch = 'assets/aero/icons/nav_search.png';
-  static const String navSettings = 'assets/aero/icons/nav_settings.png';
   static const String rowContinue = 'assets/aero/icons/row_continue.png';
   static const String rowSeries = 'assets/aero/icons/row_series.png';
   static const String rowMovies = 'assets/aero/icons/row_movies.png';
