@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:iptv_domain/iptv_domain.dart';
 
 import '../app_database.dart';
+import '../connection.dart';
 
 /// Lignes supprimées à chaque passe : les requêtes de l'interface peuvent
 /// s'intercaler entre deux passes.
@@ -72,7 +73,7 @@ final class CatalogMaintenanceDao {
         ),
       ),
     );
-    await _db.transaction(() async {
+    await transactionKeepingCause(_db, () async {
       for (final entry in merged.entries) {
         await _db.customStatement(
           '''

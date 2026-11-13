@@ -38,8 +38,16 @@ Future<Widget> bootstrap({
   final cacheDirectory = Directory(p.join(directory.path, 'posters'));
   await cacheDirectory.create(recursive: true);
 
+  // SQLite reçoit son propre dossier temporaire, à côté de la base : sur
+  // Android, il n'en trouve pas toujours un qu'il ait le droit d'utiliser.
+  final scratchDirectory = Directory(p.join(directory.path, 'sqlite_tmp'));
+  await _recreate(scratchDirectory);
+
   final database = AppDatabase(
-    openAppDatabase(File(p.join(directory.path, 'aero_iptv.sqlite'))),
+    openAppDatabase(
+      File(p.join(directory.path, 'aero_iptv.sqlite')),
+      temporaryDirectory: scratchDirectory,
+    ),
   );
   final container = ProviderContainer(
     overrides: [
@@ -64,6 +72,17 @@ Future<Widget> bootstrap({
     container: container,
     child: const AeroIptvApp(),
   );
+}
+
+/// Vide [directory] : un arrêt brutal y laisse des fichiers temporaires que
+/// rien ne reprendra.
+Future<void> _recreate(Directory directory) async {
+  try {
+    if (directory.existsSync()) await directory.delete(recursive: true);
+  } on FileSystemException {
+    // Un fichier encore ouvert partira au prochain démarrage.
+  }
+  await directory.create(recursive: true);
 }
 
 /// Clés de services que l'application n'utilise plus : rien ne doit rester

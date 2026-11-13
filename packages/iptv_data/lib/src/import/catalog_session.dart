@@ -3,6 +3,7 @@ import 'package:iptv_domain/iptv_domain.dart';
 
 import '../adapters/catalog_batch.dart';
 import '../database/app_database.dart';
+import '../database/connection.dart';
 import '../database/locator_columns.dart';
 
 /// Écrit un catalogue en base, lot après lot.
@@ -38,32 +39,33 @@ final class CatalogSession {
 
   /// Écrit un lot dans une transaction courte : les lectures de l'interface
   /// peuvent s'intercaler entre deux lots.
-  Future<void> write(CatalogBatch batch) => _db.transaction(() async {
-    final channels = <LiveChannelsCompanion>[];
-    final movies = <MoviesCompanion>[];
-    final episodes = <EpisodesCompanion>[];
+  Future<void> write(CatalogBatch batch) =>
+      transactionKeepingCause(_db, () async {
+        final channels = <LiveChannelsCompanion>[];
+        final movies = <MoviesCompanion>[];
+        final episodes = <EpisodesCompanion>[];
 
-    for (final entry in batch.entries) {
-      _sortOrder++;
-      switch (entry) {
-        case LiveEntry():
-          channels.add(await _liveRow(entry));
-        case MovieEntry():
-          movies.add(_movieRow(entry));
-        case SeriesEntry():
-          await _writeSeries(entry);
-        case EpisodeEntry():
-          episodes.add(await _episodeRow(entry));
-      }
-    }
+        for (final entry in batch.entries) {
+          _sortOrder++;
+          switch (entry) {
+            case LiveEntry():
+              channels.add(await _liveRow(entry));
+            case MovieEntry():
+              movies.add(_movieRow(entry));
+            case SeriesEntry():
+              await _writeSeries(entry);
+            case EpisodeEntry():
+              episodes.add(await _episodeRow(entry));
+          }
+        }
 
-    await _db.batch((batch) {
-      batch
-        ..insertAll(_db.liveChannels, channels)
-        ..insertAll(_db.movies, movies)
-        ..insertAll(_db.episodes, episodes);
-    });
-  });
+        await _db.batch((batch) {
+          batch
+            ..insertAll(_db.liveChannels, channels)
+            ..insertAll(_db.movies, movies)
+            ..insertAll(_db.episodes, episodes);
+        });
+      });
 
   /// Oublie ce qu'une section abandonnée avait écrit : ses lignes viennent
   /// d'être supprimées de la base, et leurs identifiants ne valent plus rien.
