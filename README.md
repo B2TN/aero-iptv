@@ -69,11 +69,13 @@ Add your M3U playlist or your Xtream Codes login, and you're ready. Aero IPTV is
 
 - **A welcoming home screen**: featured picks, trending titles, and resume where you left off.
 - **Live TV**: channels by group, with what's on now.
-- **One page per movie or series**: all versions and languages in one place.
+- **One page per movie or series**: the summary and genre from your provider, a summary under each episode, the next announced episodes with their air dates, and all versions and languages in one place.
 - **Full playback controls**: audio tracks, subtitles, 30-second jumps.
 - **Skip intro and next episode**, offered only during the intro and the end credits, when the video file or a community database knows where they are.
 - **Translated subtitles** in the language of your choice.
 - **Real remote-control navigation**, plus mouse support on Windows.
+- **Performance mode** for small devices like the Fire TV Stick: the same screens without blur or shadows. It turns itself on for low-memory devices, and you can switch it in Settings.
+- **Your choice of grouping**: series versions, movie versions and channel qualities can each be grouped or listed one by one.
 - **Single-connection subscriptions** are supported.
 - **Five languages**: English, French, Spanish, German and Arabic.
 
@@ -121,6 +123,7 @@ Subtitles drawn as images (PGS, VobSub) contain no text and can't be translated.
 - No account, no ads, no analytics.
 - The app only contacts your provider, Apple's public charts for the home screen trends, and DeepL if you've entered a key.
 - To find the intro and the end credits of an episode, it asks [TheIntroDB](https://theintrodb.org), [IntroDB](https://introdb.app) and [TVmaze](https://www.tvmaze.com). They only receive the series title, its public IDs, and the season and episode numbers.
+- To list the upcoming episodes of a series, it asks TVmaze with the series title only.
 
 ## Content and rights
 
