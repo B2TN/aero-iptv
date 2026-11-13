@@ -5,7 +5,6 @@ import 'package:iptv_domain/iptv_domain.dart';
 
 import '../adapters/http_text_stream.dart';
 
-const int _batchSize = 50;
 const Duration _timeout = Duration(seconds: 60);
 
 /// Les clés gratuites se terminent ainsi et ont leur propre adresse.
@@ -19,18 +18,7 @@ const Map<String, String> _targetCodes = {
   'no': 'NB',
 };
 
-final RegExp _blankLine = RegExp(r'\r?\n\s*\r?\n');
-final RegExp _lineBreak = RegExp(r'\r?\n');
-
-/// Une réplique SRT : tout ce qui précède le texte reste inchangé.
-final class _Cue {
-  const _Cue(this.header, this.text);
-
-  final String header;
-  final String text;
-}
-
-/// Traduit des sous-titres SRT avec DeepL.
+/// Traduit des répliques de sous-titres avec DeepL.
 final class DeepLSubtitleTranslator implements SubtitleTranslator {
   const DeepLSubtitleTranslator(this._client, {required String apiKey})
     : _apiKey = apiKey;
@@ -48,46 +36,6 @@ final class DeepLSubtitleTranslator implements SubtitleTranslator {
     List<String> texts, {
     required String language,
   }) => _translateBatch(texts, language);
-
-  @override
-  Future<SubtitleFile> translate(
-    SubtitleFile file, {
-    required String language,
-  }) async {
-    final cues = [
-      for (final block in file.content.trim().split(_blankLine))
-        ?_parseCue(block),
-    ];
-    final translated = <String>[];
-    for (var start = 0; start < cues.length; start += _batchSize) {
-      final end = (start + _batchSize).clamp(0, cues.length);
-      translated.addAll(
-        await _translateBatch([
-          for (final cue in cues.sublist(start, end)) cue.text,
-        ], language),
-      );
-    }
-    final content = [
-      for (final (index, cue) in cues.indexed)
-        '${cue.header}\n${translated[index]}',
-    ].join('\n\n');
-    return SubtitleFile(
-      content: '$content\n',
-      language: language,
-      title: file.title,
-    );
-  }
-
-  /// Retourne `null` pour un bloc qui ne suit pas la forme d'une réplique.
-  _Cue? _parseCue(String block) {
-    final lines = block.split(_lineBreak);
-    final timing = lines.indexWhere((line) => line.contains('-->'));
-    if (timing < 0 || timing == lines.length - 1) return null;
-    return _Cue(
-      lines.sublist(0, timing + 1).join('\n'),
-      lines.sublist(timing + 1).join('\n'),
-    );
-  }
 
   Future<List<String>> _translateBatch(
     List<String> texts,

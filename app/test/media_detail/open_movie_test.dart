@@ -62,11 +62,6 @@ final class _NoProgress extends Fake implements WatchProgressRepository {
   Future<void> save(WatchProgress progress) async {}
 }
 
-final class _NoSubtitles extends Fake implements SubtitleRepository {
-  @override
-  bool get isAvailable => false;
-}
-
 final class _NoCredentials extends Fake implements CredentialStore {}
 
 Future<_Engine> _open(WidgetTester tester, List<Movie> movies) async {
@@ -82,7 +77,6 @@ Future<_Engine> _open(WidgetTester tester, List<Movie> movies) async {
           (_) => const SizedBox.expand(),
         ),
         watchProgressRepositoryProvider.overrideWithValue(_NoProgress()),
-        subtitleRepositoryProvider.overrideWithValue(_NoSubtitles()),
         resolveStreamUrlProvider.overrideWithValue(
           ResolveStreamUrl(_NoCredentials()),
         ),

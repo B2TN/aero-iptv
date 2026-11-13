@@ -68,9 +68,6 @@ final class _FakeEngine implements PlaybackEngine {
   Future<void> selectSubtitle(MediaTrack? track) async {}
 
   @override
-  Future<void> loadSubtitle(SubtitleFile file) async {}
-
-  @override
   Future<List<MediaChapter>> chapters() async => const [];
 
   @override
@@ -89,17 +86,6 @@ final class _NoProgress implements WatchProgressRepository {
 
   @override
   Future<void> remove(int sourceId, String contentKey) async {}
-}
-
-final class _NoSubtitles implements SubtitleRepository {
-  @override
-  bool get isAvailable => false;
-
-  @override
-  Future<void> remember(SubtitleQuery query, SubtitleFile file) async {}
-
-  @override
-  Future<SubtitleFile?> find(SubtitleQuery query) async => null;
 }
 
 final class _Probe implements StreamProbe {
@@ -138,7 +124,6 @@ Future<_FakeEngine> _openPlayer(
           (_) => const SizedBox.expand(),
         ),
         watchProgressRepositoryProvider.overrideWithValue(_NoProgress()),
-        subtitleRepositoryProvider.overrideWithValue(_NoSubtitles()),
         streamProbeProvider.overrideWithValue(probe),
         resolveStreamUrlProvider.overrideWithValue(
           ResolveStreamUrl(_NoCredentials()),

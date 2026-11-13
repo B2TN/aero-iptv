@@ -212,12 +212,10 @@
   "playerExitFullscreen": "Quitter le plein écran",
   "playerMono": "mono",
   "playerStereo": "stéréo",
-  "playerSubtitlesDownload": "Télécharger sous-titre",
-  "playerSubtitlesSearching": "Recherche des sous-titres...",
+  "playerSubtitlesTranslate": "Traduire les sous-titres",
   "playerSubtitlesLoaded": "Sous-titres chargés",
-  "playerSubtitlesUntranslated": "Sous-titres chargés en anglais : traduction non configurée",
   "playerSubtitlesNotFound": "Cette source ne contient aucun sous-titre",
-  "playerSubtitlesFailed": "Téléchargement des sous-titres impossible",
+  "playerSubtitlesFailed": "Traduction des sous-titres impossible",
   "@playerEndsAt": {
     "placeholders": {
       "time": {
@@ -226,7 +224,6 @@
     }
   },
   "settingsDeepL": "Clé DeepL (sous-titres traduits)",
-  "settingsOpenSubtitles": "Clé OpenSubtitles (sous-titres complets)",
   "settingsKeySet": "Configurée",
   "settingsKeyUnset": "Non configurée",
   "settingsKeyReplace": "Remplacer la clé",

@@ -58,9 +58,20 @@ Future<Widget> bootstrap({
     ],
   );
   unawaited(container.read(posterCacheProvider).trim());
+  unawaited(_forgetRetiredKeys(container.read(apiKeyStoreProvider)));
 
   return UncontrolledProviderScope(
     container: container,
     child: const AeroIptvApp(),
   );
+}
+
+/// Clés de services que l'application n'utilise plus : rien ne doit rester
+/// dans le coffre sans raison.
+Future<void> _forgetRetiredKeys(ApiKeyStore keys) async {
+  try {
+    await keys.write('opensubtitles', null);
+  } on Exception {
+    // Coffre ou fichier indisponible : nouvel essai au prochain démarrage.
+  }
 }

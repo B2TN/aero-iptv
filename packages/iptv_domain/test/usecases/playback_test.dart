@@ -41,7 +41,6 @@ final class FakeEngine implements PlaybackEngine {
       StreamController<PlaybackState>.broadcast();
   final List<PlaybackRequest> opened = [];
   final List<MediaTrack?> selected = [];
-  final List<SubtitleFile> loaded = [];
   bool disposed = false;
 
   @override
@@ -60,9 +59,6 @@ final class FakeEngine implements PlaybackEngine {
 
   @override
   Future<void> selectSubtitle(MediaTrack? track) async => selected.add(track);
-
-  @override
-  Future<void> loadSubtitle(SubtitleFile file) async => loaded.add(file);
 
   @override
   Future<List<MediaChapter>> chapters() async => const [];
@@ -110,28 +106,6 @@ final class FakeProgress implements WatchProgressRepository {
   }) async => saved;
 }
 
-final class FakeSubtitles implements SubtitleRepository {
-  FakeSubtitles({this.result, this.failure});
-
-  final SubtitleFile? result;
-  final Failure? failure;
-  final List<SubtitleQuery> queries = [];
-
-  @override
-  bool get isAvailable => true;
-
-  @override
-  Future<void> remember(SubtitleQuery query, SubtitleFile file) async {}
-
-  @override
-  Future<SubtitleFile?> find(SubtitleQuery query) async {
-    queries.add(query);
-    final error = failure;
-    if (error != null) throw error;
-    return result;
-  }
-}
-
 void main() {
   group('normalizeLanguageCode', () {
     test('ramène les variantes à un code ISO 639-1', () {
@@ -176,7 +150,7 @@ void main() {
         selectedAudioId: '2',
         preferredLanguage: 'fr',
       );
-      expect(choice, isA<FetchExternalSubtitles>());
+      expect(choice, isA<SubtitlesMissing>());
     });
 
     test('préfère une piste intégrée dans la bonne langue', () {
@@ -188,22 +162,22 @@ void main() {
       expect((choice as UseEmbeddedSubtitles).track.id, '4');
     });
 
-    test('cherche à l extérieur si la langue est mauvaise', () {
+    test('signale l absence de la langue voulue', () {
       final choice = choose(
         audioTracks: [audio('1', 'eng')],
         subtitleTracks: [subtitle('3', 'ger')],
         preferredLanguage: 'fr',
       );
-      expect((choice as FetchExternalSubtitles).language, 'fr');
+      expect((choice as SubtitlesMissing).language, 'fr');
     });
 
-    test('cherche à l extérieur si la langue est inconnue', () {
+    test('une langue d audio inconnue demande des sous-titres', () {
       final choice = choose(
         audioTracks: [audio('1', null)],
         subtitleTracks: const [],
         preferredLanguage: 'fr',
       );
-      expect(choice, isA<FetchExternalSubtitles>());
+      expect(choice, isA<SubtitlesMissing>());
     });
   });
 
@@ -211,14 +185,9 @@ void main() {
     late FakeEngine engine;
     late FakeProgress progress;
 
-    PlaybackSession session({
-      FakeSubtitles? subtitles,
-      void Function(Failure)? onFailure,
-    }) => PlaybackSession(
+    PlaybackSession session() => PlaybackSession(
       engine: engine,
       progress: progress,
-      subtitles: subtitles ?? FakeSubtitles(),
-      onSubtitleFailure: onFailure,
       clock: () => DateTime.utc(2026),
     );
 
@@ -235,27 +204,8 @@ void main() {
       progress = FakeProgress();
     });
 
-    test('charge des sous-titres externes si nécessaire', () async {
-      const file = SubtitleFile(content: 'srt', language: 'fr', title: 'x');
-      final subtitles = FakeSubtitles(result: file);
-      await session(
-        subtitles: subtitles,
-      ).play(vodRequest, movie, preferredLanguage: 'fr');
-
-      engine.emit(
-        PlaybackState(tracksReady: true, audioTracks: [audio('1', 'eng')]),
-      );
-      await flush();
-
-      expect(subtitles.queries.single.year, 2010);
-      expect(engine.loaded.single, same(file));
-    });
-
-    test('active une piste intégrée sans appeler le service', () async {
-      final subtitles = FakeSubtitles();
-      await session(
-        subtitles: subtitles,
-      ).play(vodRequest, movie, preferredLanguage: 'fr');
+    test('active une piste intégrée dans la bonne langue', () async {
+      await session().play(vodRequest, movie, preferredLanguage: 'fr');
 
       engine.emit(
         PlaybackState(
@@ -267,55 +217,52 @@ void main() {
       await flush();
 
       expect(engine.selected.single!.id, '2');
-      expect(subtitles.queries, isEmpty);
+    });
+
+    test('sans piste dans la bonne langue, ne choisit rien', () async {
+      await session().play(vodRequest, movie, preferredLanguage: 'fr');
+
+      engine.emit(
+        PlaybackState(
+          tracksReady: true,
+          audioTracks: [audio('1', 'eng')],
+          subtitleTracks: [subtitle('2', 'ger')],
+        ),
+      );
+      await flush();
+
+      expect(engine.selected, isEmpty);
     });
 
     test('ne décide qu une fois par contenu', () async {
-      final subtitles = FakeSubtitles();
-      await session(
-        subtitles: subtitles,
-      ).play(vodRequest, movie, preferredLanguage: 'fr');
+      await session().play(vodRequest, movie, preferredLanguage: 'fr');
 
       final state = PlaybackState(
         tracksReady: true,
         audioTracks: [audio('1', 'eng')],
+        subtitleTracks: [subtitle('2', 'fre')],
       );
       engine
         ..emit(state)
         ..emit(state);
       await flush();
 
-      expect(subtitles.queries, hasLength(1));
+      expect(engine.selected, hasLength(1));
     });
 
-    test('une erreur de sous-titres n interrompt pas la lecture', () async {
-      final failures = <Failure>[];
-      await session(
-        subtitles: FakeSubtitles(failure: const RateLimitFailure('quota')),
-        onFailure: failures.add,
-      ).play(vodRequest, movie, preferredLanguage: 'fr');
+    test('ne choisit pas de sous-titres en direct', () async {
+      await session().play(liveRequest, channel, preferredLanguage: 'fr');
 
       engine.emit(
-        PlaybackState(tracksReady: true, audioTracks: [audio('1', 'eng')]),
+        PlaybackState(
+          tracksReady: true,
+          audioTracks: [audio('1', 'eng')],
+          subtitleTracks: [subtitle('2', 'fre')],
+        ),
       );
       await flush();
 
-      expect(failures.single, isA<RateLimitFailure>());
-      expect(engine.loaded, isEmpty);
-    });
-
-    test('ne cherche pas de sous-titres en direct', () async {
-      final subtitles = FakeSubtitles();
-      await session(
-        subtitles: subtitles,
-      ).play(liveRequest, channel, preferredLanguage: 'fr');
-
-      engine.emit(
-        PlaybackState(tracksReady: true, audioTracks: [audio('1', 'eng')]),
-      );
-      await flush();
-
-      expect(subtitles.queries, isEmpty);
+      expect(engine.selected, isEmpty);
     });
 
     test('enregistre la position toutes les 15 secondes', () async {

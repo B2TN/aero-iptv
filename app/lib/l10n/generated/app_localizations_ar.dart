@@ -448,29 +448,19 @@ class AppLocalizationsAr extends AppLocalizations {
   String get playerStereo => 'ستيريو';
 
   @override
-  String get playerSubtitlesDownload => 'تنزيل الترجمة';
-
-  @override
-  String get playerSubtitlesSearching => 'جارٍ البحث عن الترجمة...';
+  String get playerSubtitlesTranslate => 'ترجمة الترجمة النصية';
 
   @override
   String get playerSubtitlesLoaded => 'تم تحميل الترجمة';
 
   @override
-  String get playerSubtitlesUntranslated =>
-      'تم تحميل الترجمة بالإنجليزية: الترجمة الآلية غير مهيأة';
-
-  @override
   String get playerSubtitlesNotFound => 'لا يحتوي هذا المصدر على عناوين فرعية';
 
   @override
-  String get playerSubtitlesFailed => 'تعذر تنزيل الترجمة';
+  String get playerSubtitlesFailed => 'تعذّرت ترجمة الترجمة النصية';
 
   @override
   String get settingsDeepL => 'مفتاح DeepL (ترجمة الأسطر)';
-
-  @override
-  String get settingsOpenSubtitles => 'مفتاح OpenSubtitles (ترجمة كاملة)';
 
   @override
   String get settingsKeySet => 'مهيأ';

@@ -5,11 +5,10 @@ import '../entities/content_kind.dart';
 import '../entities/media_track.dart';
 import '../entities/playback_request.dart';
 import '../entities/playback_state.dart';
-import '../entities/subtitle_file.dart';
+import '../entities/subtitle_outcome.dart';
 import '../entities/watch_progress.dart';
 import '../normalization/language_code.dart';
 import '../ports/playback_engine.dart';
-import '../ports/subtitle_repository.dart';
 import '../ports/subtitle_translator.dart';
 import '../ports/watch_progress_repository.dart';
 import 'choose_subtitle.dart';
@@ -42,7 +41,6 @@ final class PlaybackSession {
   PlaybackSession({
     required PlaybackEngine engine,
     required WatchProgressRepository progress,
-    required this.subtitles,
     this.translator,
     void Function(Failure failure)? onSubtitleFailure,
     ChooseSubtitle chooseSubtitle = const ChooseSubtitle(),
@@ -56,10 +54,8 @@ final class PlaybackSession {
   final PlaybackEngine _engine;
   final WatchProgressRepository _progress;
 
-  /// Sous-titres en ligne et service de traduction. Ils peuvent changer après le
-  /// début de la lecture : leurs clés sont lues dans le coffre de façon
-  /// asynchrone.
-  SubtitleRepository subtitles;
+  /// Service de traduction. Il peut changer après le début de la lecture : sa
+  /// clé est lue dans le coffre de façon asynchrone.
   SubtitleTranslator? translator;
   final void Function(Failure failure)? _onSubtitleFailure;
   final ChooseSubtitle _chooseSubtitle;
@@ -94,7 +90,7 @@ final class PlaybackSession {
     await _saveProgress();
     _item = item;
     _language = preferredLanguage;
-    // OpenSubtitles ne référence pas les émissions en direct.
+    // Le direct ne reçoit pas de sous-titres choisis d'office.
     _subtitlesHandled = item.kind == ContentKind.live;
     _lastSaved = request.startAt ?? Duration.zero;
     _translatingCues = false;
@@ -173,80 +169,26 @@ final class PlaybackSession {
   /// Affiche les sous-titres dans [language], par défaut la langue de
   /// l'utilisateur.
   ///
-  /// Une piste du flux déjà dans cette langue passe d'abord. Sinon, un fichier
-  /// complet trouvé en ligne est traduit d'un bloc : toutes les répliques sont
-  /// prêtes dès la sélection. À défaut, la piste du flux est traduite à la volée.
-  /// Lève une [Failure] si un service échoue et qu'il ne reste aucune piste.
-  Future<SubtitleDownload> downloadSubtitles({String? language}) async {
-    final item = _item;
-    if (item == null) return SubtitleDownload.notFound;
+  /// Une piste du flux déjà dans cette langue passe d'abord. Sinon, la
+  /// meilleure piste de texte du flux est traduite à la volée, si un service
+  /// de traduction est configuré.
+  Future<SubtitleOutcome> showSubtitles({String? language}) async {
+    if (_item == null) return SubtitleOutcome.none;
     final target = language ?? _language;
     final exact = _textTrackIn(target);
     if (exact != null) {
       _translatingCues = false;
       await _engine.selectSubtitle(exact);
-      return SubtitleDownload.loaded;
+      return SubtitleOutcome.loaded;
     }
-
-    final canTranslateTrack = translator != null && _textTracks.isNotEmpty;
-    if (subtitles.isAvailable) {
-      try {
-        final result = await _loadWholeFile(item, target);
-        if (result != SubtitleDownload.notFound || !canTranslateTrack) {
-          return result;
-        }
-      } on Failure {
-        if (!canTranslateTrack) rethrow;
-      }
-    }
-    if (canTranslateTrack) {
+    if (translator != null && _textTracks.isNotEmpty) {
       await _translateEmbeddedTrack(target);
-      return SubtitleDownload.loaded;
+      return SubtitleOutcome.loaded;
     }
     return _textTracks.isEmpty && _engine.state.subtitleTracks.isNotEmpty
-        ? SubtitleDownload.imagesOnly
-        : SubtitleDownload.notConfigured;
+        ? SubtitleOutcome.imagesOnly
+        : SubtitleOutcome.none;
   }
-
-  /// Cherche un fichier en ligne dans [language], ou en anglais pour le traduire.
-  Future<SubtitleDownload> _loadWholeFile(
-    PlaybackItem item,
-    String language,
-  ) async {
-    final wanted = _queryFor(item, language);
-    final exact = await subtitles.find(wanted);
-    if (exact != null) {
-      await _show(exact);
-      return SubtitleDownload.loaded;
-    }
-    if (language == _sourceLanguage) return SubtitleDownload.notFound;
-
-    final source = await subtitles.find(_queryFor(item, _sourceLanguage));
-    if (source == null) return SubtitleDownload.notFound;
-    final translator = this.translator;
-    if (translator == null) {
-      await _show(source);
-      return SubtitleDownload.untranslated;
-    }
-    final translated = await translator.translate(source, language: language);
-    await subtitles.remember(wanted, translated);
-    await _show(translated);
-    return SubtitleDownload.loaded;
-  }
-
-  Future<void> _show(SubtitleFile file) async {
-    _translatingCues = false;
-    await _engine.loadSubtitle(file);
-  }
-
-  SubtitleQuery _queryFor(PlaybackItem item, String language) => SubtitleQuery(
-    contentKey: item.contentKey,
-    title: item.title,
-    language: language,
-    year: item.year,
-    season: item.season,
-    episode: item.episode,
-  );
 
   /// Enregistre la position, puis libère le moteur.
   Future<void> close() async {
@@ -280,22 +222,10 @@ final class PlaybackSession {
       preferredLanguage: _language,
     );
     switch (choice) {
-      case SubtitlesNotNeeded():
+      case SubtitlesNotNeeded() || SubtitlesMissing():
         break;
       case UseEmbeddedSubtitles():
         await _engine.selectSubtitle(choice.track);
-      case FetchExternalSubtitles():
-        await _fetchSubtitles(item, choice.language);
-    }
-  }
-
-  /// Une erreur de sous-titres ne doit jamais interrompre la lecture.
-  Future<void> _fetchSubtitles(PlaybackItem item, String language) async {
-    try {
-      final file = await subtitles.find(_queryFor(item, language));
-      if (file != null) await _engine.loadSubtitle(file);
-    } on Failure catch (failure) {
-      _onSubtitleFailure?.call(failure);
     }
   }
 

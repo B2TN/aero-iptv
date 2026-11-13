@@ -66,6 +66,6 @@ function Get-AppVersion {
 # Injecte les clés de services si elles sont renseignées.
 function Get-SecretArguments {
     if (Test-Path $SecretsFile) { return @("--dart-define-from-file=$SecretsFile") }
-    Write-Warning 'config\secrets.json absent : tendances et sous-titres externes désactivés.'
+    Write-Warning 'config\secrets.json absent : tendances TMDb et clé DeepL de compilation désactivées.'
     return @()
 }

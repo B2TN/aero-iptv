@@ -454,30 +454,20 @@ class AppLocalizationsDe extends AppLocalizations {
   String get playerStereo => 'Stereo';
 
   @override
-  String get playerSubtitlesDownload => 'Untertitel herunterladen';
-
-  @override
-  String get playerSubtitlesSearching => 'Untertitel werden gesucht...';
+  String get playerSubtitlesTranslate => 'Untertitel übersetzen';
 
   @override
   String get playerSubtitlesLoaded => 'Untertitel geladen';
 
   @override
-  String get playerSubtitlesUntranslated =>
-      'Untertitel auf Englisch geladen: Übersetzung nicht eingerichtet';
-
-  @override
   String get playerSubtitlesNotFound => 'Diese Quelle enthält keine Untertitel';
 
   @override
-  String get playerSubtitlesFailed => 'Untertitel konnten nicht geladen werden';
+  String get playerSubtitlesFailed =>
+      'Untertitel konnten nicht übersetzt werden';
 
   @override
   String get settingsDeepL => 'DeepL-Schlüssel (übersetzte Untertitel)';
-
-  @override
-  String get settingsOpenSubtitles =>
-      'OpenSubtitles-Schlüssel (vollständige Untertitel)';
 
   @override
   String get settingsKeySet => 'Eingerichtet';

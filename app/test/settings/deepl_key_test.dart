@@ -11,7 +11,6 @@ import 'package:iptv_domain/iptv_domain.dart';
 import 'package:qr/qr.dart';
 
 const String _keysPage = 'https://www.deepl.com/your-account/keys';
-const String _openSubtitlesPage = 'https://www.opensubtitles.com/consumers';
 
 final Finder _qrCode = find.byWidgetPredicate(
   (widget) => widget is CustomPaint && widget.painter is QrPainter,
@@ -117,33 +116,23 @@ void main() {
     });
   }
 
-  testWidgets('la clé OpenSubtitles a sa propre page', (tester) async {
-    final opened = await _openEntry(
-      tester,
-      hasBrowser: true,
-      row: 'Clé OpenSubtitles (sous-titres complets)',
-    );
+  testWidgets('seule la clé DeepL est demandée', (tester) async {
+    await _openEntry(tester, hasBrowser: true);
 
-    await tester.tap(find.text('Obtenir une clé'));
-    await tester.pump();
-    await tester.pump();
-
-    expect(opened, [_openSubtitlesPage]);
+    // Les paramètres restent affichés sous la saisie.
+    expect(find.text('Clé DeepL (sous-titres traduits)'), findsWidgets);
+    expect(find.textContaining('OpenSubtitles'), findsNothing);
   });
 
-  testWidgets('le QR code nomme le bon service', (tester) async {
-    await _openEntry(
-      tester,
-      hasBrowser: false,
-      row: 'Clé OpenSubtitles (sous-titres complets)',
-    );
+  testWidgets('le QR code nomme le service', (tester) async {
+    await _openEntry(tester, hasBrowser: false);
 
     await tester.tap(find.text('Obtenir une clé'));
     await tester.pump();
     await tester.pump();
     await tester.pump();
 
-    expect(find.textContaining('la page OpenSubtitles'), findsOneWidget);
+    expect(find.textContaining('la page DeepL'), findsOneWidget);
   });
 
   test('le code contient bien l adresse complète', () {

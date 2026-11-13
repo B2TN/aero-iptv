@@ -111,12 +111,7 @@ The Windows version has seen the most use. The Android versions have been tested
 
 ## Translated subtitles (optional)
 
-Two free services add translation, each with your own key, entered in **Settings**:
-
-| Key | What it does |
-|---|---|
-| [DeepL](https://www.deepl.com/your-account/keys) | Translates the subtitle lines of the video as you watch |
-| [OpenSubtitles](https://www.opensubtitles.com/consumers) | Finds a complete file, translated in one go as soon as you pick it. It may be slightly out of sync, since it comes from a different source than the video |
+Subtitles come from the video itself: the app doesn't download any. To translate them into another language, enter a free [DeepL](https://www.deepl.com/your-account/keys) key in **Settings**: the lines are translated as you watch.
 
 Subtitles drawn as images (PGS, VobSub) contain no text and can't be translated.
 
@@ -124,7 +119,7 @@ Subtitles drawn as images (PGS, VobSub) contain no text and can't be translated.
 
 - Your login details stay on your device, encrypted by the system vault (DPAPI on Windows, Keystore on Android), and are only sent to your provider.
 - No account, no ads, no analytics.
-- The app only contacts your provider, Apple's public charts for the home screen trends, and the services whose key you've entered.
+- The app only contacts your provider, Apple's public charts for the home screen trends, and DeepL if you've entered a key.
 - To find the intro and the end credits of an episode, it asks [TheIntroDB](https://theintrodb.org), [IntroDB](https://introdb.app) and [TVmaze](https://www.tvmaze.com). They only receive the series title, its public IDs, and the season and episode numbers.
 
 ## Content and rights

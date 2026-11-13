@@ -14,9 +14,8 @@ import '../../../l10n/country_names.dart';
 import '../playlist/playlist_manager_screen.dart';
 import '../widgets/setting_row.dart';
 
-/// Pages des comptes où se trouvent les clés d'API.
+/// Page du compte où se trouve la clé d'API de DeepL.
 const String _deepLKeysPage = 'https://www.deepl.com/your-account/keys';
-const String _openSubtitlesKeysPage = 'https://www.opensubtitles.com/consumers';
 
 /// Service dont l'utilisateur fournit lui-même la clé d'API.
 typedef _KeyService = ({
@@ -122,12 +121,6 @@ class SettingsScreen extends ConsumerWidget {
       page: _deepLKeysPage,
       key: deepLKeyProvider,
     );
-    final _KeyService openSubtitles = (
-      name: 'OpenSubtitles',
-      title: l10n.settingsOpenSubtitles,
-      page: _openSubtitlesKeysPage,
-      key: openSubtitlesKeyProvider,
-    );
     final playlists = ref.watch(sourcesProvider).value?.length ?? 0;
     String onOff(bool value) => value ? l10n.settingsOn : l10n.settingsOff;
     String keyState(_KeyService service) => ref.watch(service.key) != null
@@ -170,11 +163,6 @@ class SettingsScreen extends ConsumerWidget {
         label: deepL.title,
         value: keyState(deepL),
         action: () => _editKey(context, ref, deepL),
-      ),
-      (
-        label: openSubtitles.title,
-        value: keyState(openSubtitles),
-        action: () => _editKey(context, ref, openSubtitles),
       ),
     ];
 

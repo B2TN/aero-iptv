@@ -87,7 +87,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   late final PlaybackSession _session = PlaybackSession(
     engine: _engine,
     progress: ref.read(watchProgressRepositoryProvider),
-    subtitles: ref.read(subtitleRepositoryProvider),
     onSubtitleFailure: (_) {
       if (mounted) _showNotice(context.l10n.playerSubtitlesFailed);
     },
@@ -162,10 +161,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
       subtitleTranslatorProvider,
       (_, translator) => _session.translator = translator,
       fireImmediately: true,
-    );
-    ref.listenManual(
-      subtitleRepositoryProvider,
-      (_, subtitles) => _session.subtitles = subtitles,
     );
     unawaited(_start());
     unawaited(_findNext());
@@ -589,10 +584,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   Future<void> _chooseSubtitles() async {
     final tracks = _state.subtitleTracks;
     final l10n = context.l10n;
-    // Sans aucune clé, rien ne peut être obtenu : l'option n'est pas proposée.
-    final canTranslate =
-        ref.read(subtitleTranslatorProvider) != null ||
-        ref.read(subtitleRepositoryProvider).isAvailable;
+    // Sans clé de traduction, l'option n'est pas proposée.
+    final canTranslate = ref.read(subtitleTranslatorProvider) != null;
     final choice = await showAeroMenu(
       context,
       title: l10n.playerSubtitles,
@@ -600,19 +593,19 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
         l10n.playerSubtitlesOff,
         for (final (index, track) in tracks.indexed)
           _trackLabel(l10n.playerTrack(index + 1), track),
-        if (canTranslate) l10n.playerSubtitlesDownload,
+        if (canTranslate) l10n.playerSubtitlesTranslate,
       ],
     );
     if (choice == null) return;
     if (choice == tracks.length + 1) {
-      await _downloadSubtitles();
+      await _translateSubtitles();
       return;
     }
     _session.stopSubtitleTranslation();
     await _engine.selectSubtitle(choice == 0 ? null : tracks[choice - 1]);
   }
 
-  Future<void> _downloadSubtitles() async {
+  Future<void> _translateSubtitles() async {
     final l10n = context.l10n;
     final appLanguage = ref.read(settingsProvider).languageCode;
     final languages = translationLanguages(appLanguage);
@@ -624,18 +617,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
       ],
     );
     if (choice == null || !mounted) return;
-    _showNotice(l10n.playerSubtitlesSearching);
     try {
-      final result = await _session.downloadSubtitles(
-        language: languages[choice],
-      );
+      final result = await _session.showSubtitles(language: languages[choice]);
       if (!mounted) return;
       _showNotice(switch (result) {
-        SubtitleDownload.loaded => l10n.playerSubtitlesLoaded,
-        SubtitleDownload.untranslated => l10n.playerSubtitlesUntranslated,
-        SubtitleDownload.imagesOnly => l10n.playerSubtitlesImagesOnly,
-        SubtitleDownload.notFound ||
-        SubtitleDownload.notConfigured => l10n.playerSubtitlesNotFound,
+        SubtitleOutcome.loaded => l10n.playerSubtitlesLoaded,
+        SubtitleOutcome.imagesOnly => l10n.playerSubtitlesImagesOnly,
+        SubtitleOutcome.none => l10n.playerSubtitlesNotFound,
       });
     } on Failure {
       if (mounted) _showNotice(l10n.playerSubtitlesFailed);

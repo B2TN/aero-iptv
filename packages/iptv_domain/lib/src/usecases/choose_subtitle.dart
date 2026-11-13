@@ -18,9 +18,10 @@ final class UseEmbeddedSubtitles extends SubtitleChoice {
   final MediaTrack track;
 }
 
-/// Les sous-titres sont absents ou dans une autre langue.
-final class FetchExternalSubtitles extends SubtitleChoice {
-  const FetchExternalSubtitles(this.language);
+/// Le flux n'a pas de sous-titres dans la langue voulue. L'utilisateur peut
+/// faire traduire une autre piste depuis le lecteur.
+final class SubtitlesMissing extends SubtitleChoice {
+  const SubtitlesMissing(this.language);
 
   final String language;
 }
@@ -52,6 +53,6 @@ final class ChooseSubtitle {
         return UseEmbeddedSubtitles(track);
       }
     }
-    return FetchExternalSubtitles(wanted);
+    return SubtitlesMissing(wanted);
   }
 }

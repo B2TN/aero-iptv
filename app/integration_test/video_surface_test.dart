@@ -8,7 +8,7 @@ import 'package:image/image.dart' as img;
 import 'package:integration_test/integration_test.dart';
 import 'package:iptv_domain/iptv_domain.dart';
 import 'package:iptv_player/iptv_player.dart';
-import 'package:media_kit/media_kit.dart' show NativePlayer;
+import 'package:media_kit/media_kit.dart' show NativePlayer, SubtitleTrack;
 
 const int _width = 320;
 const int _height = 180;
@@ -128,11 +128,11 @@ void main() {
       final cue = engine.subtitleCues
           .firstWhere((text) => text.isNotEmpty)
           .timeout(const Duration(seconds: 5));
-      await engine.loadSubtitle(
-        const SubtitleFile(
-          content: '1\n00:00:00,000 --> 00:10:00,000\nBonjour le lagon\n',
-          language: 'fr',
+      await engine.player.setSubtitleTrack(
+        SubtitleTrack.data(
+          '1\n00:00:00,000 --> 00:10:00,000\nBonjour le lagon\n',
           title: 'Essai',
+          language: 'fr',
         ),
       );
       expect(await cue, 'Bonjour le lagon');

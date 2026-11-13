@@ -157,12 +157,11 @@ All keys are optional:
 | Key | Purpose | Without a key |
 |---|---|---|
 | `TMDB_READ_TOKEN` | Trends and large images on the home screen | Apple's public charts and the playlist's posters |
-| `OPENSUBTITLES_API_KEY` | Complete subtitle file, translated in one go when selected | Only the stream's tracks are available, translated on the fly |
-| `DEEPL_API_KEY` | "Download subtitles" option: translation into the chosen language | The option isn't offered |
+| `DEEPL_API_KEY` | "Translate subtitles" option: translation into the chosen language | The option isn't offered |
 
-The DeepL and OpenSubtitles keys are easier to enter in **Settings**: they're encrypted there by the system vault, and take priority over the ones set at build time. Free DeepL keys end in `:fx`. The "Get a key" button opens the service's page in the browser on Windows, and shows it as a QR code on TV.
+The DeepL key is easier to enter in **Settings**: it's encrypted there by the system vault, and takes priority over the one set at build time. Free DeepL keys end in `:fx`. The "Get a key" button opens DeepL's page in the browser on Windows, and shows it as a QR code on TV.
 
-A stream track already in the requested language comes first. Otherwise, a file found on OpenSubtitles is translated in one go: every line is ready as soon as it's selected, and the result is kept. That file comes from a different source than the video, so it may be slightly out of sync. Without an OpenSubtitles key or a matching file, the stream's track is translated line by line, preferably from English, because a track's full text is only known by playing the movie. Tracks drawn as images (PGS, VobSub, DVB) contain no text to translate.
+Subtitles only come from the stream: the app downloads none. A stream track already in the requested language comes first. Otherwise, the stream's track is translated line by line, preferably from English, because a track's full text is only known by playing the movie. Tracks drawn as images (PGS, VobSub, DVB) contain no text to translate.
 
 Copy `config/secrets.example.json` to `config/secrets.json` and fill in your keys: the scripts in `tool/` include them at build time. For a development run, from `app`:
 

@@ -160,15 +160,6 @@ final class MediaKitEngine implements PlaybackEngine {
   }
 
   @override
-  Future<void> loadSubtitle(SubtitleFile file) => player.setSubtitleTrack(
-    mk.SubtitleTrack.data(
-      file.content,
-      title: file.title,
-      language: file.language,
-    ),
-  );
-
-  @override
   Future<List<MediaChapter>> chapters() async {
     if (_disposed) return const [];
     final native = player.platform! as mk.NativePlayer;

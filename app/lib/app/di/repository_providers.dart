@@ -11,9 +11,6 @@ import 'infrastructure_providers.dart';
 /// Seul fichier de l'application qui connaît les implémentations : les écrans
 /// ne manipulent que les ports du domaine.
 const String _tmdbToken = String.fromEnvironment('TMDB_READ_TOKEN');
-const String _openSubtitlesKey = String.fromEnvironment(
-  'OPENSUBTITLES_API_KEY',
-);
 const String _deepLKey = String.fromEnvironment('DEEPL_API_KEY');
 
 final playlistRepositoryProvider = Provider<PlaylistRepository>(
@@ -89,20 +86,6 @@ class ApiKeyController extends Notifier<String?> {
 final deepLKeyProvider = NotifierProvider<ApiKeyController, String?>(
   () => ApiKeyController('deepl', _deepLKey),
 );
-
-final openSubtitlesKeyProvider = NotifierProvider<ApiKeyController, String?>(
-  () => ApiKeyController('opensubtitles', _openSubtitlesKey),
-);
-
-final subtitleRepositoryProvider = Provider<SubtitleRepository>((ref) {
-  final key = ref.watch(openSubtitlesKeyProvider);
-  return SubtitleRepositoryImpl(
-    ref.watch(databaseProvider),
-    key == null
-        ? null
-        : OpenSubtitlesClient(ref.watch(httpClientProvider), apiKey: key),
-  );
-});
 
 /// `null` tant qu'aucune clé de traduction n'est configurée.
 final subtitleTranslatorProvider = Provider<SubtitleTranslator?>((ref) {

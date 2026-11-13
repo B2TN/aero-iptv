@@ -75,12 +75,6 @@ final class _PrefixTranslator implements SubtitleTranslator {
     List<String> texts, {
     required String language,
   }) async => [for (final text in texts) '$language:$text'];
-
-  @override
-  Future<SubtitleFile> translate(
-    SubtitleFile file, {
-    required String language,
-  }) async => file;
 }
 
 final class _NoProgress implements WatchProgressRepository {
@@ -97,19 +91,17 @@ final class _NoProgress implements WatchProgressRepository {
   Future<void> remove(int sourceId, String contentKey) async {}
 }
 
-final class _NoSubtitles implements SubtitleRepository {
-  @override
-  bool get isAvailable => false;
-
-  @override
-  Future<void> remember(SubtitleQuery query, SubtitleFile file) async {}
-
-  @override
-  Future<SubtitleFile?> find(SubtitleQuery query) async => null;
-}
-
 mk.NativePlayer nativeOf(MediaKitEngine engine) =>
     engine.player.platform! as mk.NativePlayer;
+
+/// Ajoute une piste de sous-titres au flux en cours, comme un fichier externe.
+Future<void> addSubtitleTrack(
+  MediaKitEngine engine,
+  String content, {
+  required String language,
+}) => engine.player.setSubtitleTrack(
+  mk.SubtitleTrack.data(content, title: 'Essai', language: language),
+);
 
 /// Crée un moteur muet : ce test ne doit rien jouer sur les haut-parleurs.
 Future<MediaKitEngine> silentEngine() async {
@@ -205,7 +197,7 @@ void main() {
     expect(reserve, greaterThan(3));
   }, timeout: const Timeout(Duration(minutes: 1)));
 
-  test('charge des sous-titres externes et les affiche', () async {
+  test('affiche une piste de sous-titres ajoutée', () async {
     final engine = await silentEngine();
     await engine.open(liveRequest());
     await waitForStatus(engine, PlaybackStatus.playing);
@@ -213,12 +205,10 @@ void main() {
     final shown = engine.player.stream.subtitle
         .firstWhere((lines) => lines.any((line) => line.contains('Bonjour')))
         .timeout(const Duration(seconds: 15));
-    await engine.loadSubtitle(
-      const SubtitleFile(
-        content: '1\n00:00:00,000 --> 01:00:00,000\nBonjour\n',
-        language: 'fr',
-        title: 'Test',
-      ),
+    await addSubtitleTrack(
+      engine,
+      '1\n00:00:00,000 --> 01:00:00,000\nBonjour\n',
+      language: 'fr',
     );
 
     expect((await shown).join(), contains('Bonjour'));
@@ -232,7 +222,6 @@ void main() {
       final session = PlaybackSession(
         engine: engine,
         progress: _NoProgress(),
-        subtitles: _NoSubtitles(),
         translator: _PrefixTranslator(),
       );
       await session.play(
@@ -251,12 +240,10 @@ void main() {
       final tracks = engine.states
           .firstWhere((state) => state.subtitleTracks.isNotEmpty)
           .timeout(const Duration(seconds: 15));
-      await engine.loadSubtitle(
-        const SubtitleFile(
-          content: '1\n00:00:00,000 --> 01:00:00,000\nHello\n',
-          language: 'en',
-          title: 'English',
-        ),
+      await addSubtitleTrack(
+        engine,
+        '1\n00:00:00,000 --> 01:00:00,000\nHello\n',
+        language: 'en',
       );
       await tracks;
 
@@ -264,8 +251,8 @@ void main() {
           .firstWhere((text) => text.contains('Hello'))
           .timeout(const Duration(seconds: 15));
       expect(
-        await session.downloadSubtitles(language: 'de'),
-        SubtitleDownload.loaded,
+        await session.showSubtitles(language: 'de'),
+        SubtitleOutcome.loaded,
       );
       expect(await shown, 'de:Hello');
       await session.close();

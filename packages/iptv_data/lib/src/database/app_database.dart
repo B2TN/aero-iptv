@@ -17,16 +17,19 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
-  MigrationStrategy get migration =>
-      MigrationStrategy(
-        onCreate: (migrator) => migrator.createAll(),
-        onUpgrade: (migrator, from, to) async {
-          if (from < 2) {
-            await migrator.addColumn(seriesEntries, seriesEntries.tmdbId);
-          }
-        },
-      );
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (migrator) => migrator.createAll(),
+    onUpgrade: (migrator, from, to) async {
+      if (from < 2) {
+        await migrator.addColumn(seriesEntries, seriesEntries.tmdbId);
+      }
+      if (from < 3) {
+        // Sous-titres téléchargés d'OpenSubtitles, service retiré.
+        await migrator.deleteTable('subtitle_cache');
+      }
+    },
+  );
 }

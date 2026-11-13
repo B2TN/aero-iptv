@@ -21,7 +21,6 @@ final class _Engine implements PlaybackEngine {
   final List<PlaybackRequest> opened = [];
   final List<Duration> seeks = [];
   final List<MediaTrack?> selectedSubtitles = [];
-  final List<SubtitleFile> loadedSubtitles = [];
   final StreamController<String> cues = StreamController<String>.broadcast();
 
   @override
@@ -60,10 +59,6 @@ final class _Engine implements PlaybackEngine {
   Future<void> selectSubtitle(MediaTrack? track) async =>
       selectedSubtitles.add(track);
 
-  @override
-  Future<void> loadSubtitle(SubtitleFile file) async =>
-      loadedSubtitles.add(file);
-
   /// Chapitres du fichier simulé.
   List<MediaChapter> chapterList = const [];
 
@@ -81,12 +76,6 @@ final class _Translator implements SubtitleTranslator {
     List<String> texts, {
     required String language,
   }) async => [for (final text in texts) '$language:$text'];
-
-  @override
-  Future<SubtitleFile> translate(
-    SubtitleFile file, {
-    required String language,
-  }) async => file;
 }
 
 /// La clé n'arrive du coffre qu'au moment où le test le décide.
@@ -112,32 +101,6 @@ final class _NoProgress implements WatchProgressRepository {
 
   @override
   Future<void> remove(int sourceId, String contentKey) async {}
-}
-
-final class _NoSubtitles implements SubtitleRepository {
-  @override
-  bool get isAvailable => false;
-
-  @override
-  Future<void> remember(SubtitleQuery query, SubtitleFile file) async {}
-
-  @override
-  Future<SubtitleFile?> find(SubtitleQuery query) async => null;
-}
-
-final class _OnlineSubtitles implements SubtitleRepository {
-  @override
-  bool get isAvailable => true;
-
-  @override
-  Future<void> remember(SubtitleQuery query, SubtitleFile file) async {}
-
-  @override
-  Future<SubtitleFile?> find(SubtitleQuery query) async => SubtitleFile(
-    content: 'texte',
-    language: query.language,
-    title: query.title,
-  );
 }
 
 final class _NoCredentials implements CredentialStore {
@@ -245,7 +208,6 @@ Future<_Engine> _pump(
   ApiKeyStore keys = const MemorylessApiKeyStore(),
   PlaybackState state = _playing,
   SubtitleTranslator? translator,
-  SubtitleRepository Function(String? key)? subtitles,
   List<MediaChapter> chapters = const [],
 }) async {
   tester.view
@@ -270,11 +232,6 @@ Future<_Engine> _pump(
           (_) => const SizedBox.expand(),
         ),
         watchProgressRepositoryProvider.overrideWithValue(_NoProgress()),
-        subtitleRepositoryProvider.overrideWith(
-          (ref) =>
-              subtitles?.call(ref.watch(openSubtitlesKeyProvider)) ??
-              _NoSubtitles(),
-        ),
         resolveStreamUrlProvider.overrideWithValue(
           ResolveStreamUrl(_NoCredentials()),
         ),
@@ -729,7 +686,7 @@ void main() {
     final disable = tester.getTopLeft(find.text('Désactiver')).dy;
     final track = tester.getTopLeft(find.text('Allemand')).dy;
     expect(disable, lessThan(track));
-    expect(find.text('Télécharger sous-titre'), findsNothing);
+    expect(find.text('Traduire les sous-titres'), findsNothing);
     await _leave(tester);
   });
 
@@ -751,7 +708,7 @@ void main() {
       await tester.tap(find.text('Sous-titres'));
       await tester.pump();
       await tester.pump();
-      await tester.tap(find.text('Télécharger sous-titre'));
+      await tester.tap(find.text('Traduire les sous-titres'));
       await tester.pump();
       await tester.pump();
       await tester.tap(find.text('Français'));
@@ -765,38 +722,7 @@ void main() {
     },
   );
 
-  testWidgets(
-    'une clé OpenSubtitles lue après l ouverture du lecteur sert quand même',
-    (tester) async {
-      final store = _LateKeyStore();
-      final engine = await _pump(
-        tester,
-        _target(ContentKind.movie),
-        keys: store,
-        subtitles: (key) => key == null ? _NoSubtitles() : _OnlineSubtitles(),
-      );
-
-      store.key.complete('cle');
-      await tester.pump();
-      await tester.pump();
-
-      await tester.tap(find.text('Sous-titres'));
-      await tester.pump();
-      await tester.pump();
-      await tester.tap(find.text('Télécharger sous-titre'));
-      await tester.pump();
-      await tester.pump();
-      await tester.tap(find.text('Français'));
-      await tester.pump();
-      await tester.pump();
-      await tester.pump();
-
-      expect(engine.loadedSubtitles.single.language, 'fr');
-      await _leave(tester);
-    },
-  );
-
-  group('télécharger sous-titre', () {
+  group('traduire les sous-titres', () {
     Future<_Engine> openLanguages(
       WidgetTester tester, {
       PlaybackState state = _withEnglishSubtitles,
@@ -810,7 +736,7 @@ void main() {
       await tester.tap(find.text('Sous-titres'));
       await tester.pump();
       await tester.pump();
-      await tester.tap(find.text('Télécharger sous-titre'));
+      await tester.tap(find.text('Traduire les sous-titres'));
       await tester.pump();
       await tester.pump();
       return engine;

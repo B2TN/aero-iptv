@@ -27,30 +27,6 @@ CREATE TABLE app_settings (
   setting_value TEXT NOT NULL
 ) AS AppSettingRow;
 
--- Sous-titres téléchargés : le quota d'OpenSubtitles est limité par jour.
-CREATE TABLE subtitle_cache (
-  content_key TEXT NOT NULL,
-  language TEXT NOT NULL,
-  title TEXT NOT NULL,
-  content TEXT NOT NULL,
-  created_at INTEGER NOT NULL,
-  PRIMARY KEY (content_key, language)
-) WITHOUT ROWID AS SubtitleCacheRow;
-
-CREATE INDEX subtitle_cache_age ON subtitle_cache (created_at);
-
-cachedSubtitle:
-  SELECT * FROM subtitle_cache
-  WHERE content_key = :content_key AND language = :language;
-
-trimSubtitleCache:
-  DELETE FROM subtitle_cache
-  WHERE created_at <= (
-    SELECT created_at FROM subtitle_cache
-    ORDER BY created_at DESC
-    LIMIT 1 OFFSET :keep
-  );
-
 recentProgress:
   SELECT * FROM watch_progress
   WHERE source_id = :source_id

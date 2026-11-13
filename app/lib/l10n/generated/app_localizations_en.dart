@@ -452,29 +452,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get playerStereo => 'stereo';
 
   @override
-  String get playerSubtitlesDownload => 'Download subtitles';
-
-  @override
-  String get playerSubtitlesSearching => 'Searching for subtitles...';
+  String get playerSubtitlesTranslate => 'Translate subtitles';
 
   @override
   String get playerSubtitlesLoaded => 'Subtitles loaded';
 
   @override
-  String get playerSubtitlesUntranslated =>
-      'Subtitles loaded in English: translation is not configured';
-
-  @override
   String get playerSubtitlesNotFound => 'This source has no subtitles';
 
   @override
-  String get playerSubtitlesFailed => 'Could not download subtitles';
+  String get playerSubtitlesFailed => 'Couldn\'t translate the subtitles';
 
   @override
   String get settingsDeepL => 'DeepL key (translated subtitles)';
-
-  @override
-  String get settingsOpenSubtitles => 'OpenSubtitles key (full subtitles)';
 
   @override
   String get settingsKeySet => 'Set';

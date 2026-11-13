@@ -854,29 +854,17 @@ abstract class AppLocalizations {
   /// **'stéréo'**
   String get playerStereo;
 
-  /// No description provided for @playerSubtitlesDownload.
+  /// No description provided for @playerSubtitlesTranslate.
   ///
   /// In fr, this message translates to:
-  /// **'Télécharger sous-titre'**
-  String get playerSubtitlesDownload;
-
-  /// No description provided for @playerSubtitlesSearching.
-  ///
-  /// In fr, this message translates to:
-  /// **'Recherche des sous-titres...'**
-  String get playerSubtitlesSearching;
+  /// **'Traduire les sous-titres'**
+  String get playerSubtitlesTranslate;
 
   /// No description provided for @playerSubtitlesLoaded.
   ///
   /// In fr, this message translates to:
   /// **'Sous-titres chargés'**
   String get playerSubtitlesLoaded;
-
-  /// No description provided for @playerSubtitlesUntranslated.
-  ///
-  /// In fr, this message translates to:
-  /// **'Sous-titres chargés en anglais : traduction non configurée'**
-  String get playerSubtitlesUntranslated;
 
   /// No description provided for @playerSubtitlesNotFound.
   ///
@@ -887,7 +875,7 @@ abstract class AppLocalizations {
   /// No description provided for @playerSubtitlesFailed.
   ///
   /// In fr, this message translates to:
-  /// **'Téléchargement des sous-titres impossible'**
+  /// **'Traduction des sous-titres impossible'**
   String get playerSubtitlesFailed;
 
   /// No description provided for @settingsDeepL.
@@ -895,12 +883,6 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Clé DeepL (sous-titres traduits)'**
   String get settingsDeepL;
-
-  /// No description provided for @settingsOpenSubtitles.
-  ///
-  /// In fr, this message translates to:
-  /// **'Clé OpenSubtitles (sous-titres complets)'**
-  String get settingsOpenSubtitles;
 
   /// No description provided for @settingsKeySet.
   ///
