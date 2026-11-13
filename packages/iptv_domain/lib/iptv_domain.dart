@@ -28,6 +28,7 @@ export 'src/entities/stream_locator.dart';
 export 'src/entities/stream_quality.dart';
 export 'src/entities/subtitle_outcome.dart';
 export 'src/entities/subtitle_style.dart';
+export 'src/entities/title_details.dart';
 export 'src/entities/trending_item.dart';
 export 'src/entities/watch_progress.dart';
 export 'src/normalization/country_catalog.dart';

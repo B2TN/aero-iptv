@@ -346,6 +346,33 @@ void main() {
       expect(page.items.map((s) => s.title), contains('EN - Breaking Bad'));
     });
 
+    test('une playlist M3U n a pas de résumé, sans requête', () async {
+      final repository = CatalogRepositoryImpl(
+        db,
+        vault,
+        MockClient((_) async => fail('aucune requête attendue')),
+      );
+      final movie = (await repository.movies(
+        sourceId,
+        const PageRequest(),
+      )).items.first;
+      final series = (await repository.series(
+        sourceId,
+        const PageRequest(),
+        grouped: true,
+        language: 'fr',
+      )).items.first;
+
+      expect(
+        (await repository.movieDetails(sourceId, movie.id)).isEmpty,
+        isTrue,
+      );
+      expect(
+        (await repository.seriesDetails(sourceId, series.id)).isEmpty,
+        isTrue,
+      );
+    });
+
     test('range les épisodes par saison', () async {
       final page = await catalog.series(
         sourceId,
@@ -426,6 +453,187 @@ void main() {
       );
       expect(second.single.episodes, hasLength(1));
       expect(requests, 1);
+    });
+
+    Future<CatalogRepositoryImpl> importLost(MockClient client) async {
+      vault.values[sourceId] = const XtreamCredentials(
+        serverUrl: 'http://s.example',
+        username: 'u',
+        password: 'p',
+      );
+      await runImport(
+        const FakeCatalogAdapter([
+          CatalogBatch([
+            SeriesEntry(
+              rawName: 'FR - Lost',
+              rawGroup: 'SERIES',
+              xtreamSeriesId: 9,
+            ),
+          ]),
+        ]),
+      );
+      return CatalogRepositoryImpl(db, vault, client);
+    }
+
+    Map<String, Object?> lostInfo() => {
+      'info': {
+        'plot': 'Des rescapés sur une île.',
+        'genre': 'Drame',
+        'episode_run_time': '42',
+      },
+      'episodes': {
+        '1': [
+          {
+            'id': '77',
+            'season': 1,
+            'episode_num': 1,
+            'title': 'Pilote',
+            'info': {'plot': 'L avion s écrase.'},
+          },
+        ],
+      },
+    };
+
+    test('une seule requête donne la fiche et les épisodes', () async {
+      var requests = 0;
+      final repository = await importLost(
+        MockClient((request) async {
+          requests++;
+          return http.Response.bytes(utf8.encode(jsonEncode(lostInfo())), 200);
+        }),
+      );
+      final entry = (await repository.series(
+        sourceId,
+        const PageRequest(),
+        grouped: true,
+        language: 'fr',
+      )).items.single.id;
+
+      // La fiche demande les deux à la fois.
+      final (details, seasons) = await (
+        repository.seriesDetails(sourceId, entry),
+        repository.seasonsOf(sourceId, entry),
+      ).wait;
+      final again = await repository.seriesDetails(sourceId, entry);
+
+      expect(details.overview, 'Des rescapés sur une île.');
+      expect(details.genre, 'Drame');
+      expect(details.runtime, const Duration(minutes: 42));
+      expect(seasons.single.episodes.single.overview, 'L avion s écrase.');
+      expect(again.overview, details.overview);
+      expect(requests, 1);
+    });
+
+    test('complète les épisodes gardés sans résumé', () async {
+      var requests = 0;
+      final repository = await importLost(
+        MockClient((request) async {
+          requests++;
+          return http.Response.bytes(utf8.encode(jsonEncode(lostInfo())), 200);
+        }),
+      );
+      final entry = (await repository.series(
+        sourceId,
+        const PageRequest(),
+        grouped: true,
+        language: 'fr',
+      )).items.single.id;
+      // Épisode rangé par une version précédente, qui ne gardait pas les
+      // résumés.
+      await db.customStatement(
+        "INSERT INTO episodes (catalog_id, series_entry_id, season, number, "
+        "title, content_key, xtream_stream_id, container_ext) SELECT catalog_id, "
+        "id, 1, 1, "
+        "'Pilote', 'x:e:77', 77, 'mkv' FROM series_entries WHERE id = ?",
+        [entry],
+      );
+      final before = await db
+          .customSelect('SELECT id FROM episodes')
+          .getSingle();
+
+      final seasons = await repository.seasonsOf(sourceId, entry);
+
+      final episode = seasons.single.episodes.single;
+      expect(episode.overview, 'L avion s écrase.');
+      // L'épisode garde son identifiant : la reprise de lecture en dépend.
+      expect(episode.id, before.read<int>('id'));
+      expect(requests, 1);
+    });
+
+    test('lit encore les épisodes gardés si le serveur ne répond pas', () async {
+      final repository = await importLost(
+        MockClient((_) async => http.Response('panne', 503)),
+      );
+      final entry = (await repository.series(
+        sourceId,
+        const PageRequest(),
+        grouped: true,
+        language: 'fr',
+      )).items.single.id;
+      await db.customStatement(
+        "INSERT INTO episodes (catalog_id, series_entry_id, season, number, "
+        "title, content_key, xtream_stream_id, container_ext) SELECT catalog_id, "
+        "id, 1, 1, "
+        "'Pilote', 'x:e:77', 77, 'mkv' FROM series_entries WHERE id = ?",
+        [entry],
+      );
+
+      final seasons = await repository.seasonsOf(sourceId, entry);
+
+      expect(seasons.single.episodes.single.title, 'Pilote');
+      await expectLater(
+        repository.seriesDetails(sourceId, entry),
+        throwsA(isA<Failure>()),
+      );
+    });
+
+    test('demande le résumé d un film une seule fois', () async {
+      final asked = <String?>[];
+      vault.values[sourceId] = const XtreamCredentials(
+        serverUrl: 'http://s.example',
+        username: 'u',
+        password: 'p',
+      );
+      await runImport(
+        const FakeCatalogAdapter([
+          CatalogBatch([
+            MovieEntry(
+              rawName: 'FR - Dune',
+              rawGroup: 'FILMS',
+              locator: XtreamStream(
+                namespace: XtreamNamespace.movie,
+                streamId: 31,
+                extension: 'mkv',
+              ),
+            ),
+          ]),
+        ]),
+      );
+      final repository = CatalogRepositoryImpl(
+        db,
+        vault,
+        MockClient((request) async {
+          asked.add(request.url.queryParameters['vod_id']);
+          return http.Response(
+            jsonEncode({
+              'info': {'plot': 'Paul rejoint Arrakis.', 'duration_secs': 9300},
+            }),
+            200,
+          );
+        }),
+      );
+      final movie = (await repository.movies(
+        sourceId,
+        const PageRequest(),
+      )).items.single;
+
+      final first = await repository.movieDetails(sourceId, movie.id);
+      final second = await repository.movieDetails(sourceId, movie.id);
+
+      expect(first.overview, 'Paul rejoint Arrakis.');
+      expect(first.runtime, const Duration(minutes: 155));
+      expect(second.overview, first.overview);
+      expect(asked, ['31']);
     });
   });
 

@@ -228,6 +228,58 @@ void main() {
         isEmpty,
       );
     });
+
+    test('lit le résumé de l épisode', () {
+      final episodes = XtreamEpisode.listFromSeriesInfo({
+        'episodes': {
+          '1': [
+            {
+              'id': 5,
+              'info': {'plot': '  Léa rejoint\n l équipe.  '},
+            },
+            // Un panneau qui ne sait rien envoie une liste vide.
+            {'id': 6, 'info': <Object?>[]},
+          ],
+        },
+      });
+      expect(episodes.first.overview, 'Léa rejoint l équipe.');
+      expect(episodes.last.overview, isNull);
+    });
+  });
+
+  group('XtreamTitleInfo', () {
+    test('lit le résumé, le genre et la durée d un film', () {
+      final info = XtreamTitleInfo.fromJson({
+        'plot': 'Un biologiste tente de sauver un récif.',
+        'genre': 'Documentaire',
+        'duration_secs': 6120,
+      });
+      expect(info.overview, 'Un biologiste tente de sauver un récif.');
+      expect(info.genre, 'Documentaire');
+      expect(info.runtimeMinutes, 102);
+    });
+
+    test('se rabat sur la description et la durée d épisode', () {
+      final info = XtreamTitleInfo.fromJson({
+        'plot': '',
+        'description': 'Une ville face à la tempête.',
+        'duration_secs': '0',
+        'episode_run_time': '45',
+      });
+      expect(info.overview, 'Une ville face à la tempête.');
+      expect(info.runtimeMinutes, 45);
+    });
+
+    test('ignore les textes de remplissage', () {
+      for (final filler in ['N/A', 'null', '-', '']) {
+        expect(XtreamTitleInfo.fromJson({'plot': filler}).overview, isNull);
+      }
+    });
+
+    test('accepte un bloc vide ou absent', () {
+      expect(XtreamTitleInfo.fromJson(<Object?>[]).overview, isNull);
+      expect(XtreamTitleInfo.fromJson(null).genre, isNull);
+    });
   });
 
   group('XtreamSourceAdapter', () {

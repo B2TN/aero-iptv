@@ -10,6 +10,7 @@ final class Episode {
     required this.title,
     required this.contentKey,
     required this.locator,
+    this.overview,
   });
 
   final int id;
@@ -21,4 +22,7 @@ final class Episode {
   /// Identité stable entre deux synchronisations, contrairement à [id].
   final String contentKey;
   final StreamLocator locator;
+
+  /// Résumé de l'épisode, quand le fournisseur le donne.
+  final String? overview;
 }

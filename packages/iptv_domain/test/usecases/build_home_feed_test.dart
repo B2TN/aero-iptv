@@ -100,6 +100,14 @@ final class FakeCatalog implements CatalogRepository {
   Future<List<Season>> seasonsOf(int sourceId, int seriesEntryId) async => [];
 
   @override
+  Future<TitleDetails> movieDetails(int sourceId, int movieId) async =>
+      TitleDetails.none;
+
+  @override
+  Future<TitleDetails> seriesDetails(int sourceId, int seriesEntryId) async =>
+      TitleDetails.none;
+
+  @override
   Future<List<MediaVersion>> versionsOf(
     int sourceId,
     String groupingKey,

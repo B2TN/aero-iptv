@@ -17,7 +17,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -29,6 +29,23 @@ class AppDatabase extends _$AppDatabase {
       if (from < 3) {
         // Sous-titres téléchargés d'OpenSubtitles, service retiré.
         await migrator.deleteTable('subtitle_cache');
+      }
+      if (from < 4) {
+        // Résumés, genres et durées des films, des séries et des épisodes.
+        for (final table in <TableInfo<Table, Object?>>[
+          movies,
+          seriesEntries,
+        ]) {
+          for (final name in [
+            'overview',
+            'genre',
+            'runtime_minutes',
+            'details_loaded',
+          ]) {
+            await migrator.addColumn(table, table.columnsByName[name]!);
+          }
+        }
+        await migrator.addColumn(episodes, episodes.overview);
       }
     },
   );

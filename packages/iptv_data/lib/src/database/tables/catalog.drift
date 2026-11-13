@@ -70,7 +70,12 @@ CREATE TABLE movies (
   container_ext TEXT,
   user_agent TEXT,
   referrer TEXT,
-  sort_order INTEGER NOT NULL
+  sort_order INTEGER NOT NULL,
+  -- Résumé, genre et durée, demandés au fournisseur à la première ouverture.
+  overview TEXT,
+  genre TEXT,
+  runtime_minutes INTEGER,
+  details_loaded BOOLEAN NOT NULL DEFAULT FALSE
 ) AS MovieRow;
 
 CREATE INDEX movies_browse ON movies (catalog_id, sort_order);
@@ -91,7 +96,12 @@ CREATE TABLE series_entries (
   poster_url TEXT,
   xtream_series_id INTEGER,
   tmdb_id TEXT,
-  sort_order INTEGER NOT NULL
+  sort_order INTEGER NOT NULL,
+  -- Résumé, genre et durée, demandés au fournisseur à la première ouverture.
+  overview TEXT,
+  genre TEXT,
+  runtime_minutes INTEGER,
+  details_loaded BOOLEAN NOT NULL DEFAULT FALSE
 ) AS SeriesEntryRow;
 
 CREATE INDEX series_browse ON series_entries (catalog_id, grouping_key);
@@ -110,7 +120,8 @@ CREATE TABLE episodes (
   xtream_stream_id INTEGER,
   container_ext TEXT,
   user_agent TEXT,
-  referrer TEXT
+  referrer TEXT,
+  overview TEXT
 ) AS EpisodeRow;
 
 CREATE INDEX episodes_of_entry ON episodes (series_entry_id, season, number);
@@ -281,6 +292,22 @@ episodesForEntry:
   SELECT * FROM episodes
   WHERE series_entry_id = :entry_id
   ORDER BY season, number;
+
+saveMovieDetails:
+  UPDATE movies
+  SET overview = :overview, genre = :genre, runtime_minutes = :runtime_minutes,
+      details_loaded = TRUE
+  WHERE id = :id;
+
+saveSeriesDetails:
+  UPDATE series_entries
+  SET overview = :overview, genre = :genre, runtime_minutes = :runtime_minutes,
+      details_loaded = TRUE
+  WHERE id = :id;
+
+saveEpisodeOverview:
+  UPDATE episodes SET overview = :overview
+  WHERE series_entry_id = :entry_id AND content_key = :content_key;
 
 -- Maintenance -----------------------------------------------------------------
 

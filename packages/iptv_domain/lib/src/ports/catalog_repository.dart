@@ -4,6 +4,7 @@ import '../entities/episode.dart';
 import '../entities/movie.dart';
 import '../entities/season.dart';
 import '../entities/series.dart';
+import '../entities/title_details.dart';
 
 /// Accès aux films et aux séries.
 abstract interface class CatalogRepository {
@@ -59,4 +60,12 @@ abstract interface class CatalogRepository {
   /// Saisons d'une version. Pour une source Xtream, les épisodes sont chargés
   /// à la première ouverture, puis conservés en base.
   Future<List<Season>> seasonsOf(int sourceId, int seriesEntryId);
+
+  /// Résumé, genre et durée d'un film. Pour une source Xtream, demandés au
+  /// fournisseur à la première ouverture, puis conservés en base.
+  Future<TitleDetails> movieDetails(int sourceId, int movieId);
+
+  /// Résumé, genre et durée d'une version de série, chargés comme ses
+  /// épisodes, dont ils accompagnent les résumés.
+  Future<TitleDetails> seriesDetails(int sourceId, int seriesEntryId);
 }

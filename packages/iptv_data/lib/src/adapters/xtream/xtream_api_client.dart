@@ -81,13 +81,25 @@ final class XtreamApiClient {
     }
   }
 
-  /// Retourne les épisodes d'une série.
-  Future<List<XtreamEpisode>> seriesEpisodes(int seriesId) async {
+  /// Retourne une série : son résumé et ses épisodes.
+  Future<XtreamSeriesInfo> seriesInfo(int seriesId) async {
     final json = await _getJson(
       _apiUri({'action': 'get_series_info', 'series_id': '$seriesId'}),
     );
-    if (json is! Map<String, dynamic>) return const [];
-    return XtreamEpisode.listFromSeriesInfo(json);
+    if (json is! Map<String, dynamic>) {
+      return const XtreamSeriesInfo(info: XtreamTitleInfo(), episodes: []);
+    }
+    return XtreamSeriesInfo.fromJson(json);
+  }
+
+  /// Retourne le résumé, le genre et la durée d'un film.
+  Future<XtreamTitleInfo> movieInfo(int streamId) async {
+    final json = await _getJson(
+      _apiUri({'action': 'get_vod_info', 'vod_id': '$streamId'}),
+    );
+    return XtreamTitleInfo.fromJson(
+      json is Map<String, dynamic> ? json['info'] : null,
+    );
   }
 
   /// Adresse du guide XMLTV du compte.

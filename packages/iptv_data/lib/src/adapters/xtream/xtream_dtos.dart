@@ -25,6 +25,57 @@ final class XtreamCategory {
   final String name;
 }
 
+/// Résumé, genre et durée d'un film ou d'une série, lus dans le bloc `info`
+/// de `get_vod_info` ou de `get_series_info`.
+final class XtreamTitleInfo {
+  const XtreamTitleInfo({this.overview, this.genre, this.runtimeMinutes});
+
+  /// Lit le bloc `info`. Certains panneaux envoient une liste vide à la place
+  /// d'un objet quand ils ne savent rien.
+  factory XtreamTitleInfo.fromJson(Object? json) {
+    if (json is! Map<String, dynamic>) return const XtreamTitleInfo();
+    final seconds = readInt(json['duration_secs']);
+    return XtreamTitleInfo(
+      overview: readOverview(json['plot']) ?? readOverview(json['description']),
+      genre: readString(json['genre']),
+      runtimeMinutes: seconds != null && seconds > 0
+          ? (seconds / 60).round()
+          : _positive(readInt(json['episode_run_time'])),
+    );
+  }
+
+  final String? overview;
+  final String? genre;
+  final int? runtimeMinutes;
+
+  static int? _positive(int? value) =>
+      value != null && value > 0 ? value : null;
+}
+
+/// Résumé lisible, ou `null` pour les textes de remplissage des panneaux.
+String? readOverview(Object? value) {
+  final text = readString(value)?.replaceAll(RegExp(r'\s+'), ' ');
+  if (text == null || text.length < 3) return null;
+  return switch (text.toLowerCase()) {
+    'n/a' || 'null' || 'none' || 'no description' => null,
+    _ => text,
+  };
+}
+
+/// Réponse de `get_series_info` : la série et ses épisodes.
+final class XtreamSeriesInfo {
+  const XtreamSeriesInfo({required this.info, required this.episodes});
+
+  factory XtreamSeriesInfo.fromJson(Map<String, dynamic> json) =>
+      XtreamSeriesInfo(
+        info: XtreamTitleInfo.fromJson(json['info']),
+        episodes: XtreamEpisode.listFromSeriesInfo(json),
+      );
+
+  final XtreamTitleInfo info;
+  final List<XtreamEpisode> episodes;
+}
+
 /// Épisode retourné par `get_series_info`.
 final class XtreamEpisode {
   const XtreamEpisode({
@@ -33,6 +84,7 @@ final class XtreamEpisode {
     required this.number,
     required this.title,
     required this.extension,
+    this.overview,
   });
 
   final int id;
@@ -40,6 +92,7 @@ final class XtreamEpisode {
   final int number;
   final String title;
   final String extension;
+  final String? overview;
 
   /// Lit la réponse de `get_series_info`.
   ///
@@ -64,6 +117,10 @@ final class XtreamEpisode {
                 number: readInt(episode['episode_num']) ?? 0,
                 title: readString(episode['title']) ?? '',
                 extension: readString(episode['container_extension']) ?? 'mp4',
+                overview: switch (episode['info']) {
+                  final Map<String, dynamic> info => readOverview(info['plot']),
+                  _ => null,
+                },
               ),
     ];
   }

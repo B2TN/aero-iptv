@@ -4,15 +4,20 @@ import 'package:iptv_domain/iptv_domain.dart';
 
 import '../adapters/xtream/xtream_api_client.dart';
 import '../database/app_database.dart';
+import '../database/connection.dart';
 import '../database/locator_columns.dart';
 
 /// Lecture des films et des séries.
 final class CatalogRepositoryImpl implements CatalogRepository {
-  const CatalogRepositoryImpl(this._db, this._credentials, this._client);
+  CatalogRepositoryImpl(this._db, this._credentials, this._client);
 
   final AppDatabase _db;
   final CredentialStore _credentials;
   final http.Client _client;
+
+  /// Appels `get_series_info` en cours. La fiche d'une série demande ses
+  /// épisodes et son résumé en même temps : une seule requête sert les deux.
+  final Map<int, Future<void>> _seriesLoads = {};
 
   @override
   Future<Page<Movie>> movies(int sourceId, PageRequest page) async {
@@ -213,8 +218,17 @@ final class CatalogRepositoryImpl implements CatalogRepository {
   Future<List<Season>> seasonsOf(int sourceId, int seriesEntryId) async {
     var rows = await _db.episodesForEntry(entryId: seriesEntryId).get();
     if (rows.isEmpty) {
-      await _loadXtreamEpisodes(sourceId, seriesEntryId);
+      await _loadSeries(sourceId, seriesEntryId);
       rows = await _db.episodesForEntry(entryId: seriesEntryId).get();
+    } else if (await _lacksDetails(seriesEntryId)) {
+      // Épisodes gardés par une version précédente, sans leurs résumés : on
+      // les complète si le fournisseur répond, sinon ils restent lisibles.
+      try {
+        await _loadSeries(sourceId, seriesEntryId);
+        rows = await _db.episodesForEntry(entryId: seriesEntryId).get();
+      } on Failure {
+        // Les épisodes connus suffisent pour lire.
+      }
     }
 
     final seasons = <int, List<Episode>>{};
@@ -227,38 +241,121 @@ final class CatalogRepositoryImpl implements CatalogRepository {
     ];
   }
 
-  Future<void> _loadXtreamEpisodes(int sourceId, int seriesEntryId) async {
+  @override
+  Future<TitleDetails> movieDetails(int sourceId, int movieId) async {
+    final row = await _db.movieById(id: movieId).getSingleOrNull();
+    if (row == null) return TitleDetails.none;
+    final streamId = row.xtreamStreamId;
+    if (row.detailsLoaded || streamId == null) {
+      return _details(row.overview, row.genre, row.runtimeMinutes);
+    }
+    final info = await (await _api(sourceId)).movieInfo(streamId);
+    await _db.saveMovieDetails(
+      id: movieId,
+      overview: info.overview,
+      genre: info.genre,
+      runtimeMinutes: info.runtimeMinutes,
+    );
+    return _details(info.overview, info.genre, info.runtimeMinutes);
+  }
+
+  @override
+  Future<TitleDetails> seriesDetails(int sourceId, int seriesEntryId) async {
+    if (await _lacksDetails(seriesEntryId)) {
+      await _loadSeries(sourceId, seriesEntryId);
+    }
+    final entry = await _db
+        .seriesEntryById(id: seriesEntryId)
+        .getSingleOrNull();
+    if (entry == null) return TitleDetails.none;
+    return _details(entry.overview, entry.genre, entry.runtimeMinutes);
+  }
+
+  /// Vrai pour une série Xtream dont le résumé n'a pas encore été demandé.
+  Future<bool> _lacksDetails(int seriesEntryId) async {
+    final entry = await _db
+        .seriesEntryById(id: seriesEntryId)
+        .getSingleOrNull();
+    return entry != null &&
+        !entry.detailsLoaded &&
+        entry.xtreamSeriesId != null;
+  }
+
+  Future<void> _loadSeries(int sourceId, int seriesEntryId) =>
+      _seriesLoads[seriesEntryId] ??= _fetchSeries(sourceId, seriesEntryId)
+          .whenComplete(() {
+            // Sans accolades, le rappel renverrait cette tâche même, que
+            // `whenComplete` attendrait alors sans fin.
+            _seriesLoads.remove(seriesEntryId);
+          });
+
+  /// Demande la série au fournisseur, puis range ses épisodes, leurs résumés
+  /// et le sien. Les épisodes déjà connus gardent leur identifiant : seul
+  /// leur résumé change.
+  Future<void> _fetchSeries(int sourceId, int seriesEntryId) async {
     final entry = await _db
         .seriesEntryById(id: seriesEntryId)
         .getSingleOrNull();
     final seriesId = entry?.xtreamSeriesId;
     if (entry == null || seriesId == null) return;
 
+    final series = await (await _api(sourceId)).seriesInfo(seriesId);
+    final known = await _db.episodesForEntry(entryId: seriesEntryId).get();
+    await transactionKeepingCause(_db, () async {
+      if (known.isEmpty) {
+        await _db.batch((batch) {
+          batch.insertAll(_db.episodes, [
+            for (final episode in series.episodes)
+              EpisodesCompanion.insert(
+                catalogId: entry.catalogId,
+                seriesEntryId: seriesEntryId,
+                season: episode.season,
+                number: episode.number,
+                title: episode.title,
+                contentKey: 'x:e:${episode.id}',
+                xtreamStreamId: Value(episode.id),
+                containerExt: Value(episode.extension),
+                overview: Value(episode.overview),
+              ),
+          ]);
+        });
+      } else {
+        for (final episode in series.episodes) {
+          final overview = episode.overview;
+          if (overview == null) continue;
+          await _db.saveEpisodeOverview(
+            overview: overview,
+            entryId: seriesEntryId,
+            contentKey: 'x:e:${episode.id}',
+          );
+        }
+      }
+      await _db.saveSeriesDetails(
+        id: seriesEntryId,
+        overview: series.info.overview,
+        genre: series.info.genre,
+        runtimeMinutes: series.info.runtimeMinutes,
+      );
+    });
+  }
+
+  Future<XtreamApiClient> _api(int sourceId) async {
     final credentials = await _credentials.read(sourceId);
     if (credentials is! XtreamCredentials) {
       throw const AuthFailure('Compte Xtream absent du coffre.');
     }
-    final episodes = await XtreamApiClient(
-      _client,
-      credentials,
-    ).seriesEpisodes(seriesId);
-
-    await _db.batch((batch) {
-      batch.insertAll(_db.episodes, [
-        for (final episode in episodes)
-          EpisodesCompanion.insert(
-            catalogId: entry.catalogId,
-            seriesEntryId: seriesEntryId,
-            season: episode.season,
-            number: episode.number,
-            title: episode.title,
-            contentKey: 'x:e:${episode.id}',
-            xtreamStreamId: Value(episode.id),
-            containerExt: Value(episode.extension),
-          ),
-      ]);
-    });
+    return XtreamApiClient(_client, credentials);
   }
+
+  static TitleDetails _details(
+    String? overview,
+    String? genre,
+    int? runtimeMinutes,
+  ) => TitleDetails(
+    overview: overview,
+    genre: genre,
+    runtime: runtimeMinutes == null ? null : Duration(minutes: runtimeMinutes),
+  );
 
   Future<Map<String, List<SeriesEntryRow>>> _versionsByGroup(
     int sourceId,
@@ -341,5 +438,6 @@ final class CatalogRepositoryImpl implements CatalogRepository {
       userAgent: row.userAgent,
       referrer: row.referrer,
     ).toLocator(XtreamNamespace.series),
+    overview: row.overview,
   );
 }
