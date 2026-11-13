@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -16,6 +15,7 @@ import '../../../design_system/components/aero_button.dart';
 import '../../../design_system/components/aero_canvas.dart';
 import '../../../design_system/components/aero_menu.dart';
 import '../../../design_system/components/aero_states.dart';
+import '../../../design_system/components/subtitle_text.dart';
 import '../../../design_system/glass/glass_panel.dart';
 import '../../../design_system/tokens/aero_tokens.dart';
 import '../../../focus/focus_frame.dart';
@@ -730,7 +730,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
               onTap: _onVideoTap,
             ),
             AeroScale(
-              child: _SubtitleLine(cue: _cue, raised: _overlayVisible),
+              child: SubtitleLayer(
+                text: _cue,
+                style: ref.watch(
+                  settingsProvider.select((settings) => settings.subtitleStyle),
+                ),
+                raised: _overlayVisible,
+              ),
             ),
             AeroScale(
               child: _explaining
@@ -826,45 +832,6 @@ class _FloatingAction extends StatelessWidget {
           label: label,
           icon: Icons.skip_next,
           onSelect: onSelect,
-        ),
-      ),
-    ),
-  );
-}
-
-/// Réplique en cours. Le contour remplace une ombre floue, coûteuse à dessiner
-/// sur un stick à chaque changement de texte.
-class _SubtitleLine extends StatelessWidget {
-  const _SubtitleLine({required this.cue, required this.raised});
-
-  final ValueListenable<String> cue;
-
-  /// La barre de commandes est affichée : le texte passe au-dessus.
-  final bool raised;
-
-  static const TextStyle _style = TextStyle(
-    color: Color(0xFFFFFFFF),
-    fontSize: 28,
-    fontWeight: FontWeight.w500,
-    height: 1.25,
-    shadows: [
-      Shadow(color: Color(0xFF000000), offset: Offset(1.5, 1.5)),
-      Shadow(color: Color(0xFF000000), offset: Offset(-1.5, 1.5)),
-      Shadow(color: Color(0xFF000000), offset: Offset(1.5, -1.5)),
-      Shadow(color: Color(0xFF000000), offset: Offset(-1.5, -1.5)),
-    ],
-  );
-
-  @override
-  Widget build(BuildContext context) => IgnorePointer(
-    child: Align(
-      alignment: Alignment.bottomCenter,
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(80, 0, 80, raised ? 236 : 44),
-        child: ValueListenableBuilder<String>(
-          valueListenable: cue,
-          builder: (context, text, _) =>
-              Text(text, style: _style, textAlign: TextAlign.center),
         ),
       ),
     ),

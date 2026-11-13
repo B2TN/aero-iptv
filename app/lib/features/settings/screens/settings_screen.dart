@@ -13,6 +13,7 @@ import '../../../focus/dpad_collection.dart';
 import '../../../l10n/country_names.dart';
 import '../playlist/playlist_manager_screen.dart';
 import '../widgets/setting_row.dart';
+import 'subtitle_appearance_screen.dart';
 
 /// Page du compte où se trouve la clé d'API de DeepL.
 const String _deepLKeysPage = 'https://www.deepl.com/your-account/keys';
@@ -158,6 +159,14 @@ class SettingsScreen extends ConsumerWidget {
         label: l10n.settingsLanguage,
         value: languageNames[settings.languageCode] ?? settings.languageCode,
         action: () => _chooseLanguage(context, ref),
+      ),
+      (
+        label: l10n.settingsSubtitleAppearance,
+        value: [
+          subtitleSizeName(l10n, settings.subtitleStyle.size),
+          subtitleColorName(l10n, settings.subtitleStyle.color),
+        ].join(', '),
+        action: () => openSubtitleAppearance(context),
       ),
       (
         label: deepL.title,

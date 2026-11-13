@@ -1,3 +1,5 @@
+import 'subtitle_style.dart';
+
 /// Réglages de l'application.
 final class AppSettings {
   const AppSettings({
@@ -7,6 +9,7 @@ final class AppSettings {
     this.languageCode = 'fr',
     this.activeSourceId,
     this.catalogRules = 0,
+    this.subtitleStyle = const SubtitleStyle(),
   });
 
   /// Fusion des versions d'une série. Désactivée : vue brute de la playlist.
@@ -27,6 +30,9 @@ final class AppSettings {
   /// Version des règles de nettoyage appliquées au dernier import.
   final int catalogRules;
 
+  /// Apparence des sous-titres dans le lecteur.
+  final SubtitleStyle subtitleStyle;
+
   AppSettings copyWith({
     bool? groupSeries,
     bool? groupChannels,
@@ -34,6 +40,7 @@ final class AppSettings {
     String? languageCode,
     int? activeSourceId,
     int? catalogRules,
+    SubtitleStyle? subtitleStyle,
   }) => AppSettings(
     groupSeries: groupSeries ?? this.groupSeries,
     groupChannels: groupChannels ?? this.groupChannels,
@@ -41,5 +48,6 @@ final class AppSettings {
     languageCode: languageCode ?? this.languageCode,
     activeSourceId: activeSourceId ?? this.activeSourceId,
     catalogRules: catalogRules ?? this.catalogRules,
+    subtitleStyle: subtitleStyle ?? this.subtitleStyle,
   );
 }

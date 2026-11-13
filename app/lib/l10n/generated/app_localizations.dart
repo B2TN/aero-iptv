@@ -902,6 +902,216 @@ abstract class AppLocalizations {
   /// **'Traduction des sous-titres impossible'**
   String get playerSubtitlesFailed;
 
+  /// No description provided for @settingsSubtitleAppearance.
+  ///
+  /// In fr, this message translates to:
+  /// **'Apparence des sous-titres'**
+  String get settingsSubtitleAppearance;
+
+  /// No description provided for @subtitlePreview.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aperçu'**
+  String get subtitlePreview;
+
+  /// No description provided for @subtitleSample.
+  ///
+  /// In fr, this message translates to:
+  /// **'On remonte avant la tempête.'**
+  String get subtitleSample;
+
+  /// No description provided for @subtitleSize.
+  ///
+  /// In fr, this message translates to:
+  /// **'Taille'**
+  String get subtitleSize;
+
+  /// No description provided for @subtitleFont.
+  ///
+  /// In fr, this message translates to:
+  /// **'Police'**
+  String get subtitleFont;
+
+  /// No description provided for @subtitleColor.
+  ///
+  /// In fr, this message translates to:
+  /// **'Couleur du texte'**
+  String get subtitleColor;
+
+  /// No description provided for @subtitleEdge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Contour'**
+  String get subtitleEdge;
+
+  /// No description provided for @subtitleBackground.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fond'**
+  String get subtitleBackground;
+
+  /// No description provided for @subtitleBackgroundOpacity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Opacité du fond'**
+  String get subtitleBackgroundOpacity;
+
+  /// No description provided for @subtitlePosition.
+  ///
+  /// In fr, this message translates to:
+  /// **'Position'**
+  String get subtitlePosition;
+
+  /// No description provided for @subtitleReset.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rétablir les réglages d\'origine'**
+  String get subtitleReset;
+
+  /// No description provided for @subtitleSizeSmall.
+  ///
+  /// In fr, this message translates to:
+  /// **'Petite'**
+  String get subtitleSizeSmall;
+
+  /// No description provided for @subtitleSizeMedium.
+  ///
+  /// In fr, this message translates to:
+  /// **'Moyenne'**
+  String get subtitleSizeMedium;
+
+  /// No description provided for @subtitleSizeLarge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Grande'**
+  String get subtitleSizeLarge;
+
+  /// No description provided for @subtitleSizeExtraLarge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Très grande'**
+  String get subtitleSizeExtraLarge;
+
+  /// No description provided for @subtitleFontStandard.
+  ///
+  /// In fr, this message translates to:
+  /// **'Standard'**
+  String get subtitleFontStandard;
+
+  /// No description provided for @subtitleFontBold.
+  ///
+  /// In fr, this message translates to:
+  /// **'Grasse'**
+  String get subtitleFontBold;
+
+  /// No description provided for @subtitleFontSerif.
+  ///
+  /// In fr, this message translates to:
+  /// **'À empattements'**
+  String get subtitleFontSerif;
+
+  /// No description provided for @subtitleFontMonospace.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chasse fixe'**
+  String get subtitleFontMonospace;
+
+  /// No description provided for @subtitleColorWhite.
+  ///
+  /// In fr, this message translates to:
+  /// **'Blanc'**
+  String get subtitleColorWhite;
+
+  /// No description provided for @subtitleColorYellow.
+  ///
+  /// In fr, this message translates to:
+  /// **'Jaune'**
+  String get subtitleColorYellow;
+
+  /// No description provided for @subtitleColorCyan.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cyan'**
+  String get subtitleColorCyan;
+
+  /// No description provided for @subtitleColorGreen.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vert'**
+  String get subtitleColorGreen;
+
+  /// No description provided for @subtitleEdgeNone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun'**
+  String get subtitleEdgeNone;
+
+  /// No description provided for @subtitleEdgeOutline.
+  ///
+  /// In fr, this message translates to:
+  /// **'Contour noir'**
+  String get subtitleEdgeOutline;
+
+  /// No description provided for @subtitleEdgeShadow.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ombre'**
+  String get subtitleEdgeShadow;
+
+  /// No description provided for @subtitleBackgroundNone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun'**
+  String get subtitleBackgroundNone;
+
+  /// No description provided for @subtitleBackgroundBlack.
+  ///
+  /// In fr, this message translates to:
+  /// **'Noir'**
+  String get subtitleBackgroundBlack;
+
+  /// No description provided for @subtitleBackgroundGrey.
+  ///
+  /// In fr, this message translates to:
+  /// **'Gris'**
+  String get subtitleBackgroundGrey;
+
+  /// No description provided for @subtitleBackgroundNavy.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bleu nuit'**
+  String get subtitleBackgroundNavy;
+
+  /// No description provided for @subtitleOpacityValue.
+  ///
+  /// In fr, this message translates to:
+  /// **'{percent} %'**
+  String subtitleOpacityValue(int percent);
+
+  /// No description provided for @subtitlePositionBottom.
+  ///
+  /// In fr, this message translates to:
+  /// **'En bas'**
+  String get subtitlePositionBottom;
+
+  /// No description provided for @subtitlePositionRaised.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un peu relevée'**
+  String get subtitlePositionRaised;
+
+  /// No description provided for @subtitlePositionHigher.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plus haut'**
+  String get subtitlePositionHigher;
+
+  /// No description provided for @subtitlePositionTop.
+  ///
+  /// In fr, this message translates to:
+  /// **'En haut'**
+  String get subtitlePositionTop;
+
   /// No description provided for @settingsDeepL.
   ///
   /// In fr, this message translates to:

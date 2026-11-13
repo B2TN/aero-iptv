@@ -478,6 +478,113 @@ class AppLocalizationsEn extends AppLocalizations {
   String get playerSubtitlesFailed => 'Couldn\'t translate the subtitles';
 
   @override
+  String get settingsSubtitleAppearance => 'Subtitle appearance';
+
+  @override
+  String get subtitlePreview => 'Preview';
+
+  @override
+  String get subtitleSample => 'We\'re heading up before the storm.';
+
+  @override
+  String get subtitleSize => 'Size';
+
+  @override
+  String get subtitleFont => 'Font';
+
+  @override
+  String get subtitleColor => 'Text color';
+
+  @override
+  String get subtitleEdge => 'Edge';
+
+  @override
+  String get subtitleBackground => 'Background';
+
+  @override
+  String get subtitleBackgroundOpacity => 'Background opacity';
+
+  @override
+  String get subtitlePosition => 'Position';
+
+  @override
+  String get subtitleReset => 'Restore the original settings';
+
+  @override
+  String get subtitleSizeSmall => 'Small';
+
+  @override
+  String get subtitleSizeMedium => 'Medium';
+
+  @override
+  String get subtitleSizeLarge => 'Large';
+
+  @override
+  String get subtitleSizeExtraLarge => 'Extra large';
+
+  @override
+  String get subtitleFontStandard => 'Standard';
+
+  @override
+  String get subtitleFontBold => 'Bold';
+
+  @override
+  String get subtitleFontSerif => 'Serif';
+
+  @override
+  String get subtitleFontMonospace => 'Monospace';
+
+  @override
+  String get subtitleColorWhite => 'White';
+
+  @override
+  String get subtitleColorYellow => 'Yellow';
+
+  @override
+  String get subtitleColorCyan => 'Cyan';
+
+  @override
+  String get subtitleColorGreen => 'Green';
+
+  @override
+  String get subtitleEdgeNone => 'None';
+
+  @override
+  String get subtitleEdgeOutline => 'Black outline';
+
+  @override
+  String get subtitleEdgeShadow => 'Shadow';
+
+  @override
+  String get subtitleBackgroundNone => 'None';
+
+  @override
+  String get subtitleBackgroundBlack => 'Black';
+
+  @override
+  String get subtitleBackgroundGrey => 'Grey';
+
+  @override
+  String get subtitleBackgroundNavy => 'Navy';
+
+  @override
+  String subtitleOpacityValue(int percent) {
+    return '$percent%';
+  }
+
+  @override
+  String get subtitlePositionBottom => 'Bottom';
+
+  @override
+  String get subtitlePositionRaised => 'Slightly raised';
+
+  @override
+  String get subtitlePositionHigher => 'Higher';
+
+  @override
+  String get subtitlePositionTop => 'Top';
+
+  @override
   String get settingsDeepL => 'DeepL key (translated subtitles)';
 
   @override

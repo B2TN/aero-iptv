@@ -933,6 +933,41 @@ void main() {
       expect(updated.groupChannels, isTrue);
     });
 
+    test('garde l apparence des sous-titres', () async {
+      final settings = SettingsRepositoryImpl(db);
+      expect(
+        (await settings.watch().first).subtitleStyle,
+        const SubtitleStyle(),
+      );
+      const style = SubtitleStyle(
+        size: SubtitleSize.large,
+        font: SubtitleFont.serif,
+        color: SubtitleColor.yellow,
+        edge: SubtitleEdge.shadow,
+        background: SubtitleBackground.navy,
+        backgroundOpacity: 75,
+        position: SubtitlePosition.top,
+      );
+
+      await settings.save(const AppSettings(subtitleStyle: style));
+
+      expect((await settings.watch().first).subtitleStyle, style);
+    });
+
+    test('une apparence illisible revient aux valeurs par défaut', () async {
+      await db.customStatement(
+        "INSERT INTO app_settings VALUES ('subtitle_color', 'violet'), "
+        "('subtitle_background_opacity', '33')",
+      );
+
+      final style = (await SettingsRepositoryImpl(
+        db,
+      ).watch().first).subtitleStyle;
+
+      expect(style.color, SubtitleColor.white);
+      expect(style.backgroundOpacity, 50);
+    });
+
     test('la progression survit à une resynchronisation', () async {
       await importFixture();
       final progress = WatchProgressRepositoryImpl(db);

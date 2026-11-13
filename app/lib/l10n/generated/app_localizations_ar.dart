@@ -474,6 +474,113 @@ class AppLocalizationsAr extends AppLocalizations {
   String get playerSubtitlesFailed => 'تعذّرت ترجمة الترجمة النصية';
 
   @override
+  String get settingsSubtitleAppearance => 'مظهر الترجمة النصية';
+
+  @override
+  String get subtitlePreview => 'معاينة';
+
+  @override
+  String get subtitleSample => 'سنصعد قبل العاصفة.';
+
+  @override
+  String get subtitleSize => 'الحجم';
+
+  @override
+  String get subtitleFont => 'الخط';
+
+  @override
+  String get subtitleColor => 'لون النص';
+
+  @override
+  String get subtitleEdge => 'الحافة';
+
+  @override
+  String get subtitleBackground => 'الخلفية';
+
+  @override
+  String get subtitleBackgroundOpacity => 'شفافية الخلفية';
+
+  @override
+  String get subtitlePosition => 'الموضع';
+
+  @override
+  String get subtitleReset => 'استعادة الإعدادات الأصلية';
+
+  @override
+  String get subtitleSizeSmall => 'صغير';
+
+  @override
+  String get subtitleSizeMedium => 'متوسط';
+
+  @override
+  String get subtitleSizeLarge => 'كبير';
+
+  @override
+  String get subtitleSizeExtraLarge => 'كبير جدًا';
+
+  @override
+  String get subtitleFontStandard => 'عادي';
+
+  @override
+  String get subtitleFontBold => 'عريض';
+
+  @override
+  String get subtitleFontSerif => 'مذيّل';
+
+  @override
+  String get subtitleFontMonospace => 'ثابت العرض';
+
+  @override
+  String get subtitleColorWhite => 'أبيض';
+
+  @override
+  String get subtitleColorYellow => 'أصفر';
+
+  @override
+  String get subtitleColorCyan => 'سماوي';
+
+  @override
+  String get subtitleColorGreen => 'أخضر';
+
+  @override
+  String get subtitleEdgeNone => 'بلا';
+
+  @override
+  String get subtitleEdgeOutline => 'حافة سوداء';
+
+  @override
+  String get subtitleEdgeShadow => 'ظل';
+
+  @override
+  String get subtitleBackgroundNone => 'بلا';
+
+  @override
+  String get subtitleBackgroundBlack => 'أسود';
+
+  @override
+  String get subtitleBackgroundGrey => 'رمادي';
+
+  @override
+  String get subtitleBackgroundNavy => 'أزرق داكن';
+
+  @override
+  String subtitleOpacityValue(int percent) {
+    return '$percent٪';
+  }
+
+  @override
+  String get subtitlePositionBottom => 'في الأسفل';
+
+  @override
+  String get subtitlePositionRaised => 'أعلى قليلًا';
+
+  @override
+  String get subtitlePositionHigher => 'أعلى';
+
+  @override
+  String get subtitlePositionTop => 'في الأعلى';
+
+  @override
   String get settingsDeepL => 'مفتاح DeepL (ترجمة الأسطر)';
 
   @override

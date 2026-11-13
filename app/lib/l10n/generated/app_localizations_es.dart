@@ -483,6 +483,113 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se han podido traducir los subtítulos';
 
   @override
+  String get settingsSubtitleAppearance => 'Aspecto de los subtítulos';
+
+  @override
+  String get subtitlePreview => 'Vista previa';
+
+  @override
+  String get subtitleSample => 'Subimos antes de la tormenta.';
+
+  @override
+  String get subtitleSize => 'Tamaño';
+
+  @override
+  String get subtitleFont => 'Fuente';
+
+  @override
+  String get subtitleColor => 'Color del texto';
+
+  @override
+  String get subtitleEdge => 'Contorno';
+
+  @override
+  String get subtitleBackground => 'Fondo';
+
+  @override
+  String get subtitleBackgroundOpacity => 'Opacidad del fondo';
+
+  @override
+  String get subtitlePosition => 'Posición';
+
+  @override
+  String get subtitleReset => 'Restablecer los ajustes originales';
+
+  @override
+  String get subtitleSizeSmall => 'Pequeño';
+
+  @override
+  String get subtitleSizeMedium => 'Mediano';
+
+  @override
+  String get subtitleSizeLarge => 'Grande';
+
+  @override
+  String get subtitleSizeExtraLarge => 'Muy grande';
+
+  @override
+  String get subtitleFontStandard => 'Estándar';
+
+  @override
+  String get subtitleFontBold => 'Negrita';
+
+  @override
+  String get subtitleFontSerif => 'Con serifa';
+
+  @override
+  String get subtitleFontMonospace => 'Monoespaciada';
+
+  @override
+  String get subtitleColorWhite => 'Blanco';
+
+  @override
+  String get subtitleColorYellow => 'Amarillo';
+
+  @override
+  String get subtitleColorCyan => 'Cian';
+
+  @override
+  String get subtitleColorGreen => 'Verde';
+
+  @override
+  String get subtitleEdgeNone => 'Ninguno';
+
+  @override
+  String get subtitleEdgeOutline => 'Contorno negro';
+
+  @override
+  String get subtitleEdgeShadow => 'Sombra';
+
+  @override
+  String get subtitleBackgroundNone => 'Ninguno';
+
+  @override
+  String get subtitleBackgroundBlack => 'Negro';
+
+  @override
+  String get subtitleBackgroundGrey => 'Gris';
+
+  @override
+  String get subtitleBackgroundNavy => 'Azul marino';
+
+  @override
+  String subtitleOpacityValue(int percent) {
+    return '$percent %';
+  }
+
+  @override
+  String get subtitlePositionBottom => 'Abajo';
+
+  @override
+  String get subtitlePositionRaised => 'Un poco más arriba';
+
+  @override
+  String get subtitlePositionHigher => 'Más arriba';
+
+  @override
+  String get subtitlePositionTop => 'Arriba';
+
+  @override
   String get settingsDeepL => 'Clave de DeepL (subtítulos traducidos)';
 
   @override
