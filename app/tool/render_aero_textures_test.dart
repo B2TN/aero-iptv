@@ -454,96 +454,6 @@ void _clapper(Canvas canvas) {
   canvas.restore();
 }
 
-void _play(Canvas canvas) {
-  final shape = Path()
-    ..moveTo(22, 13)
-    ..quadraticBezierTo(22, 5, 30, 9)
-    ..lineTo(88, 44)
-    ..quadraticBezierTo(95, 50, 88, 56)
-    ..lineTo(30, 91)
-    ..quadraticBezierTo(22, 95, 22, 87)
-    ..close();
-  const box = Rect.fromLTRB(20, 5, 94, 95);
-  canvas
-    ..drawPath(
-      shape,
-      Paint()
-        ..color = _alpha(const Color(0xFF53F08F), 0.7)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
-    )
-    ..drawPath(
-      shape,
-      _linear(
-        box,
-        const [Color(0xFFD8FFC4), Color(0xFF55E07A), Color(0xFF17A34F)],
-        stops: const [0, 0.5, 1],
-      ),
-    );
-  final gleam = Path()
-    ..moveTo(29, 14)
-    ..lineTo(84, 47)
-    ..quadraticBezierTo(50, 44, 29, 62)
-    ..close();
-  canvas.drawPath(gleam, Paint()..color = _alpha(_white, 0.32));
-}
-
-void _info(Canvas canvas) {
-  const center = Offset(50, 50);
-  final orb = Rect.fromCircle(center: center, radius: 46);
-  canvas
-    ..drawCircle(
-      center,
-      46,
-      _radial(
-        orb,
-        const [Color(0xFFE2F6FF), Color(0xFF6EC4F5), Color(0xFF1668C8)],
-        center: const Alignment(-0.2, -0.45),
-        radius: 0.9,
-        stops: const [0, 0.5, 1],
-      ),
-    )
-    ..drawCircle(
-      center,
-      46,
-      Paint()
-        ..color = _alpha(_white, 0.85)
-        ..isAntiAlias = true
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.5,
-    )
-    ..drawOval(
-      const Rect.fromLTRB(22, 9, 78, 42),
-      _linear(const Rect.fromLTRB(22, 9, 78, 42), [
-        _alpha(_white, 0.78),
-        _alpha(_white, 0.04),
-      ]),
-    );
-  const ink = Color(0xFF0D3D80);
-  canvas
-    ..drawCircle(const Offset(50, 28), 8, Paint()..color = ink)
-    ..drawRRect(
-      RRect.fromRectAndRadius(
-        const Rect.fromLTRB(42, 42, 58, 78),
-        const Radius.circular(3.5),
-      ),
-      Paint()..color = ink,
-    )
-    ..drawRRect(
-      RRect.fromRectAndRadius(
-        const Rect.fromLTRB(36, 42, 54, 49),
-        const Radius.circular(2.5),
-      ),
-      Paint()..color = ink,
-    )
-    ..drawRRect(
-      RRect.fromRectAndRadius(
-        const Rect.fromLTRB(36, 71, 64, 78),
-        const Radius.circular(2.5),
-      ),
-      Paint()..color = ink,
-    );
-}
-
 // --- Fond ----------------------------------------------------------------
 
 const double _backWidth = 1600;
@@ -808,8 +718,6 @@ void main() {
     await _icon('row_continue', 34, _history);
     await _icon('row_series', 34, _tvStar);
     await _icon('row_movies', 34, _clapper);
-    await _icon('play', 30, _play);
-    await _icon('info', 30, _info);
 
     var total = 0;
     for (final file in directory.listSync(recursive: true).whereType<File>()) {

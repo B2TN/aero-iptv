@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:iptv_domain/iptv_domain.dart';
@@ -130,18 +131,17 @@ class _HeroCarouselState extends State<HeroCarousel> {
                         canRequestFocus: false,
                         skipTraversal: true,
                         onKeyEvent: _onPlayKey,
-                        child: Semantics(
+                        child: AeroButton(
                           label: item.movie != null
                               ? l10n.homePlay
                               : l10n.homeOpen,
-                          child: AeroButton(
-                            label: '',
-                            image: AeroAssets.play,
-                            tone: AeroTone.green,
-                            minWidth: _playWidth,
-                            focusNode: _actionNode,
-                            onSelect: () => widget.onOpen(item),
-                          ),
+                          icon: item.movie != null
+                              ? Icons.play_arrow_rounded
+                              : Icons.video_library_rounded,
+                          tone: AeroTone.green,
+                          minWidth: _playWidth,
+                          focusNode: _actionNode,
+                          onSelect: () => widget.onOpen(item),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -149,14 +149,11 @@ class _HeroCarouselState extends State<HeroCarousel> {
                         canRequestFocus: false,
                         skipTraversal: true,
                         onKeyEvent: _onInfoKey,
-                        child: Semantics(
+                        child: AeroButton(
                           label: l10n.homeInfo,
-                          child: AeroButton(
-                            label: '',
-                            image: AeroAssets.info,
-                            minWidth: _infoWidth,
-                            onSelect: () => _showInfo(item),
-                          ),
+                          icon: Icons.info_outline_rounded,
+                          minWidth: _infoWidth,
+                          onSelect: () => _showInfo(item),
                         ),
                       ),
                     ],

@@ -29,8 +29,6 @@ abstract final class AeroAssets {
   static const String rowContinue = 'assets/aero/icons/row_continue.png';
   static const String rowSeries = 'assets/aero/icons/row_series.png';
   static const String rowMovies = 'assets/aero/icons/row_movies.png';
-  static const String play = 'assets/aero/icons/play.png';
-  static const String info = 'assets/aero/icons/info.png';
   static const String chevron = 'assets/aero/icons/chevron.png';
 }
 
