@@ -171,6 +171,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsGroupChannels => 'Regrouper les qualités des chaînes';
 
   @override
+  String get settingsGroupMovies => 'Regrouper les versions des films';
+
+  @override
   String get settingsDelay => 'Retard des chaînes en direct';
 
   @override

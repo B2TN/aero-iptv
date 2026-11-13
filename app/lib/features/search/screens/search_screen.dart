@@ -50,6 +50,7 @@ final _resultsProvider = FutureProvider.autoDispose<List<SearchHit>>((
   final query = ref.watch(searchQueryProvider).trim();
   final source = ref.watch(activeSourceProvider);
   final language = ref.watch(settingsProvider.select((s) => s.languageCode));
+  final groupMovies = ref.watch(settingsProvider.select((s) => s.groupMovies));
   if (query.isEmpty || source == null) return const [];
   await Future<void>.delayed(_inputDebounce);
   if (!ref.mounted) return const [];
@@ -60,6 +61,7 @@ final _resultsProvider = FutureProvider.autoDispose<List<SearchHit>>((
         query,
         const PageRequest(limit: 40),
         language: language,
+        groupMovies: groupMovies,
       );
   return page.items;
 });

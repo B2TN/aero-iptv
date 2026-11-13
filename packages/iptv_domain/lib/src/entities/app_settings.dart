@@ -5,6 +5,7 @@ final class AppSettings {
   const AppSettings({
     this.groupSeries = true,
     this.groupChannels = true,
+    this.groupMovies = true,
     this.liveDelaySeconds = 0,
     this.languageCode = 'fr',
     this.activeSourceId,
@@ -17,6 +18,10 @@ final class AppSettings {
 
   /// Fusion des qualités d'une chaîne. Désactivée : vue brute de la playlist.
   final bool groupChannels;
+
+  /// Fusion des versions d'un film. Désactivée : chaque version est un titre à
+  /// part, lu sans passer par le choix de la version.
+  final bool groupMovies;
 
   /// Retard ajouté aux chaînes en direct pour stabiliser la lecture.
   final int liveDelaySeconds;
@@ -36,6 +41,7 @@ final class AppSettings {
   AppSettings copyWith({
     bool? groupSeries,
     bool? groupChannels,
+    bool? groupMovies,
     int? liveDelaySeconds,
     String? languageCode,
     int? activeSourceId,
@@ -44,6 +50,7 @@ final class AppSettings {
   }) => AppSettings(
     groupSeries: groupSeries ?? this.groupSeries,
     groupChannels: groupChannels ?? this.groupChannels,
+    groupMovies: groupMovies ?? this.groupMovies,
     liveDelaySeconds: liveDelaySeconds ?? this.liveDelaySeconds,
     languageCode: languageCode ?? this.languageCode,
     activeSourceId: activeSourceId ?? this.activeSourceId,

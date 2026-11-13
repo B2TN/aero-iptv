@@ -4,6 +4,7 @@ import '../database/app_database.dart' hide AppSettings;
 
 const String _groupSeriesKey = 'group_series';
 const String _groupChannelsKey = 'group_channels';
+const String _groupMoviesKey = 'group_movies';
 const String _liveDelayKey = 'live_delay_seconds';
 const String _languageKey = 'language';
 const String _activeSourceKey = 'active_source_id';
@@ -31,6 +32,7 @@ final class SettingsRepositoryImpl implements SettingsRepository {
     batch.insertAllOnConflictUpdate(_db.appSettings, [
       _row(_groupSeriesKey, '${settings.groupSeries}'),
       _row(_groupChannelsKey, '${settings.groupChannels}'),
+      _row(_groupMoviesKey, '${settings.groupMovies}'),
       _row(_liveDelayKey, '${settings.liveDelaySeconds}'),
       _row(_languageKey, settings.languageCode),
       _row(_catalogRulesKey, '${settings.catalogRules}'),
@@ -63,6 +65,7 @@ final class SettingsRepositoryImpl implements SettingsRepository {
         values[_groupChannelsKey],
         defaults.groupChannels,
       ),
+      groupMovies: _readBool(values[_groupMoviesKey], defaults.groupMovies),
       liveDelaySeconds:
           int.tryParse(values[_liveDelayKey] ?? '') ??
           defaults.liveDelaySeconds,

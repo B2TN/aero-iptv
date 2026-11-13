@@ -49,6 +49,7 @@
   "settingsTitle": "الإعدادات",
   "settingsGroupSeries": "تجميع نسخ المسلسلات",
   "settingsGroupChannels": "تجميع جودات القنوات",
+  "settingsGroupMovies": "تجميع نسخ الأفلام",
   "settingsDelay": "تأخير القنوات المباشرة",
   "settingsDelayValue": "{seconds, plural, =0{بدون} other{{seconds} ث}}",
   "settingsLanguage": "لغة التطبيق",

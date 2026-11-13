@@ -398,6 +398,12 @@ abstract class AppLocalizations {
   /// **'Regrouper les qualités des chaînes'**
   String get settingsGroupChannels;
 
+  /// No description provided for @settingsGroupMovies.
+  ///
+  /// In fr, this message translates to:
+  /// **'Regrouper les versions des films'**
+  String get settingsGroupMovies;
+
   /// No description provided for @settingsDelay.
   ///
   /// In fr, this message translates to:

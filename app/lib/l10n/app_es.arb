@@ -49,6 +49,7 @@
   "settingsTitle": "Ajustes",
   "settingsGroupSeries": "Agrupar versiones de series",
   "settingsGroupChannels": "Agrupar calidades de canales",
+  "settingsGroupMovies": "Agrupar las versiones de las películas",
   "settingsDelay": "Retraso de canales en directo",
   "settingsDelayValue": "{seconds, plural, =0{Ninguno} other{{seconds} s}}",
   "settingsLanguage": "Idioma de la aplicación",

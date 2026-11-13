@@ -488,6 +488,59 @@ void main() {
       expect(page.items.single.posterUrl, 'http://p/de.jpg');
     });
 
+    test('sans regroupement, montre chaque version avec sa langue', () async {
+      await addMovieVersion('Inception', tag: 'EN', poster: 'http://p/en.jpg');
+      await addMovieVersion('Inception', tag: 'DE', poster: 'http://p/de.jpg');
+
+      final grouped = await search.search(
+        sourceId,
+        'inception',
+        const PageRequest(),
+        language: 'fr',
+      );
+      final page = await search.search(
+        sourceId,
+        'inception',
+        const PageRequest(),
+        language: 'fr',
+        groupMovies: false,
+      );
+
+      // La playlist de test a déjà son Inception : trois versions en tout.
+      expect(grouped.items, hasLength(1));
+      final titles = [for (final hit in page.items) hit.title];
+      expect(titles, hasLength(3));
+      expect(titles, containsAll(['Inception (EN)', 'Inception (DE)']));
+      expect(
+        {for (final hit in page.items) hit.id}.length,
+        page.items.length,
+        reason: 'chaque version garde son propre identifiant',
+      );
+    });
+
+    test('sans regroupement, les séries restent groupées', () async {
+      final grouped = await search.search(
+        sourceId,
+        'break',
+        const PageRequest(),
+        language: 'fr',
+      );
+      final ungrouped = await search.search(
+        sourceId,
+        'break',
+        const PageRequest(),
+        language: 'fr',
+        groupMovies: false,
+      );
+
+      List<String> seriesOf(Page<SearchHit> page) => [
+        for (final hit in page.items)
+          if (hit.kind == ContentKind.series) hit.title,
+      ];
+      expect(seriesOf(grouped), ['Breaking Bad']);
+      expect(seriesOf(ungrouped), seriesOf(grouped));
+    });
+
     test('liste les films d une langue', () async {
       await addMovieVersion('Dune', tag: 'EN');
       await addMovieVersion('Dune', tag: 'AR');

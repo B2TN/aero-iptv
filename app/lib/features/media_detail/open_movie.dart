@@ -13,7 +13,12 @@ Future<void> openMovie(BuildContext context, WidgetRef ref, Movie movie) async {
   final source = ref.read(activeSourceProvider);
   if (source == null) return;
   final l10n = context.l10n;
-  final language = ref.read(settingsProvider).languageCode;
+  final settings = ref.read(settingsProvider);
+  if (!settings.groupMovies) {
+    await openPlayer(context, PlayerTarget.movie(source.id, movie));
+    return;
+  }
+  final language = settings.languageCode;
   final movies = await ref.read(catalogRepositoryProvider).moviesByTitleKeys(
     source.id,
     {GroupingKey.of(movie.title)},

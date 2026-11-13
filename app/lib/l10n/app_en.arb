@@ -49,6 +49,7 @@
   "settingsTitle": "Settings",
   "settingsGroupSeries": "Group series versions",
   "settingsGroupChannels": "Group channel qualities",
+  "settingsGroupMovies": "Group movie versions",
   "settingsDelay": "Live channel delay",
   "settingsDelayValue": "{seconds, plural, =0{None} other{{seconds} s}}",
   "settingsLanguage": "App language",

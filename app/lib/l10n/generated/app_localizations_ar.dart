@@ -170,6 +170,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsGroupChannels => 'تجميع جودات القنوات';
 
   @override
+  String get settingsGroupMovies => 'تجميع نسخ الأفلام';
+
+  @override
   String get settingsDelay => 'تأخير القنوات المباشرة';
 
   @override

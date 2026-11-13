@@ -64,13 +64,17 @@ final class _NoProgress extends Fake implements WatchProgressRepository {
 
 final class _NoCredentials extends Fake implements CredentialStore {}
 
-Future<_Engine> _open(WidgetTester tester, List<Movie> movies) async {
+Future<_Engine> _open(
+  WidgetTester tester,
+  List<Movie> movies, {
+  AppSettings settings = const AppSettings(),
+}) async {
   final engine = _Engine();
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         activeSourceProvider.overrideWithValue(_source),
-        settingsProvider.overrideWithValue(const AppSettings()),
+        settingsProvider.overrideWithValue(settings),
         catalogRepositoryProvider.overrideWithValue(_Catalog(movies)),
         playbackEngineFactoryProvider.overrideWithValue(() => engine),
         videoSurfaceBuilderProvider.overrideWithValue(
@@ -133,6 +137,19 @@ void main() {
 
   testWidgets('une seule version part directement en lecture', (tester) async {
     final engine = await _open(tester, [_movie(1, 'FR')]);
+
+    expect(find.text('Français'), findsNothing);
+    expect(engine.opened, ['http://s/1.mkv']);
+    await _leave(tester);
+  });
+
+  testWidgets('sans regroupement, lit la version choisie sans demander', (
+    tester,
+  ) async {
+    final engine = await _open(tester, [
+      _movie(1, 'EN'),
+      _movie(2, 'FR'),
+    ], settings: const AppSettings(groupMovies: false));
 
     expect(find.text('Français'), findsNothing);
     expect(engine.opened, ['http://s/1.mkv']);

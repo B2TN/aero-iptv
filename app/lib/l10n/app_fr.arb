@@ -85,6 +85,7 @@
   "settingsTitle": "Paramètres",
   "settingsGroupSeries": "Regrouper les versions des séries",
   "settingsGroupChannels": "Regrouper les qualités des chaînes",
+  "settingsGroupMovies": "Regrouper les versions des films",
   "settingsDelay": "Retard des chaînes en direct",
   "settingsDelayValue": "{seconds, plural, =0{Aucun} other{{seconds} s}}",
   "@settingsDelayValue": {

@@ -128,52 +128,71 @@ class SettingsScreen extends ConsumerWidget {
         ? l10n.settingsKeySet
         : l10n.settingsKeyUnset;
 
-    final rows = <({String label, String value, VoidCallback action})>[
-      (
-        label: l10n.settingsPlaylists,
-        value: l10n.settingsPlaylistCount(playlists),
-        action: () => openPlaylistManager(context),
-      ),
-      (
-        label: l10n.settingsGroupSeries,
-        value: onOff(settings.groupSeries),
-        action: () => updateSettings(
-          ref,
-          (current) => current.copyWith(groupSeries: !current.groupSeries),
-        ),
-      ),
-      (
-        label: l10n.settingsGroupChannels,
-        value: onOff(settings.groupChannels),
-        action: () => updateSettings(
-          ref,
-          (current) => current.copyWith(groupChannels: !current.groupChannels),
-        ),
-      ),
-      (
-        label: l10n.settingsDelay,
-        value: l10n.settingsDelayValue(settings.liveDelaySeconds),
-        action: () => _chooseDelay(context, ref),
-      ),
-      (
-        label: l10n.settingsLanguage,
-        value: languageNames[settings.languageCode] ?? settings.languageCode,
-        action: () => _chooseLanguage(context, ref),
-      ),
-      (
-        label: l10n.settingsSubtitleAppearance,
-        value: [
-          subtitleSizeName(l10n, settings.subtitleStyle.size),
-          subtitleColorName(l10n, settings.subtitleStyle.color),
-        ].join(', '),
-        action: () => openSubtitleAppearance(context),
-      ),
-      (
-        label: deepL.title,
-        value: keyState(deepL),
-        action: () => _editKey(context, ref, deepL),
-      ),
-    ];
+    final rows =
+        <({String label, String value, VoidCallback action, bool? toggled})>[
+          (
+            label: l10n.settingsPlaylists,
+            value: l10n.settingsPlaylistCount(playlists),
+            action: () => openPlaylistManager(context),
+            toggled: null,
+          ),
+          (
+            label: l10n.settingsGroupSeries,
+            value: onOff(settings.groupSeries),
+            action: () => updateSettings(
+              ref,
+              (current) => current.copyWith(groupSeries: !current.groupSeries),
+            ),
+            toggled: settings.groupSeries,
+          ),
+          (
+            label: l10n.settingsGroupMovies,
+            value: onOff(settings.groupMovies),
+            action: () => updateSettings(
+              ref,
+              (current) => current.copyWith(groupMovies: !current.groupMovies),
+            ),
+            toggled: settings.groupMovies,
+          ),
+          (
+            label: l10n.settingsGroupChannels,
+            value: onOff(settings.groupChannels),
+            action: () => updateSettings(
+              ref,
+              (current) =>
+                  current.copyWith(groupChannels: !current.groupChannels),
+            ),
+            toggled: settings.groupChannels,
+          ),
+          (
+            label: l10n.settingsDelay,
+            value: l10n.settingsDelayValue(settings.liveDelaySeconds),
+            action: () => _chooseDelay(context, ref),
+            toggled: null,
+          ),
+          (
+            label: l10n.settingsLanguage,
+            value:
+                languageNames[settings.languageCode] ?? settings.languageCode,
+            action: () => _chooseLanguage(context, ref),
+            toggled: null,
+          ),
+          (
+            label: l10n.settingsSubtitleAppearance,
+            value: [
+              subtitleSizeName(l10n, settings.subtitleStyle.size),
+              subtitleColorName(l10n, settings.subtitleStyle.color),
+            ].join(', '),
+            action: () => openSubtitleAppearance(context),
+            toggled: null,
+          ),
+          (
+            label: deepL.title,
+            value: keyState(deepL),
+            action: () => _editKey(context, ref, deepL),
+            toggled: null,
+          ),
+        ];
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(160, 32, 160, 32),
@@ -200,6 +219,7 @@ class SettingsScreen extends ConsumerWidget {
                     itemBuilder: (context, index, focused) => SettingRow(
                       label: rows[index].label,
                       value: rows[index].value,
+                      toggled: rows[index].toggled,
                       focused: focused,
                     ),
                   ),

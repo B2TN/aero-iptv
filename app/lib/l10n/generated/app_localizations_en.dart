@@ -171,6 +171,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsGroupChannels => 'Group channel qualities';
 
   @override
+  String get settingsGroupMovies => 'Group movie versions';
+
+  @override
   String get settingsDelay => 'Live channel delay';
 
   @override
