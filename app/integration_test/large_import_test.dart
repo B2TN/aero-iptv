@@ -146,6 +146,8 @@ void main() {
     expect(status.failure, isNull);
     expect(status.finished, isTrue);
     expect(status.failedSections, isEmpty);
+    // Le regroupement des versions a besoin d'un fichier temporaire.
+    expect(status.failedRefinements, isEmpty);
     expect(status.processed, 301000);
     expect(seen, hasLength(greaterThanOrEqualTo(4)));
     expect(find.text('Cette playlist est encore vide'), findsNothing);
@@ -179,6 +181,7 @@ void main() {
     report('import', first);
 
     expect(first.failure, isNull);
+    expect(first.failedRefinements, isEmpty);
     expect(first.finished, isTrue);
     // Le guide du panneau est coupé : il manque, sans faire échouer le reste.
     expect(first.epgFailed, isTrue);
