@@ -42,9 +42,40 @@ List<int> _block(int track, int timecode, List<int> payload) => [
   ...payload,
 ];
 
+/// Chapitres Matroska : titre et début, en millisecondes.
+List<int> _chapters(List<(String, int)> chapters) => _element(
+  const [0x10, 0x43, 0xA7, 0x70],
+  _element(
+    const [0x45, 0xB9],
+    [
+      for (final (index, (title, startMs)) in chapters.indexed)
+        ..._element(
+          const [0xB6],
+          [
+            ..._element(const [0x73, 0xC4], _uint(index + 1)),
+            ..._element(const [0x91], _uint(startMs * 1000000)),
+            ..._element(
+              const [0x80],
+              [
+                ..._element(const [0x85], utf8.encode(title)),
+                ..._element(const [0x43, 0x7C], ascii.encode('eng')),
+              ],
+            ),
+          ],
+        ),
+    ],
+  ),
+);
+
 /// Écrit un vrai MKV : audio, sous-titres anglais intégrés et index en fin de
 /// fichier, comme une VOD. Le texte de chaque réplique contient son numéro.
-Uint8List buildTestMkv({required int clusters}) {
+///
+/// [chapters] ajoute des chapitres, chacun avec son titre et son début en
+/// millisecondes.
+Uint8List buildTestMkv({
+  required int clusters,
+  List<(String, int)> chapters = const [],
+}) {
   final frame = Uint8List(_frameBytes)
     ..setRange(0, 4, const [0xFF, 0xFB, 0xE4, 0x00]);
   final header = _element(
@@ -118,7 +149,9 @@ Uint8List buildTestMkv({required int clusters}) {
     ),
   );
 
-  final prefix = seekHead(0).length + info.length + tracks.length;
+  final chapterList = chapters.isEmpty ? const <int>[] : _chapters(chapters);
+  final prefix =
+      seekHead(0).length + info.length + tracks.length + chapterList.length;
   final body = BytesBuilder(copy: false);
   final clusterPositions = <int>[];
   for (var cluster = 0; cluster < clusters; cluster++) {
@@ -169,6 +202,7 @@ Uint8List buildTestMkv({required int clusters}) {
     ..add(seekHead(cuesPosition))
     ..add(info)
     ..add(tracks)
+    ..add(chapterList)
     ..add(body.takeBytes())
     ..add(cues);
   final content = segment.takeBytes();

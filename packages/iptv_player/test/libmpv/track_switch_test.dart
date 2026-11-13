@@ -72,6 +72,35 @@ void main() {
     await engine.dispose();
   }, timeout: const Timeout(Duration(minutes: 1)));
 
+  test('lit les chapitres du fichier', () async {
+    final panel = await OneConnectionPanel.start(
+      buildTestMkv(
+        clusters: 120,
+        chapters: const [('Intro', 0), ('Générique de fin', 95000)],
+      ),
+    );
+    addTearDown(panel.close);
+    final engine = MediaKitEngine(tier: MemoryTier.low);
+    await (engine.player.platform! as mk.NativePlayer).setProperty(
+      'ao',
+      'null',
+    );
+
+    await engine.open(
+      PlaybackRequest(stream: ResolvedStream(url: panel.url), isLive: false),
+    );
+    await _waitForPlaying(engine);
+    final chapters = await engine.chapters();
+
+    expect(chapters.map((chapter) => chapter.title), [
+      'Intro',
+      'Générique de fin',
+    ]);
+    expect(chapters.last.start, const Duration(seconds: 95));
+    await engine.dispose();
+    expect(await engine.chapters(), isEmpty);
+  }, timeout: const Timeout(Duration(minutes: 1)));
+
   test('un sous-titre intégré sort ses répliques', () async {
     final panel = await OneConnectionPanel.start(file);
     addTearDown(panel.close);

@@ -14,6 +14,18 @@ Aero IPTV relies on these components. Their full licenses are also included in t
 | [ANGLE](https://chromium.googlesource.com/angle/angle) | Video display on Windows | BSD 3-Clause |
 | [qr](https://pub.dev/packages/qr) | QR code for keys | BSD 3-Clause |
 
+## Intro and credits data
+
+The skip intro and next episode buttons use these community databases. The app only sends them the series title, its public IDs, and the season and episode numbers.
+
+| Service | Purpose | Data license |
+|---|---|---|
+| [TheIntroDB](https://theintrodb.org) | Intro and end credits times | Not stated by the service |
+| [IntroDB](https://introdb.app) | Intro and end credits times | [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/) |
+| [TVmaze](https://www.tvmaze.com/api) | Finds the IDs of a series from its title | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |
+
+Contains data from IntroDB (introdb.app), available under the ODbL. Series IDs are provided by TVmaze.
+
 ## libmpv and FFmpeg
 
 These libraries are distributed as provided by media_kit, as separate files: `libmpv-2.dll` on Windows and `libmpv.so` in the APKs. They are built without GPL code (`-Dgpl=false`, `--disable-gpl`) and without non-free code (`--disable-nonfree`). You can replace them with a compatible version you have built yourself.

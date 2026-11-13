@@ -112,6 +112,21 @@ final subtitleTranslatorProvider = Provider<SubtitleTranslator?>((ref) {
       : DeepLSubtitleTranslator(ref.watch(httpClientProvider), apiKey: key);
 });
 
+/// Gardé pour toute la session : ses réponses en mémoire servent à tous les
+/// épisodes d'une série.
+final segmentRepositoryProvider = Provider<SegmentRepository>((ref) {
+  final client = ref.watch(httpClientProvider);
+  return SegmentRepositoryImpl(
+    theIntroDb: TheIntroDbClient(client),
+    introDb: IntroDbClient(client),
+    tvMaze: TvMazeClient(client),
+  );
+});
+
+final findMediaSegmentsProvider = Provider<FindMediaSegments>(
+  (ref) => FindMediaSegments(ref.watch(segmentRepositoryProvider)),
+);
+
 final trendingRepositoryProvider = Provider<TrendingRepository>(
   (ref) => TrendingRepositoryImpl(
     _tmdbToken.isEmpty

@@ -10,6 +10,10 @@ import 'playback_log_policy.dart';
 import 'stream_relay.dart';
 import 'track_mapper.dart';
 
+/// Chapitres lus au plus : un fichier peut en déclarer des centaines, et seuls
+/// l'intro et le générique servent.
+const int _maxChapters = 64;
+
 /// Initialise libmpv. À appeler une seule fois, au démarrage de l'application.
 ///
 /// [libmpv] remplace la bibliothèque embarquée, ce qui sert aux tests.
@@ -162,6 +166,36 @@ final class MediaKitEngine implements PlaybackEngine {
       title: file.title,
       language: file.language,
     ),
+  );
+
+  @override
+  Future<List<MediaChapter>> chapters() async {
+    if (_disposed) return const [];
+    final native = player.platform! as mk.NativePlayer;
+    try {
+      final count = int.tryParse(
+        await native.getProperty('chapter-list/count'),
+      );
+      if (count == null) return const [];
+      return [
+        for (var index = 0; index < count && index < _maxChapters; index++)
+          MediaChapter(
+            title: await native.getProperty('chapter-list/$index/title'),
+            start: _secondsToDuration(
+              await native.getProperty('chapter-list/$index/time'),
+            ),
+          ),
+      ];
+    } on Object {
+      // Le lecteur a pu être libéré entre deux lectures de propriété.
+      return const [];
+    }
+  }
+
+  Duration _secondsToDuration(String seconds) => Duration(
+    milliseconds:
+        ((double.tryParse(seconds) ?? 0) * Duration.millisecondsPerSecond)
+            .round(),
   );
 
   @override

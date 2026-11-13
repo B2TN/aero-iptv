@@ -40,6 +40,10 @@ final class FakeCatalog implements CatalogRepository {
     String contentKey,
   ) async => null;
 
+  @override
+  Future<String?> tmdbIdOfEpisode(int sourceId, String contentKey) async =>
+      null;
+
   FakeCatalog({this.movieList = const [], this.seriesList = const []});
 
   final List<Movie> movieList;

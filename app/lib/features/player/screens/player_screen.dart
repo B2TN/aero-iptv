@@ -49,13 +49,9 @@ const int _connectionsFull = 458;
 const int _maxConnectionRetries = 3;
 const Duration _connectionRetryDelay = Duration(seconds: 3);
 
-/// Aucune donnée ne dit où finit une intro. Elle est presque toujours dans ces
-/// premières minutes, et le saut couvre la plupart des génériques.
-const Duration _introWindow = Duration(minutes: 5);
-const Duration _introSkip = Duration(seconds: 85);
-
-/// Générique de fin : l'épisode suivant se propose sans ouvrir les commandes.
-const Duration _creditsWindow = Duration(seconds: 90);
+/// Durée d'affichage de « Passer l'intro » et d'« Épisode suivant », depuis le
+/// début du passage ou l'ouverture des commandes.
+const Duration _promptDuration = Duration(seconds: 7);
 
 const double _maxVolume = 100;
 const double _seekBarHeight = 36;
@@ -132,6 +128,18 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   PlayerTarget? _next;
   bool _introSkipped = false;
 
+  /// Intro et générique, connus quand une source les donne. Sans eux, aucun
+  /// bouton n'est proposé.
+  MediaSegments _segments = MediaSegments.none;
+  bool _segmentsRequested = false;
+
+  /// Bouton proposé, pendant [_promptDuration].
+  _EpisodeAction? _prompt;
+  Timer? _promptTimer;
+
+  /// Passage où se trouvait la lecture au dernier état reçu.
+  _EpisodeAction? _lastSegment;
+
   /// Flux en cours, interrogé directement si son ouverture échoue.
   ResolvedStream? _stream;
 
@@ -170,6 +178,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     _noticeTimer?.cancel();
     _seekTimer?.cancel();
     _retryTimer?.cancel();
+    _promptTimer?.cancel();
     _fullscreen?.exit();
     unawaited(_states?.cancel());
     unawaited(_cues?.cancel());
@@ -211,7 +220,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   Future<void> _findNext() async {
     try {
       final next = await widget.target.next?.call(ref);
-      if (mounted && next != null) setState(() => _next = next);
+      if (!mounted || next == null) return;
+      setState(() => _next = next);
+      // Connu pendant le générique, l'épisode suivant s'y propose aussitôt.
+      _followSegments();
     } on Failure {
       return;
     }
@@ -246,6 +258,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
       _explaining = state.status == PlaybackStatus.failed && _explaining;
       if (failedNow) _explaining = true;
     });
+    _requestSegments(state);
+    _followSegments();
     if (!failedNow) return;
     _hideTimer?.cancel();
     unawaited(_askServer());
@@ -292,6 +306,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   }
 
   void _showOverlay({bool onSeekBar = false}) {
+    // Ouvrir les commandes pendant l'intro ou le générique repropose le bouton.
+    final segment = _segmentAction;
+    if (segment != null) _propose(segment);
     setState(() {
       _overlayVisible = true;
       _focusSeekBar = onSeekBar;
@@ -359,19 +376,125 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     });
   }
 
-  bool get _canSkipIntro {
+  /// Les passages ne se cherchent qu'une fois la durée connue : elle départage
+  /// deux montages, et les chapitres du fichier ne sont pas lus avant.
+  void _requestSegments(PlaybackState state) {
+    if (_segmentsRequested ||
+        widget.target.isLive ||
+        state.duration <= Duration.zero) {
+      return;
+    }
+    _segmentsRequested = true;
+    unawaited(_loadSegments(state.duration));
+  }
+
+  /// Sans réponse, la lecture continue simplement sans bouton.
+  Future<void> _loadSegments(Duration duration) async {
+    SegmentQuery? query;
+    try {
+      query = await _segmentQuery(duration);
+    } on Object {
+      // Les chapitres du fichier restent utilisables sans le catalogue.
+      query = null;
+    }
+    try {
+      final segments = await ref.read(findMediaSegmentsProvider)(
+        _engine,
+        duration,
+        query: query,
+      );
+      if (!mounted) return;
+      setState(() => _segments = segments);
+      _followSegments();
+    } on Object {
+      return;
+    }
+  }
+
+  /// Seul un épisode retrouvé dans le catalogue s'identifie auprès des bases :
+  /// d'un film, seuls les chapitres comptent.
+  Future<SegmentQuery?> _segmentQuery(Duration duration) async {
+    final item = widget.target.item;
+    if (item.kind != ContentKind.series) return null;
+    final catalog = ref.read(catalogRepositoryProvider);
+    final found = await catalog.episodeByContentKey(
+      item.sourceId,
+      item.contentKey,
+    );
+    if (found == null) return null;
+    final (series, episode) = found;
+    return SegmentQuery(
+      title: series.title,
+      year: series.year,
+      season: episode.season,
+      episode: episode.number,
+      tmdbId: await catalog.tmdbIdOfEpisode(item.sourceId, item.contentKey),
+      duration: duration,
+    );
+  }
+
+  /// Passage en cours de lecture, s'il appelle un bouton.
+  _EpisodeAction? get _segmentAction {
     final started =
         _state.status == PlaybackStatus.playing ||
         _state.status == PlaybackStatus.paused;
-    return started &&
-        !_introSkipped &&
-        widget.target.item.kind == ContentKind.series &&
-        _state.position < _introWindow;
+    if (!started || widget.target.isLive) return null;
+    final position = _state.position;
+    final duration = _state.duration;
+    final credits = _segments.credits;
+    if (_next != null &&
+        credits != null &&
+        credits.contains(position, duration)) {
+      return _EpisodeAction.nextEpisode;
+    }
+    final intro = _segments.intro;
+    if (!_introSkipped && intro != null && intro.contains(position, duration)) {
+      return _EpisodeAction.skipIntro;
+    }
+    return null;
+  }
+
+  /// Bouton affiché en ce moment : celui du passage en cours, pendant les
+  /// [_promptDuration] qui suivent son début ou l'ouverture des commandes.
+  _EpisodeAction? get _shownAction {
+    final segment = _segmentAction;
+    return segment != null && segment == _prompt ? segment : null;
+  }
+
+  /// En entrant dans l'intro ou le générique, le bouton se propose seul.
+  void _followSegments() {
+    final segment = _segmentAction;
+    if (segment == _lastSegment) return;
+    _lastSegment = segment;
+    if (segment != null) {
+      _propose(segment);
+    } else if (_prompt != null) {
+      _withdraw();
+    }
+  }
+
+  void _propose(_EpisodeAction action) {
+    _promptTimer?.cancel();
+    setState(() => _prompt = action);
+    _promptTimer = Timer(_promptDuration, () {
+      if (mounted) _withdraw();
+    });
+  }
+
+  void _withdraw() {
+    _promptTimer?.cancel();
+    setState(() => _prompt = null);
   }
 
   void _skipIntro() {
-    setState(() => _introSkipped = true);
-    _seekBy(_introSkip);
+    final intro = _segments.intro;
+    if (intro == null) return;
+    _promptTimer?.cancel();
+    setState(() {
+      _introSkipped = true;
+      _prompt = null;
+    });
+    _seekTo(intro.endIn(_state.duration));
   }
 
   void _openNext() {
@@ -380,13 +503,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     unawaited(Navigator.of(context).pushReplacement(playerRoute(next)));
   }
 
-  _EpisodeAction? get _floatingAction {
-    final remaining = _state.duration - _state.position;
-    final inCredits =
-        _state.status == PlaybackStatus.playing && remaining <= _creditsWindow;
-    if (_next != null && inCredits) return _EpisodeAction.nextEpisode;
-    return _canSkipIntro ? _EpisodeAction.skipIntro : null;
-  }
+  /// Commandes fermées, le bouton reste posé sur la vidéo.
+  _EpisodeAction? get _floatingAction => _overlayVisible ? null : _shownAction;
 
   void _run(_EpisodeAction action) => switch (action) {
     _EpisodeAction.skipIntro => _skipIntro(),
@@ -605,8 +723,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     final fullscreen = _fullscreen;
     final isLive = widget.target.isLive;
     final floating = _floatingAction;
+    final shown = _shownAction;
     return FocusGuard(
-      fallback: () => _rootNode,
+      // Un bouton qui disparaît sous le focus le rend aux commandes ouvertes.
+      fallback: () => _overlayVisible && _firstAction.context != null
+          ? _firstAction
+          : _rootNode,
       child: Focus(
         focusNode: _rootNode,
         onKeyEvent: _onKeyEvent,
@@ -668,8 +790,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                           ? _chooseAudio
                           : null,
                       onSubtitles: isLive ? null : _chooseSubtitles,
-                      onSkipIntro: _canSkipIntro ? _skipIntro : null,
-                      onNextEpisode: _next == null ? null : _openNext,
+                      onSkipIntro: shown == _EpisodeAction.skipIntro
+                          ? _skipIntro
+                          : null,
+                      onNextEpisode: shown == _EpisodeAction.nextEpisode
+                          ? _openNext
+                          : null,
                       fullscreen: fullscreen?.isActive,
                       onFullscreen: _toggleFullscreen,
                     )

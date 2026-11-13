@@ -60,6 +60,9 @@ final class _Engine implements PlaybackEngine {
   Future<void> loadSubtitle(SubtitleFile file) async => loaded.add(file);
 
   @override
+  Future<List<MediaChapter>> chapters() async => const [];
+
+  @override
   Future<void> dispose() async {
     await _states.close();
     await cues.close();

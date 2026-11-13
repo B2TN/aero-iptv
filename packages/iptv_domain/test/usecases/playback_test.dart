@@ -65,6 +65,9 @@ final class FakeEngine implements PlaybackEngine {
   Future<void> loadSubtitle(SubtitleFile file) async => loaded.add(file);
 
   @override
+  Future<List<MediaChapter>> chapters() async => const [];
+
+  @override
   Future<void> dispose() async {
     disposed = true;
     await controller.close();

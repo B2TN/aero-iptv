@@ -27,6 +27,9 @@ abstract interface class CatalogRepository {
     String contentKey,
   );
 
+  /// Identifiant TMDb de la série d'un épisode, quand le fournisseur le donne.
+  Future<String?> tmdbIdOfEpisode(int sourceId, String contentKey);
+
   /// Films dont le titre normalisé figure dans [titleKeys].
   Future<List<Movie>> moviesByTitleKeys(int sourceId, Set<String> titleKeys);
 

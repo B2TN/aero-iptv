@@ -70,7 +70,8 @@ Add your M3U playlist or your Xtream Codes login, and you're ready. Aero IPTV is
 - **A welcoming home screen**: featured picks, trending titles, and resume where you left off.
 - **Live TV**: channels by group, with what's on now.
 - **One page per movie or series**: all versions and languages in one place.
-- **Full playback controls**: audio tracks, subtitles, 30-second jumps, skip intro, next episode.
+- **Full playback controls**: audio tracks, subtitles, 30-second jumps.
+- **Skip intro and next episode**, offered only during the intro and the end credits, when the video file or a community database knows where they are.
 - **Translated subtitles** in the language of your choice.
 - **Real remote-control navigation**, plus mouse support on Windows.
 - **Single-connection subscriptions** are supported.
@@ -124,6 +125,7 @@ Subtitles drawn as images (PGS, VobSub) contain no text and can't be translated.
 - Your login details stay on your device, encrypted by the system vault (DPAPI on Windows, Keystore on Android), and are only sent to your provider.
 - No account, no ads, no analytics.
 - The app only contacts your provider, Apple's public charts for the home screen trends, and the services whose key you've entered.
+- To find the intro and the end credits of an episode, it asks [TheIntroDB](https://theintrodb.org), [IntroDB](https://introdb.app) and [TVmaze](https://www.tvmaze.com). They only receive the series title, its public IDs, and the season and episode numbers.
 
 ## Content and rights
 

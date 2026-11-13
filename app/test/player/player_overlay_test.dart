@@ -64,6 +64,12 @@ final class _Engine implements PlaybackEngine {
   Future<void> loadSubtitle(SubtitleFile file) async =>
       loadedSubtitles.add(file);
 
+  /// Chapitres du fichier simulé.
+  List<MediaChapter> chapterList = const [];
+
+  @override
+  Future<List<MediaChapter>> chapters() async => chapterList;
+
   @override
   Future<void> dispose() => cues.close();
 }
@@ -240,12 +246,13 @@ Future<_Engine> _pump(
   PlaybackState state = _playing,
   SubtitleTranslator? translator,
   SubtitleRepository Function(String? key)? subtitles,
+  List<MediaChapter> chapters = const [],
 }) async {
   tester.view
     ..physicalSize = window
     ..devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  final engine = _Engine();
+  final engine = _Engine()..chapterList = chapters;
   final navigator = GlobalKey<NavigatorState>();
   await tester.pumpWidget(
     ProviderScope(
@@ -255,6 +262,10 @@ Future<_Engine> _pump(
         if (translator != null)
           subtitleTranslatorProvider.overrideWithValue(translator),
         playbackEngineFactoryProvider.overrideWithValue(() => engine),
+        // Aucune base communautaire : seuls les chapitres du fichier comptent.
+        findMediaSegmentsProvider.overrideWithValue(
+          const FindMediaSegments(null),
+        ),
         videoSurfaceBuilderProvider.overrideWithValue(
           (_) => const SizedBox.expand(),
         ),
@@ -288,6 +299,8 @@ Future<_Engine> _pump(
   await tester.pump();
   engine.emit(state);
   await tester.pump();
+  await tester.pump();
+  // Les chapitres arrivent juste après la durée.
   await tester.pump();
   return engine;
 }
@@ -459,60 +472,185 @@ void main() {
   });
 
   group('épisode', () {
-    const start = Duration(minutes: 1);
     const skipIntro = "Passer l'intro";
     const nextEpisode = 'Épisode suivant';
+    const inIntro = Duration(seconds: 45);
+    const introEnd = Duration(minutes: 1, seconds: 30);
+    const inCredits = Duration(minutes: 38, seconds: 30);
 
-    testWidgets('passer l intro avance d un saut, une seule fois', (
-      tester,
-    ) async {
-      final engine = await _pump(tester, _episode(), state: _playingAt(start));
+    /// Chapitres d'un épisode de 40 minutes : intro, épisode, générique.
+    const chapters = [
+      MediaChapter(title: 'Intro', start: Duration(seconds: 30)),
+      MediaChapter(title: 'Épisode', start: introEnd),
+      MediaChapter(title: 'Credits', start: Duration(minutes: 38)),
+    ];
+
+    PlayerTarget withNext() =>
+        _episode(next: _target(ContentKind.series, title: 'Lagon S1 E2'));
+
+    testWidgets('passer l intro va à sa fin, une seule fois', (tester) async {
+      final engine = await _pump(
+        tester,
+        _episode(),
+        state: _playingAt(inIntro),
+        chapters: chapters,
+      );
 
       await tester.tap(find.text(skipIntro));
       await tester.pump(const Duration(seconds: 1));
 
-      expect(engine.seeks, [const Duration(minutes: 2, seconds: 25)]);
+      expect(engine.seeks, [introEnd]);
       expect(find.text(skipIntro), findsNothing);
       await _leave(tester);
     });
 
-    testWidgets('l intro n est plus proposée après les premières minutes', (
+    testWidgets('hors de l intro, aucun bouton', (tester) async {
+      await _pump(
+        tester,
+        _episode(),
+        state: _playingAt(const Duration(minutes: 5)),
+        chapters: chapters,
+      );
+
+      expect(find.text(skipIntro), findsNothing);
+      await _leave(tester);
+    });
+
+    testWidgets('sans donnée, aucun bouton à une position devinée', (
+      tester,
+    ) async {
+      final engine = await _pump(
+        tester,
+        withNext(),
+        state: _playingAt(inIntro),
+      );
+      expect(find.text(skipIntro), findsNothing);
+
+      engine.emit(_playingAt(inCredits));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text(nextEpisode), findsNothing);
+      await _leave(tester);
+    });
+
+    testWidgets('un film sans chapitre n a ni intro ni suite', (tester) async {
+      await _pump(
+        tester,
+        _target(ContentKind.movie),
+        state: _playingAt(inIntro),
+      );
+
+      expect(find.text(skipIntro), findsNothing);
+      expect(find.text(nextEpisode), findsNothing);
+      await _leave(tester);
+    });
+
+    testWidgets('le bouton se propose seul, puis part au bout de 7 s', (
       tester,
     ) async {
       await _pump(
         tester,
         _episode(),
-        state: _playingAt(const Duration(minutes: 6)),
+        state: _playingAt(inIntro),
+        chapters: chapters,
       );
+      // Les commandes se ferment : le bouton reste posé sur la vidéo.
+      await tester.pump(const Duration(seconds: 6));
+      expect(find.text('Pause'), findsNothing);
+      expect(find.text(skipIntro), findsOneWidget);
+
+      await tester.pump(const Duration(seconds: 2));
 
       expect(find.text(skipIntro), findsNothing);
       await _leave(tester);
     });
 
-    testWidgets('un film n a ni intro ni épisode suivant', (tester) async {
-      await _pump(tester, _target(ContentKind.movie), state: _playingAt(start));
-
-      expect(find.text(skipIntro), findsNothing);
-      expect(find.text(nextEpisode), findsNothing);
-      await _leave(tester);
-    });
-
-    testWidgets('le dernier épisode n a pas de bouton suivant', (tester) async {
-      await _pump(tester, _episode(), state: _playingAt(start));
-
-      expect(find.text(nextEpisode), findsNothing);
-      await _leave(tester);
-    });
-
-    testWidgets('épisode suivant ouvre l épisode', (tester) async {
-      final engine = await _pump(
+    testWidgets('ouvrir les commandes pendant l intro le repropose', (
+      tester,
+    ) async {
+      await _pump(
         tester,
-        _episode(next: _target(ContentKind.series, title: 'Lagon S1 E2')),
-        state: _playingAt(start),
+        _episode(),
+        state: _playingAt(inIntro),
+        chapters: chapters,
       );
+      await tester.pump(const Duration(seconds: 8));
+      expect(find.text(skipIntro), findsNothing);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.pump();
 
-      await tester.tap(find.text(nextEpisode));
+      expect(find.text('Pause'), findsOneWidget);
+      expect(find.text(skipIntro), findsOneWidget);
+      await _leave(tester);
+    });
+
+    testWidgets('même en pause, le bouton part au bout de 7 s', (tester) async {
+      final engine = await _pump(
+        tester,
+        _episode(),
+        state: PlaybackState(
+          status: PlaybackStatus.paused,
+          position: inIntro,
+          duration: _playing.duration,
+        ),
+        chapters: chapters,
+      );
+      expect(find.text(skipIntro), findsOneWidget);
+
+      await tester.pump(const Duration(seconds: 8));
+
+      // Les commandes restent ouvertes pendant la pause, sans le bouton.
+      expect(
+        find.text(lookupAppLocalizations(const Locale('fr')).playerPlay),
+        findsOneWidget,
+      );
+      expect(find.text(skipIntro), findsNothing);
+      expect(engine.seeks, isEmpty);
+      await _leave(tester);
+    });
+
+    testWidgets('commandes fermées, valider passe l intro', (tester) async {
+      final engine = await _pump(
+        tester,
+        _episode(),
+        state: _playingAt(inIntro),
+        chapters: chapters,
+      );
+      await tester.pump(const Duration(seconds: 6));
+      expect(find.text('Pause'), findsNothing);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(engine.seeks, [introEnd]);
+      expect(find.text('Pause'), findsNothing);
+      await _leave(tester);
+    });
+
+    testWidgets('l épisode suivant n est proposé que pendant le générique', (
+      tester,
+    ) async {
+      final engine = await _pump(
+        tester,
+        withNext(),
+        state: _playingAt(const Duration(minutes: 20)),
+        chapters: chapters,
+      );
+      await tester.pump();
+      expect(find.text('Pause'), findsOneWidget);
+      expect(find.text(nextEpisode), findsNothing);
+
+      await tester.pump(const Duration(seconds: 6));
+      engine.emit(_playingAt(inCredits));
+      // L'état passe par la session avant d'atteindre l'écran.
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Pause'), findsNothing);
+      expect(find.text(nextEpisode), findsOneWidget);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pump();
       await tester.pump();
 
@@ -521,48 +659,15 @@ void main() {
       await _leave(tester);
     });
 
-    testWidgets('commandes fermées, valider passe l intro', (tester) async {
-      final engine = await _pump(tester, _episode(), state: _playingAt(start));
-      await tester.pump(const Duration(seconds: 6));
-      expect(find.text('Pause'), findsNothing);
-      expect(find.text(skipIntro), findsOneWidget);
-
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(engine.seeks, hasLength(1));
-      expect(find.text('Pause'), findsNothing);
-      await _leave(tester);
-    });
-
-    testWidgets('commandes fermées, le bouton se clique', (tester) async {
-      final engine = await _pump(tester, _episode(), state: _playingAt(start));
-      await tester.pump(const Duration(seconds: 6));
-
-      await tester.tap(find.text(skipIntro));
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(engine.seeks, hasLength(1));
-      await _leave(tester);
-    });
-
-    testWidgets('le générique de fin propose l épisode suivant', (
-      tester,
-    ) async {
-      final engine = await _pump(
+    testWidgets('le dernier épisode n a pas de bouton suivant', (tester) async {
+      await _pump(
         tester,
-        _episode(next: _target(ContentKind.series, title: 'Lagon S1 E2')),
-        state: _playingAt(const Duration(minutes: 39)),
+        _episode(),
+        state: _playingAt(inCredits),
+        chapters: chapters,
       );
-      await tester.pump(const Duration(seconds: 6));
-      expect(find.text('Pause'), findsNothing);
-      expect(find.text(nextEpisode), findsOneWidget);
 
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await tester.pump();
-      await tester.pump();
-
-      expect(engine.opened, hasLength(2));
+      expect(find.text(nextEpisode), findsNothing);
       await _leave(tester);
     });
 
@@ -571,8 +676,9 @@ void main() {
     ) async {
       await _pump(
         tester,
-        _episode(next: _target(ContentKind.series)),
+        withNext(),
         state: _playingAt(const Duration(minutes: 20)),
+        chapters: chapters,
       );
       await tester.pump(const Duration(seconds: 6));
 
@@ -590,7 +696,8 @@ void main() {
           next: (_) async => throw const NetworkFailure('hors ligne'),
           item: _episode().item,
         ),
-        state: _playingAt(start),
+        state: _playingAt(inCredits),
+        chapters: chapters,
       );
 
       expect(tester.takeException(), isNull);
@@ -935,26 +1042,31 @@ void main() {
       testWidgets('la barre d un épisode tient dans l écran ($code, $window)', (
         tester,
       ) async {
-        await _pump(
+        const chapters = [
+          MediaChapter(title: 'Intro', start: Duration.zero),
+          MediaChapter(title: 'Episode', start: Duration(minutes: 2)),
+          MediaChapter(title: 'Credits', start: Duration(minutes: 38)),
+        ];
+        final engine = await _pump(
           tester,
           _episode(next: _target(ContentKind.series)),
           language: code,
           window: window,
           state: _playingAt(const Duration(minutes: 1)),
+          chapters: chapters,
         );
         await tester.pump();
         expect(tester.takeException(), isNull);
 
         final l10n = lookupAppLocalizations(language);
-        final lines = {
-          for (final label in [
-            l10n.playerPause,
-            l10n.playerSkipIntro,
-            l10n.playerNextEpisode,
-          ])
-            tester.getCenter(find.text(label)).dy.round(),
-        };
-        expect(lines, hasLength(1));
+        double line(String label) => tester.getCenter(find.text(label)).dy;
+        expect(line(l10n.playerSkipIntro), line(l10n.playerPause));
+
+        engine.emit(_playingAt(const Duration(minutes: 39)));
+        await tester.pump();
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+        expect(line(l10n.playerNextEpisode), line(l10n.playerPause));
         await _leave(tester);
       });
 

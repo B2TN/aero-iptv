@@ -72,6 +72,20 @@ final class CatalogRepositoryImpl implements CatalogRepository {
   }
 
   @override
+  Future<String?> tmdbIdOfEpisode(int sourceId, String contentKey) async {
+    final episode = await _db
+        .episodeByContentKey(sourceId: sourceId, contentKey: contentKey)
+        .getSingleOrNull();
+    if (episode == null) return null;
+    final entry = await _db
+        .seriesEntryById(id: episode.seriesEntryId)
+        .getSingleOrNull();
+    final id = entry?.tmdbId?.trim();
+    // Les panneaux renvoient « 0 » ou une chaîne vide quand ils ne savent pas.
+    return id == null || id.isEmpty || id == '0' ? null : id;
+  }
+
+  @override
   Future<List<Movie>> moviesByTitleKeys(
     int sourceId,
     Set<String> titleKeys,
