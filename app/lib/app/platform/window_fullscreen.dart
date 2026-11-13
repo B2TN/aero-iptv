@@ -1,4 +1,5 @@
 import 'dart:ffi';
+import 'dart:io' show pid;
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
@@ -18,11 +19,16 @@ const int _monitorInfoBytes = 40;
 
 final DynamicLibrary _user32 = DynamicLibrary.open('user32.dll');
 
-final int Function(Pointer<Utf16>, Pointer<Utf16>) _findWindow = _user32
+final int Function(int, int, Pointer<Utf16>, Pointer<Utf16>) _findWindow =
+    _user32.lookupFunction<
+      IntPtr Function(IntPtr, IntPtr, Pointer<Utf16>, Pointer<Utf16>),
+      int Function(int, int, Pointer<Utf16>, Pointer<Utf16>)
+    >('FindWindowExW');
+final int Function(int, Pointer<Uint32>) _windowProcess = _user32
     .lookupFunction<
-      IntPtr Function(Pointer<Utf16>, Pointer<Utf16>),
-      int Function(Pointer<Utf16>, Pointer<Utf16>)
-    >('FindWindowW');
+      Uint32 Function(IntPtr, Pointer<Uint32>),
+      int Function(int, Pointer<Uint32>)
+    >('GetWindowThreadProcessId');
 final int Function(int, int) _getStyle = _user32
     .lookupFunction<IntPtr Function(IntPtr, Int32), int Function(int, int)>(
       'GetWindowLongPtrW',
@@ -127,13 +133,23 @@ final class WindowFullscreen {
     }
   }
 
-  /// Le lanceur crée une seule fenêtre de cette classe.
+  /// Fenêtre de cette application. Toute application Flutter ouverte à côté a
+  /// une fenêtre de la même classe : seul le numéro de processus les distingue.
   int _flutterWindow() {
     final name = 'FLUTTER_RUNNER_WIN32_WINDOW'.toNativeUtf16();
+    final owner = calloc<Uint32>();
     try {
-      return _findWindow(name, nullptr);
+      var window = _findWindow(0, 0, name, nullptr);
+      while (window != 0) {
+        _windowProcess(window, owner);
+        if (owner.value == pid) return window;
+        window = _findWindow(0, window, name, nullptr);
+      }
+      return 0;
     } finally {
-      calloc.free(name);
+      calloc
+        ..free(name)
+        ..free(owner);
     }
   }
 }
