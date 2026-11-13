@@ -1,10 +1,12 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../design_system/components/aero_canvas.dart';
 import '../design_system/glass/glass_panel.dart';
+import '../design_system/tokens/aero_look.dart';
 import '../design_system/tokens/aero_tokens.dart';
 import '../features/home/screens/home_screen.dart';
 import '../features/live_tv/screens/live_tv_screen.dart';
@@ -15,8 +17,6 @@ import '../focus/focus_guard.dart';
 import '../focus/focusable.dart';
 import 'aero_iptv_app.dart';
 import 'app_state.dart';
-
-const Size _barSize = Size(540, 92);
 
 /// Structure commune : barre supérieure et onglet actif.
 ///
@@ -112,8 +112,8 @@ class _TopBar extends ConsumerWidget {
     final status = ref.watch(importControllerProvider);
     final message = status.needsAttention ? importMessage(l10n, status) : null;
 
-    Widget item(AppTab target, String asset, String label) => _NavItem(
-      asset: asset,
+    Widget item(AppTab target, IconData icon, String label) => _NavItem(
+      icon: icon,
       label: label,
       selected: tab == target,
       focusNode: nodes[target]!,
@@ -126,25 +126,19 @@ class _TopBar extends ConsumerWidget {
         children: [
           Align(
             alignment: Alignment.topCenter,
-            child: SizedBox.fromSize(
-              size: _barSize,
-              child: DecoratedBox(
-                decoration: const BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage(AeroAssets.navBar),
-                    fit: BoxFit.fill,
-                    filterQuality: FilterQuality.medium,
-                  ),
-                ),
+            child: Padding(
+              padding: const EdgeInsets.only(top: 14),
+              child: GlassPanel(
+                padding: const EdgeInsets.all(7),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    item(AppTab.home, AeroAssets.navHome, l10n.navHome),
-                    item(AppTab.live, AeroAssets.navLive, l10n.navLive),
-                    item(AppTab.search, AeroAssets.navSearch, l10n.navSearch),
+                    item(AppTab.home, Icons.home_rounded, l10n.navHome),
+                    item(AppTab.live, Icons.live_tv_rounded, l10n.navLive),
+                    item(AppTab.search, Icons.search_rounded, l10n.navSearch),
                     item(
                       AppTab.settings,
-                      AeroAssets.navSettings,
+                      Icons.settings_rounded,
                       l10n.navSettings,
                     ),
                   ],
@@ -176,53 +170,99 @@ class _TopBar extends ConsumerWidget {
   }
 }
 
-/// Icône de la barre. L'onglet ouvert reste identifiable quand le focus est
-/// ailleurs, grâce à la lumière posée sous lui.
+/// Onglet de la barre : un bouton rond, et l'onglet ouvert s'allonge pour
+/// afficher son nom. Il reste ainsi identifiable quand le focus est ailleurs.
 class _NavItem extends StatelessWidget {
   const _NavItem({
-    required this.asset,
+    required this.icon,
     required this.label,
     required this.selected,
     required this.focusNode,
     required this.onSelect,
   });
 
-  final String asset;
+  final IconData icon;
   final String label;
   final bool selected;
   final FocusNode focusNode;
   final VoidCallback onSelect;
 
+  BoxDecoration _decoration({required bool performance}) {
+    if (selected) {
+      return performance
+          ? const BoxDecoration(
+              color: AeroColors.leaf,
+              borderRadius: BorderRadius.all(Radius.circular(26)),
+            )
+          : const BoxDecoration(
+              borderRadius: BorderRadius.all(Radius.circular(26)),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFFE9FFF2), AeroColors.leaf, Color(0xFF5CD993)],
+                stops: [0, 0.55, 1],
+              ),
+              boxShadow: [BoxShadow(color: Color(0x738CF5B4), blurRadius: 18)],
+            );
+    }
+    return performance
+        ? const BoxDecoration(
+            color: PerformanceColors.button,
+            shape: BoxShape.circle,
+          )
+        : const BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF2E77BE), Color(0xFF154A80)],
+            ),
+            border: Border.fromBorderSide(BorderSide(color: Color(0x80EAF8FF))),
+          );
+  }
+
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 12),
-    child: Semantics(
-      label: label,
-      button: true,
-      selected: selected,
-      child: Focusable(
-        focusNode: focusNode,
-        onSelect: onSelect,
-        scale: 1.08,
-        halo: HaloShape.pill,
-        builder: (context, focused) => SizedBox(
-          width: 92,
-          height: 62,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              if (selected)
-                const Image(
-                  image: AssetImage(AeroAssets.navActive),
-                  fit: BoxFit.fill,
-                  width: 92,
-                  height: 62,
+  Widget build(BuildContext context) {
+    final performance = AeroLook.of(context).isPerformance;
+    final ink = selected ? AeroColors.abyss : AeroColors.foam;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 3),
+      child: Semantics(
+        label: label,
+        button: true,
+        selected: selected,
+        child: Focusable(
+          focusNode: focusNode,
+          onSelect: onSelect,
+          scale: 1.08,
+          halo: HaloShape.pill,
+          builder: (context, focused) => DecoratedBox(
+            decoration: _decoration(performance: performance),
+            child: SizedBox(
+              height: 48,
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: selected ? 16 : 12),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(icon, size: 24, color: ink),
+                    if (selected) ...[
+                      const SizedBox(width: 8),
+                      Text(
+                        label,
+                        style: AeroText.body.copyWith(
+                          color: ink,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-              Image.asset(asset, width: 50, height: 50),
-            ],
+              ),
+            ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
