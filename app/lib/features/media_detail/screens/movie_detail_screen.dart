@@ -13,6 +13,20 @@ import '../../../design_system/tokens/aero_tokens.dart';
 import '../../../focus/focus_guard.dart';
 import '../../../l10n/version_names.dart';
 import '../../player/player_target.dart';
+import '../widgets/detail_parts.dart';
+
+/// Résumé, genre et durée d'une version du film. Sans réponse du fournisseur,
+/// la fiche reste complète, simplement sans résumé.
+final _detailsProvider = FutureProvider.autoDispose
+    .family<TitleDetails, ({int sourceId, int movieId})>((ref, key) async {
+      try {
+        return await ref
+            .watch(catalogRepositoryProvider)
+            .movieDetails(key.sourceId, key.movieId);
+      } on Failure {
+        return TitleDetails.none;
+      }
+    });
 
 /// Fiche d'un film : reprise, lecture depuis le début et choix de la version.
 class MovieDetailScreen extends ConsumerStatefulWidget {
@@ -94,6 +108,14 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
     final l10n = context.l10n;
     final resumeAt = _resumeAt;
     final year = _movie.year;
+    final details =
+        ref
+            .watch(
+              _detailsProvider((sourceId: widget.sourceId, movieId: _movie.id)),
+            )
+            .value ??
+        TitleDetails.none;
+    final runtime = details.runtime;
     return FocusGuard(
       fallback: () => _firstNode,
       child: AeroCanvas(
@@ -144,24 +166,19 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 70),
-                    Text(
-                      _movie.title,
-                      style: AeroText.display,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      [
+                    DetailHeader(
+                      title: _movie.title,
+                      tags: [
                         ?year?.toString(),
+                        ?details.genre,
+                        if (runtime != null) runtimeLabel(l10n, runtime),
                         movieVersionNames(
                           [_movie],
                           l10n,
                           ref.read(settingsProvider).languageCode,
                         ).single,
-                      ].join('   '),
-                      style: AeroText.body.copyWith(color: AeroColors.mist),
+                      ],
+                      overview: details.overview,
                     ),
                     const SizedBox(height: 28),
                     Wrap(
