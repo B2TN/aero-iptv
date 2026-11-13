@@ -626,6 +626,36 @@ abstract class AppLocalizations {
   /// **'Le coffre chiffré de l\'appareil ne fonctionne pas (erreur {cause}) : les identifiants de la playlist n\'ont pas pu être enregistrés ou relus.'**
   String importVaultFailed(String cause);
 
+  /// No description provided for @importErrorDetail.
+  ///
+  /// In fr, this message translates to:
+  /// **'Détail : {detail}'**
+  String importErrorDetail(String detail);
+
+  /// No description provided for @importUnrefined.
+  ///
+  /// In fr, this message translates to:
+  /// **'Actualisation terminée, sans : {steps}.'**
+  String importUnrefined(String steps);
+
+  /// No description provided for @importRefineHomonyms.
+  ///
+  /// In fr, this message translates to:
+  /// **'la séparation des séries homonymes'**
+  String get importRefineHomonyms;
+
+  /// No description provided for @importRefineVersions.
+  ///
+  /// In fr, this message translates to:
+  /// **'le regroupement des versions'**
+  String get importRefineVersions;
+
+  /// No description provided for @importRefineSearch.
+  ///
+  /// In fr, this message translates to:
+  /// **'l\'index de recherche'**
+  String get importRefineSearch;
+
   /// No description provided for @importStorageFull.
   ///
   /// In fr, this message translates to:

@@ -4,6 +4,19 @@ import 'content_kind.dart';
 /// Phase d'une synchronisation.
 enum ImportStage { connecting, catalog, indexing, epg, done }
 
+/// Finition appliquée au catalogue reçu, avant son affichage. Aucune n'est
+/// indispensable : le catalogue reste lisible si l'une d'elles échoue.
+enum CatalogRefinement {
+  /// Sépare les séries homonymes par leur année.
+  homonyms,
+
+  /// Relie les versions d'une même série en plusieurs langues.
+  versions,
+
+  /// Prépare l'index de la recherche.
+  search,
+}
+
 /// Avancement d'une synchronisation, transmis depuis l'isolate d'import.
 final class ImportProgress {
   const ImportProgress(
@@ -12,6 +25,7 @@ final class ImportProgress {
     this.processed = 0,
     this.epgFailed = false,
     this.failedSections = const {},
+    this.failedRefinements = const {},
   });
 
   final ImportStage stage;
@@ -29,4 +43,8 @@ final class ImportProgress {
   /// Sections restées en échec après plusieurs essais, avec leur cause. Les
   /// autres sont à jour, et celles-ci gardent leur contenu précédent.
   final Map<ContentKind, Failure> failedSections;
+
+  /// Finitions qui ont échoué, avec leur cause. Le catalogue est affiché sans
+  /// elles.
+  final Map<CatalogRefinement, Failure> failedRefinements;
 }

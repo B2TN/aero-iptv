@@ -318,6 +318,25 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String importErrorDetail(String detail) {
+    return 'Details: $detail';
+  }
+
+  @override
+  String importUnrefined(String steps) {
+    return 'Refresh complete, without: $steps.';
+  }
+
+  @override
+  String get importRefineHomonyms => 'telling apart series with the same title';
+
+  @override
+  String get importRefineVersions => 'grouping language versions';
+
+  @override
+  String get importRefineSearch => 'the search index';
+
+  @override
   String get importStorageFull =>
       'The device has run out of space to save the catalog. Free up some storage space, then try again.';
 

@@ -70,6 +70,7 @@ final class ImportStatus {
     this.epgFailed = false,
     this.finished = false,
     this.failedSections = const {},
+    this.failedRefinements = const {},
   });
 
   final bool running;
@@ -87,9 +88,15 @@ final class ImportStatus {
   /// Sections que le serveur n'a pas livrées. Le reste du catalogue est à jour.
   final Map<ContentKind, Failure> failedSections;
 
+  /// Finitions du catalogue qui ont échoué. Le catalogue est affiché sans elles.
+  final Map<CatalogRefinement, Failure> failedRefinements;
+
   /// L'utilisateur doit en être informé, même une fois l'import terminé.
   bool get needsAttention =>
-      running || failure != null || failedSections.isNotEmpty;
+      running ||
+      failure != null ||
+      failedSections.isNotEmpty ||
+      failedRefinements.isNotEmpty;
 }
 
 /// Pilote l'import, en arrière-plan de l'interface.
@@ -138,6 +145,7 @@ class ImportController extends Notifier<ImportStatus> {
               processed: progress.processed,
               epgFailed: progress.epgFailed,
               failedSections: progress.failedSections,
+              failedRefinements: progress.failedRefinements,
             );
             if (!done) return;
             _keepAwake(false);
@@ -179,13 +187,26 @@ String? importMessage(AppLocalizations l10n, ImportStatus status) =>
       ),
       ImportStatus(:final failedSections) when failedSections.isNotEmpty =>
         _partialMessage(l10n, failedSections),
+      ImportStatus(:final failedRefinements)
+          when failedRefinements.isNotEmpty =>
+        _unrefinedMessage(l10n, failedRefinements),
       ImportStatus(epgFailed: true) => l10n.importEpgFailed,
       ImportStatus(finished: true) => l10n.importDone,
       _ => null,
     };
 
-/// Cause d'un échec, avec le code du serveur quand il en a donné un.
-String importFailureMessage(AppLocalizations l10n, Failure failure) =>
+/// Cause d'un échec, avec le code du serveur quand il en a donné un, et le
+/// message de la base quand elle en a donné un.
+String importFailureMessage(AppLocalizations l10n, Failure failure) {
+  final cause = _failureCause(l10n, failure);
+  return switch (failure) {
+    StorageFailure(:final String detail) =>
+      '$cause\n${l10n.importErrorDetail(detail)}',
+    _ => cause,
+  };
+}
+
+String _failureCause(AppLocalizations l10n, Failure failure) =>
     switch (failure) {
       AuthFailure(status: final int status) => l10n.importAuthRejected(status),
       AuthFailure() => l10n.importAuthFailed,
@@ -238,6 +259,22 @@ String _partialMessage(
   ];
   final cause = importFailureMessage(l10n, failed.values.first);
   return '${l10n.importPartial(names.join(', '))} $cause';
+}
+
+String _unrefinedMessage(
+  AppLocalizations l10n,
+  Map<CatalogRefinement, Failure> failed,
+) {
+  final names = [
+    for (final step in failed.keys)
+      switch (step) {
+        CatalogRefinement.homonyms => l10n.importRefineHomonyms,
+        CatalogRefinement.versions => l10n.importRefineVersions,
+        CatalogRefinement.search => l10n.importRefineSearch,
+      },
+  ];
+  final cause = importFailureMessage(l10n, failed.values.first);
+  return '${l10n.importUnrefined(names.join(', '))} $cause';
 }
 
 /// Oriente les tendances vers le pays de la playlist, ou celui de la langue.

@@ -320,6 +320,26 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String importErrorDetail(String detail) {
+    return 'Detalle: $detail';
+  }
+
+  @override
+  String importUnrefined(String steps) {
+    return 'Actualización terminada, sin: $steps.';
+  }
+
+  @override
+  String get importRefineHomonyms =>
+      'la separación de series con el mismo título';
+
+  @override
+  String get importRefineVersions => 'la agrupación de versiones';
+
+  @override
+  String get importRefineSearch => 'el índice de búsqueda';
+
+  @override
   String get importStorageFull =>
       'El dispositivo no tiene espacio suficiente para guardar el catálogo. Libere espacio de almacenamiento y vuelva a intentarlo.';
 

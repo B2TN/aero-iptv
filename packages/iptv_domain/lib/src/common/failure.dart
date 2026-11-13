@@ -51,11 +51,16 @@ final class ParseFailure extends Failure {
 
 /// La base locale a refusé une opération.
 final class StorageFailure extends Failure {
-  const StorageFailure(super.message, {this.code});
+  const StorageFailure(super.message, {this.code, this.detail});
 
   /// Code de résultat étendu de SQLite. Il ne contient rien de sensible et peut
   /// être affiché. `null` si l'échec ne vient pas de la base.
   final int? code;
+
+  /// Message de SQLite et version de la bibliothèque, à afficher tels quels.
+  /// SQLite n'y cite jamais les valeurs d'une requête, seulement ses tables et
+  /// ses colonnes. `null` s'il n'est pas connu.
+  final String? detail;
 
   /// L'appareil n'a plus de place : seul cas où libérer du stockage aide.
   bool get isFull => code != null && code! & _primaryCode == _sqliteFull;

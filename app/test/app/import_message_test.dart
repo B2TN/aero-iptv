@@ -44,6 +44,19 @@ void main() {
       expect(message(const StorageFailure('x', code: 6410)), contains('6410'));
     });
 
+    test('affiche le message de la base', () {
+      final text = message(
+        const StorageFailure(
+          'x',
+          code: 1,
+          detail: 'no such column: poster_url, SQLite 3.54.1',
+        ),
+      );
+
+      expect(text, contains('erreur SQLite 1'));
+      expect(text, contains('Détail : no such column: poster_url'));
+    });
+
     test('nomme une erreur inattendue', () {
       expect(
         message(const UnexpectedFailure('x', kind: 'StateError')),
@@ -128,6 +141,28 @@ void main() {
       // La connexion, la réception, la préparation et le guide.
       expect(messages, hasLength(4));
       expect(messages, isNot(contains(null)));
+    });
+  });
+
+  group('finitions en échec', () {
+    const status = ImportStatus(
+      finished: true,
+      failedRefinements: {
+        CatalogRefinement.search: StorageFailure(
+          'x',
+          code: 1,
+          detail: 'SQL logic error',
+        ),
+      },
+    );
+
+    test('le catalogue est là, la finition manquante est nommée', () {
+      final text = importMessage(l10n, status);
+
+      expect(text, contains('terminée'));
+      expect(text, contains("l'index de recherche"));
+      expect(text, contains('SQL logic error'));
+      expect(status.needsAttention, isTrue);
     });
   });
 

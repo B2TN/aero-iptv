@@ -314,6 +314,25 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String importErrorDetail(String detail) {
+    return 'التفاصيل: $detail';
+  }
+
+  @override
+  String importUnrefined(String steps) {
+    return 'اكتمل التحديث، دون: $steps.';
+  }
+
+  @override
+  String get importRefineHomonyms => 'فصل المسلسلات التي تحمل الاسم نفسه';
+
+  @override
+  String get importRefineVersions => 'تجميع النسخ اللغوية';
+
+  @override
+  String get importRefineSearch => 'فهرس البحث';
+
+  @override
   String get importStorageFull =>
       'لم تعد في الجهاز مساحة كافية لحفظ الكتالوج. أفرغ بعض مساحة التخزين ثم أعد المحاولة.';
 

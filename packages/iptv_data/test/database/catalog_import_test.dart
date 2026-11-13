@@ -639,6 +639,59 @@ void main() {
     });
   });
 
+  group('finitions', () {
+    /// Toute modification d'une série échoue, en erreur SQLite 1 : la base
+    /// refuse une étape de la préparation du catalogue.
+    Future<void> breakSeriesUpdates() => db.customStatement(
+      'CREATE TRIGGER casse BEFORE UPDATE ON series_entries '
+      'BEGIN INSERT INTO absente VALUES (1); END',
+    );
+
+    Future<List<ImportProgress>> importSample() {
+      final body = File('test/fixtures/sample.m3u').readAsStringSync();
+      final client = MockClient(
+        (_) async => http.Response.bytes(utf8.encode(body), 200),
+      );
+      return runImport(M3uSourceAdapter(client));
+    }
+
+    test(
+      'une finition refusée n empêche pas d afficher le catalogue',
+      () async {
+        await breakSeriesUpdates();
+
+        final progress = await importSample();
+
+        final done = progress.last;
+        expect(done.stage, ImportStage.done);
+        // Seule la séparation des homonymes modifie des séries de cet exemple.
+        expect(done.failedRefinements.keys, [CatalogRefinement.homonyms]);
+        final failure =
+            done.failedRefinements[CatalogRefinement.homonyms]!
+                as StorageFailure;
+        expect(failure.code, 1);
+        expect(failure.detail, contains('no such table'));
+        expect(failure.detail, contains('SQLite 3.'));
+
+        final movies = await catalog.movies(sourceId, const PageRequest());
+        expect(movies.items, isNotEmpty);
+        final found = await search.search(
+          sourceId,
+          'inc',
+          const PageRequest(),
+          language: 'fr',
+        );
+        expect(found.items.single.title, 'Inception');
+      },
+    );
+
+    test('un import sans incident ne signale aucune finition', () async {
+      final progress = await importSample();
+
+      expect(progress.last.failedRefinements, isEmpty);
+    });
+  });
+
   group('sections', () {
     const outage = ServerFailure('panne', status: 503);
 

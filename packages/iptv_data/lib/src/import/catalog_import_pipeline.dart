@@ -112,22 +112,44 @@ final class CatalogImportPipeline {
         }
       }
       yield ImportProgress(ImportStage.indexing, processed: processed);
-      await _maintenance.separateHomonyms(catalogId);
-      await _maintenance.mergeTranslatedVersions(catalogId);
-      await _maintenance.buildSearchIndex(catalogId);
     } catch (_) {
-      await _maintenance.purge(catalogId);
+      await _discard(catalogId);
       rethrow;
     }
 
-    final previous = await _maintenance.activate(sourceId, catalogId, _clock());
-    if (previous != null) await _maintenance.purge(previous);
+    // Les finitions améliorent le catalogue, mais aucune ne doit empêcher de
+    // l'afficher : celle qui échoue est signalée, et l'import continue.
+    final refinements = <CatalogRefinement, Future<void> Function()>{
+      CatalogRefinement.homonyms: () =>
+          _maintenance.separateHomonyms(catalogId),
+      CatalogRefinement.versions: () =>
+          _maintenance.mergeTranslatedVersions(catalogId),
+      CatalogRefinement.search: () => _maintenance.buildSearchIndex(catalogId),
+    };
+    final failedRefinements = <CatalogRefinement, Failure>{};
+    for (final MapEntry(key: step, value: refine) in refinements.entries) {
+      try {
+        await refine();
+      } on Object catch (error) {
+        failedRefinements[step] = importFailureOf(error);
+      }
+    }
+
+    final int? previous;
+    try {
+      previous = await _maintenance.activate(sourceId, catalogId, _clock());
+    } catch (_) {
+      await _discard(catalogId);
+      rethrow;
+    }
+    if (previous != null) await _discard(previous);
 
     // Le catalogue est déjà consultable : le guide se télécharge ensuite.
     yield ImportProgress(
       ImportStage.epg,
       processed: processed,
       failedSections: failed,
+      failedRefinements: failedRefinements,
     );
     final epgFailed = !await _importEpg(
       sourceId,
@@ -140,7 +162,19 @@ final class CatalogImportPipeline {
       processed: processed,
       epgFailed: epgFailed,
       failedSections: failed,
+      failedRefinements: failedRefinements,
     );
+  }
+
+  /// Retire un catalogue qui ne sera pas affiché. S'il résiste, le prochain
+  /// import le retirera parmi les orphelins : son échec ne doit pas masquer
+  /// l'erreur qui a mené ici.
+  Future<void> _discard(int catalogId) async {
+    try {
+      await _maintenance.purge(catalogId);
+    } on Object {
+      // Voir ci-dessus.
+    }
   }
 
   /// Une panne passagère mérite un nouvel essai, pas un refus du compte.

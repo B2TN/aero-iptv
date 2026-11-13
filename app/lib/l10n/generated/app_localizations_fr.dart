@@ -319,6 +319,25 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String importErrorDetail(String detail) {
+    return 'Détail : $detail';
+  }
+
+  @override
+  String importUnrefined(String steps) {
+    return 'Actualisation terminée, sans : $steps.';
+  }
+
+  @override
+  String get importRefineHomonyms => 'la séparation des séries homonymes';
+
+  @override
+  String get importRefineVersions => 'le regroupement des versions';
+
+  @override
+  String get importRefineSearch => 'l\'index de recherche';
+
+  @override
   String get importStorageFull =>
       'L\'appareil n\'a plus assez de place pour enregistrer le catalogue. Libérez de l\'espace de stockage, puis réessayez.';
 
