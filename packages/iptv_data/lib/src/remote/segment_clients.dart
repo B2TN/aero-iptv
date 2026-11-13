@@ -130,14 +130,72 @@ final class TvMazeClient {
   /// la diffusion a commencé cette année-là. `null` si aucune ne correspond :
   /// une série voisine donnerait des passages faux.
   Future<SeriesIds?> lookup(String title, {int? year}) async {
-    final uri = Uri.https('api.tvmaze.com', '/search/shows', {'q': title});
-    final response = await openGet(_client, uri);
-    final Object? decoded;
-    try {
-      decoded = jsonDecode(await textChunks(response).join());
-    } on FormatException {
-      throw const ParseFailure('Réponse TVmaze illisible.');
+    final show = await _findShow(title, year: year);
+    final externals = show?['externals'];
+    if (externals is! Map<String, dynamic>) return null;
+    final tvdb = externals['thetvdb'];
+    final imdb = externals['imdb'];
+    return (
+      tvdbId: tvdb is int ? tvdb : null,
+      imdbId: imdb is String && imdb.startsWith('tt') ? imdb : null,
+    );
+  }
+
+  /// État de diffusion de la série et ses prochains épisodes, à partir de
+  /// [now]. `null` si aucune série ne correspond, comme pour [lookup].
+  Future<ShowSchedule?> schedule(
+    String title, {
+    int? year,
+    required DateTime now,
+  }) async {
+    final show = await _findShow(title, year: year);
+    final id = show?['id'];
+    if (show == null || id is! int) return null;
+    final running = show['status'] == 'Running';
+    // Une série terminée n'annonce plus rien : inutile de lire ses épisodes.
+    if (!running) return const ShowSchedule(running: false);
+
+    final episodes = await _getJson(
+      Uri.https('api.tvmaze.com', '/shows/$id/episodes'),
+    );
+    final upcoming = <UpcomingEpisode>[
+      if (episodes is List)
+        for (final episode in episodes) ?_upcoming(episode, now),
+    ]..sort((a, b) => a.airDate.compareTo(b.airDate));
+    return ShowSchedule(running: true, upcoming: upcoming);
+  }
+
+  /// Épisode pas encore diffusé à [now], ou `null`. TVmaze donne l'instant
+  /// exact de diffusion (`airstamp`) et le jour dans le pays d'origine
+  /// (`airdate`), seul montré.
+  static UpcomingEpisode? _upcoming(Object? json, DateTime now) {
+    if (json is! Map<String, dynamic>) return null;
+    final season = json['season'];
+    final number = json['number'];
+    final stamp = DateTime.tryParse('${json['airstamp'] ?? ''}');
+    final day = DateTime.tryParse('${json['airdate'] ?? ''}');
+    if (season is! int || number is! int || stamp == null || day == null) {
+      return null;
     }
+    if (!stamp.isAfter(now)) return null;
+    final name = '${json['name'] ?? ''}'.trim();
+    return UpcomingEpisode(
+      season: season,
+      number: number,
+      airDate: DateTime(day.year, day.month, day.day),
+      // TVmaze nomme « TBA » ou « Episode 5 » un épisode sans titre annoncé.
+      title: name.isEmpty || name == 'TBA' || name == 'Episode $number'
+          ? null
+          : name,
+    );
+  }
+
+  /// Série dont le nom est exactement [title], et, si [year] est connue, dont
+  /// la diffusion a commencé cette année-là.
+  Future<Map<String, dynamic>?> _findShow(String title, {int? year}) async {
+    final decoded = await _getJson(
+      Uri.https('api.tvmaze.com', '/search/shows', {'q': title}),
+    );
     if (decoded is! List) return null;
     final wanted = GroupingKey.of(title);
     for (final result in decoded) {
@@ -147,15 +205,17 @@ final class TvMazeClient {
       if (GroupingKey.of('${show['name'] ?? ''}') != wanted) continue;
       final premiered = '${show['premiered'] ?? ''}';
       if (year != null && !premiered.startsWith('$year')) continue;
-      final externals = show['externals'];
-      if (externals is! Map<String, dynamic>) continue;
-      final tvdb = externals['thetvdb'];
-      final imdb = externals['imdb'];
-      return (
-        tvdbId: tvdb is int ? tvdb : null,
-        imdbId: imdb is String && imdb.startsWith('tt') ? imdb : null,
-      );
+      return show;
     }
     return null;
+  }
+
+  Future<Object?> _getJson(Uri uri) async {
+    final response = await openGet(_client, uri);
+    try {
+      return jsonDecode(await textChunks(response).join());
+    } on FormatException {
+      throw const ParseFailure('Réponse TVmaze illisible.');
+    }
   }
 }

@@ -15,6 +15,7 @@ export 'src/repositories/catalog_repository_impl.dart';
 export 'src/repositories/epg_repository_impl.dart';
 export 'src/repositories/live_tv_repository_impl.dart';
 export 'src/repositories/playlist_repository_impl.dart';
+export 'src/repositories/schedule_repository_impl.dart';
 export 'src/repositories/search_repository_impl.dart';
 export 'src/repositories/segment_repository_impl.dart';
 export 'src/repositories/settings_repository_impl.dart';
