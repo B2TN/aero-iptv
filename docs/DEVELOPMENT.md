@@ -23,10 +23,11 @@ powershell -ExecutionPolicy Bypass -File tool\build_android.ps1
 
 | Package | Devices |
 |---|---|
-| `aero_iptv-<version>-armeabi-v7a.apk` | All Fire TV Sticks, 32-bit boxes |
-| `aero_iptv-<version>-arm64-v8a.apk` | 64-bit Android boxes and TVs |
+| `aero_iptv-<version>-armeabi-v7a.apk` | All Fire TV Sticks, Android TVs and boxes, 32-bit and 64-bit |
 
-Without `app/android/key.properties`, the APKs are signed with the debug key: they install, but they can't be published or updated by a signed version. Before distributing anything, create the final key once and back it up outside the repository:
+There is a single 32-bit APK: the 64-bit one would not start on some Android TVs, and 64-bit devices run 32-bit apps. The script keeps `--split-per-abi`, which adds 1000 to the version code of the 32-bit APK, so that updates install over the versions already published.
+
+Without `app/android/key.properties`, the APK is signed with the debug key: it installs, but it can't be published or updated by a signed version. Before distributing anything, create the final key once and back it up outside the repository:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tool\create_keystore.ps1

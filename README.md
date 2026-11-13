@@ -29,8 +29,7 @@ Pick your device. The download starts right away.
 | Device | File | |
 |---|---|---|
 | Windows 10 or 11 PC (64-bit) | `.zip` archive | <a href="https://github.com/B2TN/aero-iptv/releases/latest/download/aero-iptv-windows-x64.zip"><img src="docs/assets/bouton-windows.svg" alt="Download for Windows" height="44"></a> |
-| All Fire TV Sticks, 32-bit Android boxes | 32-bit `.apk` | <a href="https://github.com/B2TN/aero-iptv/releases/latest/download/aero-iptv-fire-tv-armeabi-v7a.apk"><img src="docs/assets/bouton-firetv.svg" alt="Download for Fire TV Stick" height="44"></a> |
-| 64-bit Android TVs and boxes | 64-bit `.apk` | <a href="https://github.com/B2TN/aero-iptv/releases/latest/download/aero-iptv-android-tv-arm64-v8a.apk"><img src="docs/assets/bouton-androidtv.svg" alt="Download for Android TV" height="44"></a> |
+| Fire TV Stick, Android TVs and boxes | `.apk`, the same file for all | <a href="https://github.com/B2TN/aero-iptv/releases/latest/download/aero-iptv-fire-tv-armeabi-v7a.apk"><img src="docs/assets/bouton-firetv.svg" alt="Download for Fire TV Stick" height="44"></a> <a href="https://github.com/B2TN/aero-iptv/releases/latest/download/aero-iptv-fire-tv-armeabi-v7a.apk"><img src="docs/assets/bouton-androidtv.svg" alt="Download for Android TV" height="44"></a> |
 
 All versions are on the [releases page](https://github.com/B2TN/aero-iptv/releases).
 
@@ -57,7 +56,8 @@ All versions are on the [releases page](https://github.com/B2TN/aero-iptv/releas
 
 1. Copy the `.apk` file to a USB drive, or download it with an app such as Downloader.
 2. Open it with a file manager, then allow the installation when the TV asks.
-3. If the TV refuses the 64-bit version, install the one from the **Fire TV Stick** button: it works everywhere.
+
+The same file works on 32-bit and 64-bit TVs: there is no separate 64-bit version anymore.
 
 </details>
 
