@@ -6,6 +6,7 @@ final class AppSettings {
     this.groupSeries = true,
     this.groupChannels = true,
     this.groupMovies = true,
+    this.performanceMode,
     this.liveDelaySeconds = 0,
     this.languageCode = 'fr',
     this.activeSourceId,
@@ -22,6 +23,10 @@ final class AppSettings {
   /// Fusion des versions d'un film. Désactivée : chaque version est un titre à
   /// part, lu sans passer par le choix de la version.
   final bool groupMovies;
+
+  /// Interface allégée, sans flou ni reflet. `null` tant que l'utilisateur n'a
+  /// pas choisi : l'appareil décide alors selon sa mémoire.
+  final bool? performanceMode;
 
   /// Retard ajouté aux chaînes en direct pour stabiliser la lecture.
   final int liveDelaySeconds;
@@ -42,6 +47,7 @@ final class AppSettings {
     bool? groupSeries,
     bool? groupChannels,
     bool? groupMovies,
+    bool? performanceMode,
     int? liveDelaySeconds,
     String? languageCode,
     int? activeSourceId,
@@ -51,6 +57,7 @@ final class AppSettings {
     groupSeries: groupSeries ?? this.groupSeries,
     groupChannels: groupChannels ?? this.groupChannels,
     groupMovies: groupMovies ?? this.groupMovies,
+    performanceMode: performanceMode ?? this.performanceMode,
     liveDelaySeconds: liveDelaySeconds ?? this.liveDelaySeconds,
     languageCode: languageCode ?? this.languageCode,
     activeSourceId: activeSourceId ?? this.activeSourceId,

@@ -128,6 +128,7 @@ class SettingsScreen extends ConsumerWidget {
         ? l10n.settingsKeySet
         : l10n.settingsKeyUnset;
 
+    final performance = ref.watch(lookProvider).isPerformance;
     final rows =
         <({String label, String value, VoidCallback action, bool? toggled})>[
           (
@@ -176,6 +177,18 @@ class SettingsScreen extends ConsumerWidget {
                 languageNames[settings.languageCode] ?? settings.languageCode,
             action: () => _chooseLanguage(context, ref),
             toggled: null,
+          ),
+          (
+            label: l10n.settingsPerformance,
+            // Sans choix de l'utilisateur, l'appareil a décidé : on le dit.
+            value: settings.performanceMode == null
+                ? l10n.settingsPerformanceAuto(onOff(performance))
+                : onOff(performance),
+            action: () => updateSettings(
+              ref,
+              (current) => current.copyWith(performanceMode: !performance),
+            ),
+            toggled: performance,
           ),
           (
             label: l10n.settingsSubtitleAppearance,

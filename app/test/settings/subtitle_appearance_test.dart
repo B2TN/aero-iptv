@@ -10,6 +10,9 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:iptv_domain/iptv_domain.dart';
+import 'package:aero_iptv/app/di/infrastructure_providers.dart';
+import 'package:aero_iptv/app/platform/device_profile.dart';
+import 'package:iptv_player/iptv_player.dart' show MemoryTier;
 
 /// Réglages en mémoire, qui publient chaque enregistrement.
 final class _Settings implements SettingsRepository {
@@ -48,6 +51,7 @@ Future<_Settings> _pump(WidgetTester tester, Widget home) async {
     ProviderScope(
       overrides: [
         settingsRepositoryProvider.overrideWithValue(settings),
+        deviceProfileProvider.overrideWithValue(_profile),
         playlistRepositoryProvider.overrideWithValue(_NoSources()),
       ],
       child: WidgetsApp(
@@ -79,6 +83,12 @@ Future<void> _tapAndSettle(WidgetTester tester, String text) async {
 
 Text _sample(WidgetTester tester) =>
     tester.widget<Text>(find.text('On remonte avant la tempête.'));
+
+/// Appareil à mémoire ordinaire : le mode Aero, sauf choix contraire.
+const DeviceProfile _profile = DeviceProfile(
+  memoryTier: MemoryTier.standard,
+  isTv: true,
+);
 
 void main() {
   group('subtitleTextStyle', () {
@@ -198,6 +208,7 @@ void main() {
         ProviderScope(
           overrides: [
             settingsRepositoryProvider.overrideWithValue(_Settings()),
+            deviceProfileProvider.overrideWithValue(_profile),
           ],
           child: WidgetsApp(
             color: const Color(0xFF000000),

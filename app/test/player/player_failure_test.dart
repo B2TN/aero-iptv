@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:aero_iptv/app/app_state.dart';
 import 'package:aero_iptv/app/di/repository_providers.dart';
-import 'package:aero_iptv/design_system/tokens/aero_tokens.dart';
 import 'package:aero_iptv/features/player/player_target.dart';
 import 'package:aero_iptv/features/player/screens/player_screen.dart';
 import 'package:aero_iptv/focus/dpad_shortcuts.dart';
+import 'package:aero_iptv/focus/focus_frame.dart';
 import 'package:aero_iptv/l10n/generated/app_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -266,17 +266,13 @@ void main() {
     // La surcouche, disparue, ne doit pas reprendre le focus à son expiration.
     await tester.pump(const Duration(seconds: 6));
 
-    // Sur une TV, le focus doit se voir : le bouton passe à son visuel vert.
-    final button = tester.widget<DecoratedBox>(
+    // Sur une TV, le focus doit se voir : le bouton porte le cadre de focus.
+    final frame = tester.widget<FocusFrame>(
       find
-          .ancestor(
-            of: find.text('Retour'),
-            matching: find.byType(DecoratedBox),
-          )
+          .ancestor(of: find.text('Retour'), matching: find.byType(FocusFrame))
           .first,
     );
-    final image = (button.decoration as BoxDecoration).image!.image;
-    expect((image as AssetImage).assetName, AeroAssets.pillBlueFocus);
+    expect(frame.focused, isTrue);
     expect(find.textContaining('HTTP 401'), findsOneWidget);
 
     await tester.sendKeyEvent(LogicalKeyboardKey.select, platform: 'android');

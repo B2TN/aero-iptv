@@ -50,6 +50,8 @@
   "settingsGroupSeries": "Serienversionen gruppieren",
   "settingsGroupChannels": "Senderqualitäten gruppieren",
   "settingsGroupMovies": "Filmversionen zusammenfassen",
+  "settingsPerformance": "Leistungsmodus",
+  "settingsPerformanceAuto": "Automatisch ({state})",
   "settingsDelay": "Verzögerung bei Live-Sendern",
   "settingsDelayValue": "{seconds, plural, =0{Keine} other{{seconds} s}}",
   "settingsLanguage": "App-Sprache",

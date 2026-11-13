@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iptv_domain/iptv_domain.dart';
+import 'package:iptv_player/iptv_player.dart' show MemoryTier;
 
+import '../design_system/tokens/aero_look.dart';
 import '../l10n/generated/app_localizations.dart';
 import 'di/infrastructure_providers.dart';
 import 'di/repository_providers.dart';
@@ -29,6 +31,18 @@ final _settingsStreamProvider = StreamProvider<AppSettings>(
 final settingsProvider = Provider<AppSettings>(
   (ref) => ref.watch(_settingsStreamProvider).value ?? const AppSettings(),
 );
+
+/// Apparence de l'interface. Tant que l'utilisateur n'a rien choisi, un
+/// appareil à petite mémoire, comme un Fire TV Stick, prend le mode
+/// Performance.
+final lookProvider = Provider<AeroLook>((ref) {
+  final chosen = ref.watch(
+    settingsProvider.select((settings) => settings.performanceMode),
+  );
+  final light =
+      chosen ?? ref.watch(deviceProfileProvider).memoryTier == MemoryTier.low;
+  return light ? AeroLook.performance : AeroLook.aero;
+});
 
 /// Vrai une fois les réglages lus, pour éviter d'afficher la mauvaise langue.
 final settingsReadyProvider = Provider<bool>(

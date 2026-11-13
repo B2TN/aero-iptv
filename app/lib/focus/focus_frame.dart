@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../design_system/tokens/aero_look.dart';
 import '../design_system/tokens/aero_tokens.dart';
 
 const double _haloOutset = 16;
@@ -73,6 +74,20 @@ class _Halo extends StatelessWidget {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
+      // Mode Performance : un trait net, sans lueur à mélanger à l'image.
+      if (AeroLook.of(context).isPerformance) {
+        return Padding(
+          padding: const EdgeInsets.all(_haloOutset - 5),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              border: Border.all(color: AeroColors.leaf, width: 3),
+              borderRadius: BorderRadius.all(
+                Radius.circular(shape == HaloShape.pill ? 32 : 16),
+              ),
+            ),
+          ),
+        );
+      }
       if (constraints.maxWidth < _haloMinimum ||
           constraints.maxHeight < _haloMinimum) {
         // Trop petit pour la texture : une bordure garde le focus visible.

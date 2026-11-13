@@ -47,15 +47,21 @@ void main() {
     expect(violations('lib/focus', const ['../features']), isEmpty);
   });
 
-  test('aucun flou en temps réel dans l interface', () {
+  // Le flou en temps réel coûte cher sur un stick : seul le verre du mode Aero
+  // y a droit, et le mode Performance s'en passe.
+  test('le flou en temps réel reste réservé au verre du mode Aero', () {
     final blurs = [
       for (final file in dartFiles('lib'))
         if (RegExp(
           r'\b(BackdropFilter|ImageFilter\.blur|ShaderMask)\b',
         ).hasMatch(file.readAsStringSync().replaceAll(RegExp(r'///.*'), '')))
-          file.path,
+          file.path.replaceAll(r'\', '/'),
     ];
-    expect(blurs, isEmpty);
+    expect(blurs, ['lib/design_system/glass/glass_panel.dart']);
+    expect(
+      File('lib/design_system/glass/glass_panel.dart').readAsStringSync(),
+      contains('isPerformance'),
+    );
   });
 
   test('un seul onglet reste monté', () {

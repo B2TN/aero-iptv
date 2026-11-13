@@ -174,6 +174,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsGroupMovies => 'Group movie versions';
 
   @override
+  String get settingsPerformance => 'Performance mode';
+
+  @override
+  String settingsPerformanceAuto(String state) {
+    return 'Automatic ($state)';
+  }
+
+  @override
   String get settingsDelay => 'Live channel delay';
 
   @override

@@ -50,6 +50,8 @@
   "settingsGroupSeries": "Group series versions",
   "settingsGroupChannels": "Group channel qualities",
   "settingsGroupMovies": "Group movie versions",
+  "settingsPerformance": "Performance mode",
+  "settingsPerformanceAuto": "Automatic ({state})",
   "settingsDelay": "Live channel delay",
   "settingsDelayValue": "{seconds, plural, =0{None} other{{seconds} s}}",
   "settingsLanguage": "App language",

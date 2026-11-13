@@ -175,6 +175,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsGroupMovies => 'Filmversionen zusammenfassen';
 
   @override
+  String get settingsPerformance => 'Leistungsmodus';
+
+  @override
+  String settingsPerformanceAuto(String state) {
+    return 'Automatisch ($state)';
+  }
+
+  @override
   String get settingsDelay => 'Verzögerung bei Live-Sendern';
 
   @override

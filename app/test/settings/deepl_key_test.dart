@@ -9,6 +9,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:iptv_domain/iptv_domain.dart';
 import 'package:qr/qr.dart';
+import 'package:aero_iptv/app/platform/device_profile.dart';
+import 'package:iptv_player/iptv_player.dart' show MemoryTier;
 
 const String _keysPage = 'https://www.deepl.com/your-account/keys';
 
@@ -31,6 +33,7 @@ Future<List<String>> _openEntry(
     ProviderScope(
       overrides: [
         settingsProvider.overrideWithValue(AppSettings(languageCode: language)),
+        deviceProfileProvider.overrideWithValue(_profile),
         sourcesProvider.overrideWith(
           (ref) => Stream.value(const <PlaylistSource>[]),
         ),
@@ -61,6 +64,12 @@ Future<List<String>> _openEntry(
   await tester.pump();
   return opened;
 }
+
+/// Appareil à mémoire ordinaire : le mode Aero, sauf choix contraire.
+const DeviceProfile _profile = DeviceProfile(
+  memoryTier: MemoryTier.standard,
+  isTv: true,
+);
 
 void main() {
   testWidgets('le bouton se place à côté de Afficher', (tester) async {

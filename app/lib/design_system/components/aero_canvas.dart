@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 
+import '../tokens/aero_look.dart';
 import '../tokens/aero_tokens.dart';
 
 /// En dessous, les écrans n'ont plus la place de s'organiser : le canevas gagne
@@ -52,13 +53,29 @@ class AeroCanvas extends StatelessWidget {
     fit: StackFit.expand,
     children: [
       // Couche isolée : le fond n'est jamais redessiné quand le focus bouge.
-      const RepaintBoundary(
-        child: Image(
-          image: AssetImage(AeroAssets.background),
-          fit: BoxFit.cover,
-          gaplessPlayback: true,
-          filterQuality: FilterQuality.low,
-        ),
+      RepaintBoundary(
+        child: AeroLook.of(context).isPerformance
+            // Un dégradé, sans image à décoder ni à garder en mémoire.
+            ? const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      PerformanceColors.backgroundTop,
+                      PerformanceColors.backgroundMiddle,
+                      PerformanceColors.backgroundBottom,
+                    ],
+                    stops: [0, 0.6, 1],
+                  ),
+                ),
+              )
+            : const Image(
+                image: AssetImage(AeroAssets.background),
+                fit: BoxFit.cover,
+                gaplessPlayback: true,
+                filterQuality: FilterQuality.low,
+              ),
       ),
       AeroScale(child: child),
     ],

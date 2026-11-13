@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../tokens/aero_look.dart';
 import '../tokens/aero_tokens.dart';
 import 'poster_image.dart';
 
@@ -28,6 +29,7 @@ class PosterCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fraction = progress;
+    final performance = AeroLook.of(context).isPerformance;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -42,11 +44,21 @@ class PosterCard extends StatelessWidget {
                   decodeWidth: 240,
                   placeholder: _Placeholder(title: title),
                 ),
-                const IgnorePointer(
-                  child: Image(
-                    image: AssetImage(AeroAssets.cardFrame),
-                    fit: BoxFit.fill,
-                  ),
+                IgnorePointer(
+                  child: performance
+                      // Un simple filet, sans reflet de verre.
+                      ? const DecoratedBox(
+                          decoration: BoxDecoration(
+                            borderRadius: _radius,
+                            border: Border.fromBorderSide(
+                              BorderSide(color: PerformanceColors.panelBorder),
+                            ),
+                          ),
+                        )
+                      : const Image(
+                          image: AssetImage(AeroAssets.cardFrame),
+                          fit: BoxFit.fill,
+                        ),
                 ),
               ],
             ),

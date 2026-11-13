@@ -173,6 +173,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsGroupMovies => 'تجميع نسخ الأفلام';
 
   @override
+  String get settingsPerformance => 'وضع الأداء';
+
+  @override
+  String settingsPerformanceAuto(String state) {
+    return 'تلقائي ($state)';
+  }
+
+  @override
   String get settingsDelay => 'تأخير القنوات المباشرة';
 
   @override

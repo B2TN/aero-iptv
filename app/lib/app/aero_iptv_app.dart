@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../design_system/tokens/aero_look.dart';
 import '../design_system/tokens/aero_tokens.dart';
 import '../focus/dpad_shortcuts.dart';
 import '../l10n/generated/app_localizations.dart';
@@ -52,6 +53,10 @@ class _AeroIptvAppState extends ConsumerState<AeroIptvApp> {
           },
         ),
       },
+      builder: (context, child) => AeroLookScope(
+        look: ref.watch(lookProvider),
+        child: child ?? const SizedBox.shrink(),
+      ),
       home: const AppShell(),
       pageRouteBuilder: <T>(settings, builder) => PageRouteBuilder<T>(
         settings: settings,

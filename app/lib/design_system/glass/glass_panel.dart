@@ -1,17 +1,19 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/widgets.dart';
 
-import '../tokens/aero_tokens.dart';
+import '../tokens/aero_look.dart';
 
-const Rect _panelSlice = Rect.fromLTRB(24, 24, 40, 40);
+const BorderRadius _radius = BorderRadius.all(Radius.circular(20));
 
-/// Les coins de la texture occupent 48 unités : le centre doit garder une taille.
-const double _minPanelSize = 50;
+/// Flou du verre dépoli, en mode Aero seulement.
+const double _blurSigma = 18;
 
-/// Panneau de verre : une image pré-rendue étirée en neuf zones.
+/// Panneau de verre.
 ///
-/// Il n'utilise volontairement pas `BackdropFilter` : le flou en temps réel
-/// ferait chuter les images par seconde sur un stick. L'aspect dépoli est déjà
-/// contenu dans la texture.
+/// En mode Aero, il floute ce qui passe derrière lui : c'est l'effet le plus
+/// coûteux de l'interface. En mode Performance, il devient un aplat opaque,
+/// sans flou ni reflet, que même un Fire TV Stick dessine sans effort.
 class GlassPanel extends StatelessWidget {
   const GlassPanel({
     required this.child,
@@ -23,22 +25,39 @@ class GlassPanel extends StatelessWidget {
   final EdgeInsetsGeometry padding;
 
   @override
-  Widget build(BuildContext context) => ConstrainedBox(
-    constraints: const BoxConstraints(
-      minWidth: _minPanelSize,
-      minHeight: _minPanelSize,
-    ),
-    child: DecoratedBox(
-      decoration: const BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage(AeroAssets.glassPanel),
-          centerSlice: _panelSlice,
-          scale: AeroAssets.scale,
-          fit: BoxFit.fill,
-          filterQuality: FilterQuality.medium,
+  Widget build(BuildContext context) {
+    final content = Padding(padding: padding, child: child);
+    if (AeroLook.of(context).isPerformance) {
+      return DecoratedBox(
+        decoration: const BoxDecoration(
+          color: PerformanceColors.panel,
+          borderRadius: _radius,
+          border: Border.fromBorderSide(
+            BorderSide(color: PerformanceColors.panelBorder),
+          ),
+        ),
+        child: content,
+      );
+    }
+    return ClipRRect(
+      borderRadius: _radius,
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: _blurSigma, sigmaY: _blurSigma),
+        child: DecoratedBox(
+          decoration: const BoxDecoration(
+            borderRadius: _radius,
+            border: Border.fromBorderSide(BorderSide(color: Color(0x42EAF8FF))),
+            // Un liseré clair en haut, comme la lumière sur l'arête du verre.
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0x4DFFFFFF), Color(0x24EAF8FF), Color(0x0DEAF8FF)],
+              stops: [0, 0.03, 1],
+            ),
+          ),
+          child: content,
         ),
       ),
-      child: Padding(padding: padding, child: child),
-    ),
-  );
+    );
+  }
 }

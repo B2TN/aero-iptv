@@ -404,6 +404,18 @@ abstract class AppLocalizations {
   /// **'Regrouper les versions des films'**
   String get settingsGroupMovies;
 
+  /// No description provided for @settingsPerformance.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mode Performance'**
+  String get settingsPerformance;
+
+  /// No description provided for @settingsPerformanceAuto.
+  ///
+  /// In fr, this message translates to:
+  /// **'Automatique ({state})'**
+  String settingsPerformanceAuto(String state);
+
   /// No description provided for @settingsDelay.
   ///
   /// In fr, this message translates to:

@@ -50,6 +50,8 @@
   "settingsGroupSeries": "تجميع نسخ المسلسلات",
   "settingsGroupChannels": "تجميع جودات القنوات",
   "settingsGroupMovies": "تجميع نسخ الأفلام",
+  "settingsPerformance": "وضع الأداء",
+  "settingsPerformanceAuto": "تلقائي ({state})",
   "settingsDelay": "تأخير القنوات المباشرة",
   "settingsDelayValue": "{seconds, plural, =0{بدون} other{{seconds} ث}}",
   "settingsLanguage": "لغة التطبيق",
