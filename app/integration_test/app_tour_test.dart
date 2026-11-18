@@ -6,6 +6,9 @@ import 'package:aero_iptv/app/app_state.dart';
 import 'package:aero_iptv/app/di/repository_providers.dart';
 import 'package:aero_iptv/bootstrap.dart';
 import 'package:aero_iptv/features/home/screens/home_screen.dart';
+import 'package:aero_iptv/features/media_detail/screens/movie_detail_screen.dart';
+import 'package:aero_iptv/features/player/screens/player_screen.dart';
+import 'package:aero_iptv/focus/focus_memory.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -80,6 +83,9 @@ void main() {
   }
 
   Future<void> shot(WidgetTester tester, String name) async {
+    // Une ligne par étape : sur un appareil sans captures, le journal dit
+    // jusqu'où la visite est allée.
+    debugPrint('ÉTAPE $name');
     if (shots == null) return;
     await tester.pump();
     await tester.runAsync(() async {
@@ -92,6 +98,17 @@ void main() {
       await file.create(recursive: true);
       await file.writeAsBytes(data!.buffer.asUint8List());
     });
+  }
+
+  /// Quitte le lecteur : un Retour masque les commandes, le suivant ferme.
+  /// Sur l'émulateur, sans sortie vidéo, le fichier se termine aussitôt et le
+  /// lecteur se ferme seul : un Retour de trop quitterait l'application.
+  Future<void> leavePlayer(WidgetTester tester) async {
+    for (var i = 0; i < 3; i++) {
+      if (find.byType(PlayerScreen).evaluate().isEmpty) return;
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await wait(tester, 500);
+    }
   }
 
   /// Défilement vertical de l'accueil.
@@ -298,6 +315,7 @@ void main() {
     await wait(tester, 2500);
     expectFocus('lecteur');
     await shot(tester, '10_lecteur');
+    final playing = find.byType(PlayerScreen).evaluate().isNotEmpty;
     where = 'lecteur';
     for (final key in [
       LogicalKeyboardKey.arrowUp,
@@ -313,11 +331,13 @@ void main() {
     ]) {
       await press(tester, key);
     }
-    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    if (playing) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await wait(tester, 400);
+      expect(find.text('Pause'), findsNothing);
+    }
+    await leavePlayer(tester);
     await wait(tester, 400);
-    expect(find.text('Pause'), findsNothing);
-    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-    await wait(tester, 800);
     expectFocus('retour du lecteur');
 
     // Recherche : clavier virtuel sur TV, vrai champ sur PC.
@@ -351,7 +371,9 @@ void main() {
     ]) {
       await press(tester, key);
     }
-    // Le clavier reprend sa première touche, comme au début de l'étape.
+    // Le clavier reprend sa première touche, comme au début de l'étape : il
+    // se souvient sinon de la dernière, laissée au bord par l'audit.
+    container.read(focusMemoryProvider).clear('search.');
     container.read(currentTabProvider.notifier).show(AppTab.home);
     await wait(tester, 600);
     container.read(currentTabProvider.notifier).show(AppTab.search);
@@ -453,10 +475,8 @@ void main() {
     await wait(tester, 1200);
     expectFocus('lecteur de film');
     await shot(tester, '18_lecteur_film');
-    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await leavePlayer(tester);
     await wait(tester, 400);
-    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-    await wait(tester, 800);
     expectFocus('retour du film');
 
     // Un film de la dernière rangée : fiche, lecture, puis retour. L'accueil
@@ -475,10 +495,9 @@ void main() {
     await press(tester, LogicalKeyboardKey.enter);
     await wait(tester, 2000);
     expectFocus('lecture depuis la fiche');
-    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-    await wait(tester, 400);
-    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-    await wait(tester, 900);
+    await leavePlayer(tester);
+    await wait(tester, 600);
+    expect(find.byType(MovieDetailScreen), findsOneWidget);
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await wait(tester, 1500);
     expectFocus('accueil après la lecture');
