@@ -48,6 +48,10 @@ final watchProgressRepositoryProvider = Provider<WatchProgressRepository>(
   (ref) => WatchProgressRepositoryImpl(ref.watch(databaseProvider)),
 );
 
+final favoritesRepositoryProvider = Provider<FavoritesRepository>(
+  (ref) => FavoritesRepositoryImpl(ref.watch(databaseProvider)),
+);
+
 final streamProbeProvider = Provider<StreamProbe>(
   (ref) => const HttpStreamProbe(),
 );

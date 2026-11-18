@@ -61,6 +61,11 @@
     }
   },
   "detailNoEpisodes": "Aucun épisode disponible pour cette version",
+  "menuOpenPage": "Voir la fiche",
+  "menuChooseVersion": "Choisir la version",
+  "menuAddFavorite": "Ajouter aux favoris",
+  "menuRemoveFavorite": "Retirer des favoris",
+  "homeFavorites": "Favoris",
   "detailSeasonCount": "{count, plural, =1{1 saison} other{{count} saisons}}",
   "@detailSeasonCount": {"placeholders": {"count": {"type": "int"}}},
   "detailRunning": "En cours de diffusion",

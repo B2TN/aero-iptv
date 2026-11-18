@@ -302,6 +302,36 @@ abstract class AppLocalizations {
   /// **'Aucun épisode disponible pour cette version'**
   String get detailNoEpisodes;
 
+  /// No description provided for @menuOpenPage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir la fiche'**
+  String get menuOpenPage;
+
+  /// No description provided for @menuChooseVersion.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir la version'**
+  String get menuChooseVersion;
+
+  /// No description provided for @menuAddFavorite.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter aux favoris'**
+  String get menuAddFavorite;
+
+  /// No description provided for @menuRemoveFavorite.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirer des favoris'**
+  String get menuRemoveFavorite;
+
+  /// No description provided for @homeFavorites.
+  ///
+  /// In fr, this message translates to:
+  /// **'Favoris'**
+  String get homeFavorites;
+
   /// No description provided for @detailSeasonCount.
   ///
   /// In fr, this message translates to:

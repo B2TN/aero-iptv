@@ -75,6 +75,26 @@ void main() {
     expect(selected, isEmpty);
   });
 
+  testWidgets('la touche Menu de la télécommande ouvre le menu', (
+    tester,
+  ) async {
+    final (selected, held) = await _pump(tester);
+
+    await tester.sendKeyEvent(
+      LogicalKeyboardKey.arrowRight,
+      platform: 'android',
+    );
+    await tester.pump();
+    await tester.sendKeyEvent(
+      LogicalKeyboardKey.contextMenu,
+      platform: 'android',
+    );
+    await tester.pump();
+
+    expect(held, [1]);
+    expect(selected, isEmpty);
+  });
+
   testWidgets('le clic droit ouvre aussi le menu', (tester) async {
     final (selected, held) = await _pump(tester);
 

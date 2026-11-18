@@ -15,6 +15,7 @@ import '../../../focus/dpad_collection.dart';
 import '../../home/screens/home_screen.dart';
 import '../../media_detail/open_movie.dart';
 import '../../media_detail/open_series.dart';
+import '../../media_detail/title_menu.dart';
 import '../../settings/playlist/playlist_manager_screen.dart';
 
 const Duration _inputDebounce = Duration(milliseconds: 180);
@@ -67,40 +68,49 @@ final _resultsProvider = FutureProvider.autoDispose<List<SearchHit>>((
 });
 
 /// Élément affiché à droite, qu'il vienne des tendances ou de la recherche.
+typedef _Opener = Future<void> Function(BuildContext context, WidgetRef ref);
+
 final class _GridItem {
   const _GridItem({
     required this.title,
     required this.imageUrl,
     required this.open,
+    required this.menu,
   });
 
   final String title;
   final String? imageUrl;
-  final Future<void> Function(BuildContext context, WidgetRef ref) open;
+  final _Opener open;
+
+  /// Menu de l'appui long, de la touche Menu et du clic droit.
+  final _Opener menu;
 }
 
 /// Recherche : clavier et suggestions à gauche, résultats à droite.
 class SearchScreen extends ConsumerWidget {
   const SearchScreen({super.key});
 
+  /// Retrouve le film ou la série d'un résultat, puis l'ouvre ou montre son
+  /// menu selon [withMenu].
   Future<void> _openHit(
     BuildContext context,
     WidgetRef ref,
-    SearchHit hit,
-  ) async {
+    SearchHit hit, {
+    bool withMenu = false,
+  }) async {
     final source = ref.read(activeSourceProvider);
     if (source == null) return;
     final catalog = ref.read(catalogRepositoryProvider);
     if (hit.kind == ContentKind.movie) {
       final movie = await catalog.movieById(hit.id);
       if (movie != null && context.mounted) {
-        await openMovie(context, ref, movie);
+        await (withMenu ? showMovieMenu : openMovie)(context, ref, movie);
       }
       return;
     }
     final series = await catalog.seriesById(hit.id);
     if (series != null && context.mounted) {
-      await openSeries(context, ref, series);
+      await (withMenu ? showSeriesMenu : openSeries)(context, ref, series);
     }
   }
 
@@ -112,12 +122,14 @@ class SearchScreen extends ConsumerWidget {
           title: series.title,
           imageUrl: series.posterUrl,
           open: (context, ref) => openSeries(context, ref, series),
+          menu: (context, ref) => showSeriesMenu(context, ref, series),
         ),
       for (final movie in feed.movies)
         _GridItem(
           title: movie.title,
           imageUrl: movie.posterUrl,
           open: (context, ref) => openMovie(context, ref, movie),
+          menu: (context, ref) => showMovieMenu(context, ref, movie),
         ),
     ].take(_maxTrending).toList(growable: false);
   }
@@ -146,6 +158,8 @@ class SearchScreen extends ConsumerWidget {
                 title: hit.title,
                 imageUrl: hit.posterUrl,
                 open: (context, ref) => _openHit(context, ref, hit),
+                menu: (context, ref) =>
+                    _openHit(context, ref, hit, withMenu: true),
               ),
           ]
         : _trending(ref.watch(homeFeedProvider).value, source.id);
@@ -263,6 +277,8 @@ class SearchScreen extends ConsumerWidget {
                               padding: const EdgeInsets.all(_gridPadding),
                               onSelect: (index) =>
                                   items[index].open(context, ref),
+                              onLongSelect: (index) =>
+                                  items[index].menu(context, ref),
                               itemBuilder: (context, index, focused) =>
                                   PosterCard(
                                     title: items[index].title,

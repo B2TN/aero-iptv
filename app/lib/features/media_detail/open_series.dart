@@ -53,15 +53,30 @@ Future<void> openSeries(
     }
     entryId = versions[choice].seriesEntryId;
   }
-  await navigator.push(
-    PageRouteBuilder<void>(
-      transitionDuration: Duration.zero,
-      reverseTransitionDuration: Duration.zero,
-      pageBuilder: (context, _, _) => MediaDetailScreen(
-        sourceId: source.id,
-        series: series,
-        seriesEntryId: entryId,
-      ),
-    ),
-  );
+  await _push(navigator, source.id, series, entryId);
 }
+
+/// Ouvre la fiche de la version [entryId] de [series], sans rien demander.
+Future<void> openSeriesVersion(
+  BuildContext context,
+  int sourceId,
+  Series series,
+  int entryId,
+) => _push(Navigator.of(context), sourceId, series, entryId);
+
+Future<void> _push(
+  NavigatorState navigator,
+  int sourceId,
+  Series series,
+  int entryId,
+) => navigator.push(
+  PageRouteBuilder<void>(
+    transitionDuration: Duration.zero,
+    reverseTransitionDuration: Duration.zero,
+    pageBuilder: (context, _, _) => MediaDetailScreen(
+      sourceId: sourceId,
+      series: series,
+      seriesEntryId: entryId,
+    ),
+  ),
+);

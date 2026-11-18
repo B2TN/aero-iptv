@@ -118,6 +118,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get detailNoEpisodes => 'No episodes available for this version';
 
   @override
+  String get menuOpenPage => 'Open the page';
+
+  @override
+  String get menuChooseVersion => 'Choose the version';
+
+  @override
+  String get menuAddFavorite => 'Add to favorites';
+
+  @override
+  String get menuRemoveFavorite => 'Remove from favorites';
+
+  @override
+  String get homeFavorites => 'Favorites';
+
+  @override
   String detailSeasonCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

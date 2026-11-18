@@ -119,6 +119,21 @@ class AppLocalizationsEs extends AppLocalizations {
       'No hay episodios disponibles para esta versión';
 
   @override
+  String get menuOpenPage => 'Ver la ficha';
+
+  @override
+  String get menuChooseVersion => 'Elegir la versión';
+
+  @override
+  String get menuAddFavorite => 'Añadir a favoritos';
+
+  @override
+  String get menuRemoveFavorite => 'Quitar de favoritos';
+
+  @override
+  String get homeFavorites => 'Favoritos';
+
+  @override
   String detailSeasonCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

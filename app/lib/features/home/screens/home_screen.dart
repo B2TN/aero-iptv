@@ -1,12 +1,12 @@
 import 'dart:math' as math;
 
+import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iptv_domain/iptv_domain.dart';
 
 import '../../../app/app_state.dart';
 import '../../../app/di/repository_providers.dart';
-import '../../../design_system/components/aero_menu.dart';
 import '../../../design_system/components/aero_states.dart';
 import '../../../design_system/components/poster_card.dart';
 import '../../../design_system/tokens/aero_tokens.dart';
@@ -14,8 +14,9 @@ import '../../../focus/dpad_collection.dart';
 import '../../../focus/focus_memory.dart';
 import '../../media_detail/open_continued.dart';
 import '../../media_detail/open_movie.dart';
+import '../../favorites/favorites_state.dart';
 import '../../media_detail/open_series.dart';
-import '../../player/player_target.dart';
+import '../../media_detail/title_menu.dart';
 import '../../settings/playlist/playlist_manager_screen.dart';
 import '../widgets/hero_carousel.dart';
 
@@ -37,9 +38,67 @@ final homeFeedProvider = FutureProvider.autoDispose<HomeFeed?>((ref) async {
   );
 });
 
+/// Film ou série de la rangée « Favoris », retrouvé dans le catalogue.
+typedef _FavoriteTitle = ({Movie? movie, Series? series});
+
+/// Favoris retrouvés dans le catalogue actuel, du plus récent au plus ancien.
+/// Un favori absent du catalogue reste enregistré : il revient avec le contenu.
+final _favoriteTitlesProvider =
+    FutureProvider.autoDispose<List<_FavoriteTitle>>((ref) async {
+      final source = ref.watch(activeSourceProvider);
+      final favorites =
+          ref.watch(favoritesProvider).value ?? const <Favorite>[];
+      if (source == null || favorites.isEmpty) return const [];
+      final language = ref.watch(
+        settingsProvider.select((settings) => settings.languageCode),
+      );
+      final catalog = ref.watch(catalogRepositoryProvider);
+      final movieKeys = {
+        for (final favorite in favorites)
+          if (favorite.kind == ContentKind.movie) favorite.key,
+      };
+      final movies = <String, List<Movie>>{};
+      if (movieKeys.isNotEmpty) {
+        for (final movie in await catalog.moviesByTitleKeys(
+          source.id,
+          movieKeys,
+        )) {
+          (movies[movieFavoriteKey(movie)] ??= []).add(movie);
+        }
+      }
+      final series = {
+        for (final found in await catalog.seriesByGroupingKeys(source.id, [
+          for (final favorite in favorites)
+            if (favorite.kind == ContentKind.series) favorite.key,
+        ], language: language))
+          found.groupingKey: found,
+      };
+      return [
+        for (final favorite in favorites)
+          if (favorite.kind == ContentKind.movie)
+            if (movies[favorite.key] case final versions?)
+              (
+                movie: versionsByLanguage(
+                  versions,
+                  (version) => version.languageTag ?? version.rawTitle,
+                  language,
+                ).first,
+                series: null,
+              )
+            else
+              ...[]
+          else if (favorite.kind == ContentKind.series)
+            if (series[favorite.key] case final found?)
+              (movie: null, series: found),
+      ];
+    });
+
 /// Marge d'une rangée, où déborde le halo de la carte active.
 const double _rowInset = 12;
 const double _chevronHeight = 40;
+
+/// Étoile des favoris, d'un or chaud sur le bleu.
+const Color _favoriteGold = Color(0xFFFFD86B);
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -119,36 +178,11 @@ class _HomeContent extends ConsumerWidget {
 
   final HomeFeed feed;
 
-  /// Options d'un élément de « Continuer à regarder ».
-  Future<void> _showContinueMenu(
-    BuildContext context,
-    WidgetRef ref,
-    WatchProgress item,
-  ) async {
-    final l10n = context.l10n;
-    final choice = await showAeroMenu(
-      context,
-      title: item.title,
-      options: [l10n.homeResume, l10n.homeRestart, l10n.homeRemoveContinue],
-    );
-    if (choice == null || !context.mounted) return;
-    final target = PlayerTarget.resume(item);
-    switch (choice) {
-      case 0:
-        await openPlayer(context, target);
-      case 1:
-        await openPlayer(context, target.resumingAt(Duration.zero));
-      case 2:
-        await ref
-            .read(watchProgressRepositoryProvider)
-            .remove(item.sourceId, item.contentKey);
-        ref.invalidate(homeFeedProvider);
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
+    final favorites =
+        ref.watch(_favoriteTitlesProvider).value ?? const <_FavoriteTitle>[];
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -175,8 +209,12 @@ class _HomeContent extends ConsumerWidget {
               withProgress: true,
               onSelect: (index) =>
                   openContinued(context, ref, feed.continueWatching[index]),
-              onLongSelect: (index) =>
-                  _showContinueMenu(context, ref, feed.continueWatching[index]),
+              onLongSelect: (index) => showContinueMenu(
+                context,
+                ref,
+                feed.continueWatching[index],
+                onRemoved: () => ref.invalidate(homeFeedProvider),
+              ),
               itemBuilder: (context, index, focused) {
                 final item = feed.continueWatching[index];
                 return PosterCard(
@@ -194,6 +232,47 @@ class _HomeContent extends ConsumerWidget {
                 );
               },
             ),
+          if (favorites.isNotEmpty)
+            _MediaRow(
+              title: l10n.homeFavorites,
+              glyph: Icons.star_rounded,
+              memoryKey: 'home.favorites',
+              itemCount: favorites.length,
+              onSelect: (index) => switch (favorites[index]) {
+                (movie: final Movie movie, series: _) => openMovie(
+                  context,
+                  ref,
+                  movie,
+                ),
+                (movie: _, series: final Series series) => openSeries(
+                  context,
+                  ref,
+                  series,
+                ),
+                _ => Future<void>.value(),
+              },
+              onLongSelect: (index) => switch (favorites[index]) {
+                (movie: final Movie movie, series: _) => showMovieMenu(
+                  context,
+                  ref,
+                  movie,
+                ),
+                (movie: _, series: final Series series) => showSeriesMenu(
+                  context,
+                  ref,
+                  series,
+                ),
+                _ => Future<void>.value(),
+              },
+              itemBuilder: (context, index, focused) {
+                final item = favorites[index];
+                return PosterCard(
+                  title: item.movie?.title ?? item.series?.title ?? '',
+                  imageUrl: item.movie?.posterUrl ?? item.series?.posterUrl,
+                  focused: focused,
+                );
+              },
+            ),
           if (feed.series.isNotEmpty)
             _MediaRow(
               title: l10n.homeSeries,
@@ -201,6 +280,8 @@ class _HomeContent extends ConsumerWidget {
               memoryKey: 'home.series',
               itemCount: feed.series.length,
               onSelect: (index) => openSeries(context, ref, feed.series[index]),
+              onLongSelect: (index) =>
+                  showSeriesMenu(context, ref, feed.series[index]),
               itemBuilder: (context, index, focused) => PosterCard(
                 title: feed.series[index].title,
                 imageUrl: feed.series[index].posterUrl,
@@ -214,6 +295,8 @@ class _HomeContent extends ConsumerWidget {
               memoryKey: 'home.movies',
               itemCount: feed.movies.length,
               onSelect: (index) => openMovie(context, ref, feed.movies[index]),
+              onLongSelect: (index) =>
+                  showMovieMenu(context, ref, feed.movies[index]),
               itemBuilder: (context, index, focused) => PosterCard(
                 title: feed.movies[index].title,
                 imageUrl: feed.movies[index].posterUrl,
@@ -232,8 +315,9 @@ class _HomeContent extends ConsumerWidget {
 class _MediaRow extends ConsumerStatefulWidget {
   const _MediaRow({
     required this.title,
-    required this.icon,
     required this.memoryKey,
+    this.icon,
+    this.glyph,
     required this.itemCount,
     required this.itemBuilder,
     required this.onSelect,
@@ -242,7 +326,10 @@ class _MediaRow extends ConsumerStatefulWidget {
   });
 
   final String title;
-  final String icon;
+
+  /// Image de la rangée, ou à défaut [glyph].
+  final String? icon;
+  final IconData? glyph;
   final String memoryKey;
   final int itemCount;
   final DpadItemBuilder itemBuilder;
@@ -285,7 +372,10 @@ class _MediaRowState extends ConsumerState<_MediaRow> {
           ),
           child: Row(
             children: [
-              Image.asset(widget.icon, width: 30, height: 30),
+              if (widget.icon case final icon?)
+                Image.asset(icon, width: 30, height: 30)
+              else
+                Icon(widget.glyph, size: 30, color: _favoriteGold),
               const SizedBox(width: 10),
               Text(widget.title, style: AeroText.heading),
             ],

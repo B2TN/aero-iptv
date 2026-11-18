@@ -266,10 +266,13 @@ class _DpadCollectionState extends ConsumerState<DpadCollection> {
 
   KeyEventResult _onKeyEvent(FocusNode node, KeyEvent event) {
     final onLongSelect = widget.onLongSelect;
-    if (onLongSelect != null &&
-        widget.itemCount > 0 &&
-        isConfirmKey(event.logicalKey)) {
-      return _onHold(event, onLongSelect);
+    if (onLongSelect != null && widget.itemCount > 0) {
+      if (isConfirmKey(event.logicalKey)) return _onHold(event, onLongSelect);
+      // La touche Menu (≡) des télécommandes ouvre le même menu.
+      if (event.logicalKey == LogicalKeyboardKey.contextMenu) {
+        if (event is KeyDownEvent) onLongSelect(_index);
+        return KeyEventResult.handled;
+      }
     }
     if (event is KeyUpEvent || widget.itemCount == 0) {
       return KeyEventResult.ignored;
