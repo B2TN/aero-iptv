@@ -26,6 +26,13 @@ abstract interface class LiveTvRepository {
     required bool grouped,
   });
 
+  /// Chaînes fusionnées désignées par leur pays et leur clé de regroupement,
+  /// dans l'ordre de [keys]. Une chaîne absente du catalogue est ignorée.
+  Future<List<Channel>> channelsByKeys(
+    int sourceId,
+    List<({String? countryCode, String groupingKey})> keys,
+  );
+
   /// Flux de [channel], du meilleur au moins bon.
   Future<List<ChannelStream>> streamsOf(
     int sourceId,

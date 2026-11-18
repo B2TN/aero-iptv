@@ -202,6 +202,18 @@ streamsOfChannel(:country AS TEXT OR NULL):
     AND grouping_key = :channel_key
   ORDER BY quality DESC, sort_order;
 
+channelByKey(:country AS TEXT OR NULL):
+  SELECT MIN(c.id) AS channel_id,
+         MIN(c.display_name) AS display_name,
+         c.grouping_key AS channel_key,
+         MAX(c.logo_url) AS logo_url,
+         MAX(c.epg_key) AS epg_key
+  FROM live_channels c
+  WHERE c.catalog_id = (SELECT active_catalog_id FROM sources WHERE id = :source_id)
+    AND c.country_code IS :country
+    AND c.grouping_key = :channel_key
+  GROUP BY c.grouping_key;
+
 liveChannelById:
   SELECT * FROM live_channels WHERE id = :id;
 

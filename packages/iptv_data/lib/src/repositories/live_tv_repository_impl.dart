@@ -52,6 +52,30 @@ final class LiveTvRepositoryImpl implements LiveTvRepository {
   }
 
   @override
+  Future<List<Channel>> channelsByKeys(
+    int sourceId,
+    List<({String? countryCode, String groupingKey})> keys,
+  ) async => [
+    for (final key in keys)
+      if (await _db
+              .channelByKey(
+                sourceId: sourceId,
+                country: key.countryCode,
+                channelKey: key.groupingKey,
+              )
+              .getSingleOrNull()
+          case final row?)
+        Channel(
+          id: row.channelId!,
+          name: row.displayName ?? '',
+          groupingKey: row.channelKey,
+          countryCode: key.countryCode,
+          logoUrl: row.logoUrl,
+          epgKey: row.epgKey,
+        ),
+  ];
+
+  @override
   Future<Page<Channel>> channels(
     int sourceId,
     String? countryCode,

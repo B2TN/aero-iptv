@@ -3,14 +3,19 @@ import 'package:iptv_domain/iptv_domain.dart';
 
 import '../../../app/app_state.dart';
 import '../../../app/di/repository_providers.dart';
+import '../../favorites/favorites_state.dart';
 
 const int _pageSize = 50;
 
 /// Pays ouvert. Le type distingue « aucun choix » du pays inconnu (`code` nul).
 final class CountrySelection {
-  const CountrySelection(this.code);
+  const CountrySelection(this.code) : favorites = false;
+
+  /// Les chaînes favorites, à la place d'un pays.
+  const CountrySelection.favorites() : code = null, favorites = true;
 
   final String? code;
+  final bool favorites;
 }
 
 class SelectedCountry extends Notifier<CountrySelection?> {
@@ -24,6 +29,8 @@ class SelectedCountry extends Notifier<CountrySelection?> {
 
   void select(String? code) => state = CountrySelection(code);
 
+  void selectFavorites() => state = const CountrySelection.favorites();
+
   void clear() => state = null;
 }
 
@@ -36,6 +43,34 @@ final countriesProvider = FutureProvider.autoDispose<List<Country>>((
   final source = ref.watch(activeSourceProvider);
   if (source == null) return const [];
   return ref.watch(liveTvRepositoryProvider).countries(source.id);
+});
+
+/// Chaînes favorites présentes dans le catalogue, avec leur émission en
+/// cours, du plus récent favori au plus ancien.
+final favoriteChannelsProvider = FutureProvider.autoDispose<ChannelList>((
+  ref,
+) async {
+  final source = ref.watch(activeSourceProvider);
+  final favorites = ref.watch(favoritesProvider).value ?? const <Favorite>[];
+  if (source == null) return const ChannelList(hasMore: false);
+  final channels = await ref
+      .watch(liveTvRepositoryProvider)
+      .channelsByKeys(source.id, [
+        for (final favorite in favorites)
+          if (favorite.kind == ContentKind.live) channelKeyOf(favorite.key),
+      ]);
+  final programmes = await ref
+      .watch(epgRepositoryProvider)
+      .nowPlaying(
+        source.id,
+        channels.map((channel) => channel.epgKey).nonNulls,
+        DateTime.now(),
+      );
+  return ChannelList(
+    channels: channels,
+    programmes: programmes,
+    hasMore: false,
+  );
 });
 
 final groupsProvider = FutureProvider.autoDispose

@@ -168,6 +168,32 @@ void main() {
       ]);
     });
 
+    test('retrouve des chaînes favorites par pays et clé', () async {
+      final groups = await liveTv.groups(sourceId, 'FR', grouped: true);
+      final tf1 = (await liveTv.channels(
+        sourceId,
+        'FR',
+        groups.single,
+        const PageRequest(),
+        grouped: true,
+      )).items.single;
+
+      final found = await liveTv.channelsByKeys(sourceId, [
+        (countryCode: 'GB', groupingKey: tf1.groupingKey),
+        (countryCode: 'FR', groupingKey: 'disparue'),
+        (countryCode: 'FR', groupingKey: tf1.groupingKey),
+      ]);
+
+      expect(found.single.name, 'TF1');
+      expect(found.single.countryCode, 'FR');
+      final streams = await liveTv.streamsOf(
+        sourceId,
+        found.single,
+        grouped: true,
+      );
+      expect(streams, hasLength(3));
+    });
+
     test('rétablit la vue brute sans réimport', () async {
       final groups = await liveTv.groups(sourceId, 'FR', grouped: false);
       expect(groups.map((g) => g.displayName), [

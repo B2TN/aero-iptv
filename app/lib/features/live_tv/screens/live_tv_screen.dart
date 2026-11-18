@@ -17,12 +17,52 @@ import '../../../design_system/glass/glass_panel.dart';
 import '../../../design_system/tokens/aero_tokens.dart';
 import '../../../focus/dpad_collection.dart';
 import '../../../l10n/country_names.dart';
+import '../../favorites/favorites_state.dart';
 import '../../player/player_target.dart';
 import '../../settings/playlist/playlist_manager_screen.dart';
 import '../providers/live_tv_providers.dart';
 
 const Duration _groupPreviewDelay = Duration(milliseconds: 180);
 const double _flagTileWidth = 170;
+
+/// Clé de l'écran des favoris, distincte de tout code pays.
+const String _favoritesKey = '*favoris';
+
+/// Étoile des favoris, d'un or chaud sur le bleu.
+const Color _favoriteGold = Color(0xFFFFD86B);
+
+/// Menu d'une chaîne : la regarder, ou l'ajouter aux favoris ou l'en retirer.
+Future<void> _showChannelMenu(
+  BuildContext context,
+  WidgetRef ref,
+  Channel channel,
+  Future<void> Function(Channel channel) play,
+) async {
+  final l10n = context.l10n;
+  final key = channelFavoriteKey(channel);
+  final favorite = await isFavorite(ref, ContentKind.live, key);
+  if (!context.mounted) return;
+  final picked = await showAeroMenu(
+    context,
+    title: channel.name,
+    options: [
+      l10n.homePlay,
+      favorite ? l10n.menuRemoveFavorite : l10n.menuAddFavorite,
+    ],
+  );
+  switch (picked) {
+    case 0:
+      await play(channel);
+    case 1:
+      await toggleFavorite(
+        ref,
+        kind: ContentKind.live,
+        key: key,
+        title: channel.name,
+        posterUrl: channel.logoUrl,
+      );
+  }
+}
 
 /// Live TV : drapeaux, puis groupes et chaînes du pays choisi.
 class LiveTvScreen extends ConsumerWidget {
@@ -43,8 +83,9 @@ class LiveTvScreen extends ConsumerWidget {
     return selection == null
         ? const _CountryGrid()
         : _ChannelBrowser(
-            key: ValueKey(selection.code),
+            key: ValueKey(selection.favorites ? _favoritesKey : selection.code),
             countryCode: selection.code,
+            favorites: selection.favorites,
           );
   }
 }
@@ -58,6 +99,11 @@ class _CountryGrid extends ConsumerWidget {
     final language = ref.watch(
       settingsProvider.select((settings) => settings.languageCode),
     );
+    final hasFavorites = (ref.watch(favoritesProvider).value ?? const []).any(
+      (favorite) => favorite.kind == ContentKind.live,
+    );
+    // La tuile des favoris précède les pays.
+    final offset = hasFavorites ? 1 : 0;
     return ref
         .watch(countriesProvider)
         .when(
@@ -68,7 +114,7 @@ class _CountryGrid extends ConsumerWidget {
             onAction: () => ref.invalidate(countriesProvider),
           ),
           data: (countries) {
-            if (countries.isEmpty) {
+            if (countries.isEmpty && !hasFavorites) {
               return AeroMessage(
                 title: l10n.emptyCatalogTitle,
                 body: l10n.emptyCatalogBody,
@@ -90,7 +136,7 @@ class _CountryGrid extends ConsumerWidget {
                       builder: (context, constraints) => DpadCollection.grid(
                         autofocus: true,
                         memoryKey: 'live.countries',
-                        itemCount: countries.length,
+                        itemCount: countries.length + offset,
                         itemExtent: 128,
                         columns: math.max(
                           2,
@@ -98,17 +144,30 @@ class _CountryGrid extends ConsumerWidget {
                         ),
                         spacing: 18,
                         padding: const EdgeInsets.all(18),
-                        onSelect: (index) => ref
-                            .read(selectedCountryProvider.notifier)
-                            .select(countries[index].code),
-                        itemBuilder: (context, index, focused) => _FlagTile(
-                          code: countries[index].code,
-                          name: _countryLabel(
-                            countries[index].code,
-                            language,
-                            l10n.liveUnknownCountry,
-                          ),
-                        ),
+                        onSelect: (index) {
+                          final selection = ref.read(
+                            selectedCountryProvider.notifier,
+                          );
+                          index < offset
+                              ? selection.selectFavorites()
+                              : selection.select(
+                                  countries[index - offset].code,
+                                );
+                        },
+                        itemBuilder: (context, index, focused) => index < offset
+                            ? _FlagTile(
+                                code: null,
+                                name: l10n.homeFavorites,
+                                glyph: Icons.star_rounded,
+                              )
+                            : _FlagTile(
+                                code: countries[index - offset].code,
+                                name: _countryLabel(
+                                  countries[index - offset].code,
+                                  language,
+                                  l10n.liveUnknownCountry,
+                                ),
+                              ),
                       ),
                     ),
                   ),
@@ -124,10 +183,13 @@ class _CountryGrid extends ConsumerWidget {
 }
 
 class _FlagTile extends StatelessWidget {
-  const _FlagTile({required this.code, required this.name});
+  const _FlagTile({required this.code, required this.name, this.glyph});
 
   final String? code;
   final String name;
+
+  /// Icône à la place d'un drapeau, comme l'étoile des favoris.
+  final IconData? glyph;
 
   @override
   Widget build(BuildContext context) {
@@ -141,7 +203,9 @@ class _FlagTile extends StatelessWidget {
             height: 64,
             // Les drapeaux vectoriels ne sont rasterisés qu'une seule fois.
             child: RepaintBoundary(
-              child: country != null && country.length == 2
+              child: glyph != null
+                  ? Icon(glyph, color: _favoriteGold, size: 56)
+                  : country != null && country.length == 2
                   ? CountryFlag.fromCountryCode(
                       country,
                       theme: const ImageTheme(
@@ -167,9 +231,16 @@ class _FlagTile extends StatelessWidget {
 }
 
 class _ChannelBrowser extends ConsumerStatefulWidget {
-  const _ChannelBrowser({required this.countryCode, super.key});
+  const _ChannelBrowser({
+    required this.countryCode,
+    this.favorites = false,
+    super.key,
+  });
 
   final String? countryCode;
+
+  /// Montre les chaînes favorites à la place des groupes d'un pays.
+  final bool favorites;
 
   @override
   ConsumerState<_ChannelBrowser> createState() => _ChannelBrowserState();
@@ -234,7 +305,15 @@ class _ChannelBrowserState extends ConsumerState<_ChannelBrowser> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final groups = ref.watch(groupsProvider(widget.countryCode));
+    final groups = widget.favorites
+        ? AsyncValue.data([
+            ChannelGroup(
+              key: _favoritesKey,
+              displayName: l10n.homeFavorites,
+              channelCount: 0,
+            ),
+          ])
+        : ref.watch(groupsProvider(widget.countryCode));
     return Padding(
       padding: const EdgeInsets.fromLTRB(40, 24, 40, 32),
       child: groups.when(
@@ -302,7 +381,16 @@ class _ChannelBrowserState extends ConsumerState<_ChannelBrowser> {
                             style: AeroText.body,
                           ),
                         )
-                      : _ChannelList(
+                      : widget.favorites
+                      ? _ChannelList(
+                          key: const ValueKey(_favoritesKey),
+                          list:
+                              ref.watch(favoriteChannelsProvider).value ??
+                              const ChannelList(loading: true),
+                          focusNode: _channelsNode,
+                          onSelect: _play,
+                        )
+                      : _PagedChannelList(
                           key: ValueKey(selected.key),
                           query: ChannelQuery(widget.countryCode, selected),
                           focusNode: _channelsNode,
@@ -318,8 +406,9 @@ class _ChannelBrowserState extends ConsumerState<_ChannelBrowser> {
   }
 }
 
-class _ChannelList extends ConsumerWidget {
-  const _ChannelList({
+/// Chaînes d'un groupe, chargées page par page.
+class _PagedChannelList extends ConsumerWidget {
+  const _PagedChannelList({
     required this.query,
     required this.focusNode,
     required this.onSelect,
@@ -328,11 +417,34 @@ class _ChannelList extends ConsumerWidget {
 
   final ChannelQuery query;
   final FocusNode focusNode;
-  final ValueChanged<Channel> onSelect;
+  final Future<void> Function(Channel channel) onSelect;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => _ChannelList(
+    list: ref.watch(channelPagesProvider(query)),
+    focusNode: focusNode,
+    onSelect: onSelect,
+    onEndReached: () =>
+        ref.read(channelPagesProvider(query).notifier).loadMore(),
+  );
+}
+
+class _ChannelList extends ConsumerWidget {
+  const _ChannelList({
+    required this.list,
+    required this.focusNode,
+    required this.onSelect,
+    this.onEndReached,
+    super.key,
+  });
+
+  final ChannelList list;
+  final FocusNode focusNode;
+  final Future<void> Function(Channel channel) onSelect;
+  final VoidCallback? onEndReached;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final list = ref.watch(channelPagesProvider(query));
     final l10n = context.l10n;
     if (list.channels.isEmpty) {
       return Center(
@@ -348,8 +460,9 @@ class _ChannelList extends ConsumerWidget {
       itemExtent: 64,
       padding: const EdgeInsets.all(4),
       onSelect: (index) => onSelect(list.channels[index]),
-      onEndReached: () =>
-          ref.read(channelPagesProvider(query).notifier).loadMore(),
+      onLongSelect: (index) =>
+          _showChannelMenu(context, ref, list.channels[index], onSelect),
+      onEndReached: onEndReached,
       itemBuilder: (context, index, focused) {
         final channel = list.channels[index];
         return _ChannelRow(

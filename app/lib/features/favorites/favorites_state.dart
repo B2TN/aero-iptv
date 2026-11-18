@@ -11,6 +11,18 @@ final favoritesProvider = StreamProvider<List<Favorite>>((ref) {
   return ref.watch(favoritesRepositoryProvider).watch(source.id);
 });
 
+/// Clé de favori d'une chaîne : son pays et sa clé de regroupement, car deux
+/// pays peuvent avoir une chaîne du même nom.
+String channelFavoriteKey(Channel channel) =>
+    '${channel.countryCode ?? ''}|${channel.groupingKey}';
+
+/// Pays et clé de regroupement d'une chaîne, relus dans sa clé de favori.
+({String? countryCode, String groupingKey}) channelKeyOf(String key) {
+  final separator = key.indexOf('|');
+  final country = separator <= 0 ? null : key.substring(0, separator);
+  return (countryCode: country, groupingKey: key.substring(separator + 1));
+}
+
 /// Clé de favori d'un film : toutes ses versions partagent son titre.
 String movieFavoriteKey(Movie movie) => GroupingKey.of(movie.title);
 
