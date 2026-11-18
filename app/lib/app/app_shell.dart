@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -36,9 +37,15 @@ class _AppShellState extends ConsumerState<AppShell> {
     for (final tab in AppTab.values) tab: FocusNode(debugLabel: tab.name),
   };
 
+  /// Vrai le temps d'une image après Haut depuis le contenu : si le focus
+  /// arrive alors sur la barre, il va à l'onglet affiché, et non à l'onglet
+  /// voisin que la géométrie aurait choisi.
+  bool _climbing = false;
+
   @override
   void initState() {
     super.initState();
+    FocusManager.instance.addListener(_onFocusMoved);
     ref.listenManual(activeSourceProvider.select((source) => source?.id), (
       _,
       id,
@@ -53,10 +60,31 @@ class _AppShellState extends ConsumerState<AppShell> {
 
   @override
   void dispose() {
+    FocusManager.instance.removeListener(_onFocusMoved);
     for (final node in _tabNodes.values) {
       node.dispose();
     }
     super.dispose();
+  }
+
+  KeyEventResult _onContentKey(FocusNode node, KeyEvent event) {
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.arrowUp) {
+      _climbing = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _climbing = false);
+    }
+    // La flèche poursuit son chemin : le déplacement reste celui d'origine.
+    return KeyEventResult.ignored;
+  }
+
+  void _onFocusMoved() {
+    if (!_climbing) return;
+    _climbing = false;
+    final primary = FocusManager.instance.primaryFocus;
+    final selected = _tabNodes[ref.read(currentTabProvider)]!;
+    if (primary != selected && _tabNodes.containsValue(primary)) {
+      selected.requestFocus();
+    }
   }
 
   /// Retour : ce qui est ouvert dans l'onglet, puis l'onglet Accueil, puis la
@@ -92,12 +120,17 @@ class _AppShellState extends ConsumerState<AppShell> {
             children: [
               _TopBar(tab: tab, nodes: _tabNodes),
               Expanded(
-                child: switch (tab) {
-                  AppTab.home => const HomeScreen(),
-                  AppTab.live => const LiveTvScreen(),
-                  AppTab.search => const SearchScreen(),
-                  AppTab.settings => const SettingsScreen(),
-                },
+                child: Focus(
+                  canRequestFocus: false,
+                  skipTraversal: true,
+                  onKeyEvent: _onContentKey,
+                  child: switch (tab) {
+                    AppTab.home => const HomeScreen(),
+                    AppTab.live => const LiveTvScreen(),
+                    AppTab.search => const SearchScreen(),
+                    AppTab.settings => const SettingsScreen(),
+                  },
+                ),
               ),
             ],
           ),

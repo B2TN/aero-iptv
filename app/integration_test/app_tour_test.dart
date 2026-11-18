@@ -365,6 +365,8 @@ void main() {
     await press(tester, LogicalKeyboardKey.arrowLeft);
     await press(tester, LogicalKeyboardKey.arrowRight);
     await press(tester, LogicalKeyboardKey.arrowUp, times: 12);
+    // Haut depuis la liste mène à l'onglet affiché, pas à son voisin.
+    expect(FocusManager.instance.primaryFocus?.debugLabel, 'settings');
     await press(tester, LogicalKeyboardKey.arrowDown);
     await press(tester, LogicalKeyboardKey.enter);
     await wait(tester, 500);
