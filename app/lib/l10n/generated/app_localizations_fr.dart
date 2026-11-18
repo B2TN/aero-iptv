@@ -24,6 +24,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get homeContinue => 'Continuer à regarder';
 
   @override
+  String homeEpisodeNumber(int season, int number) {
+    return 'S$season É$number';
+  }
+
+  @override
+  String get homeUpNext => 'À suivre';
+
+  @override
   String get homeSeries => 'Séries populaires';
 
   @override

@@ -134,6 +134,18 @@ abstract class AppLocalizations {
   /// **'Continuer à regarder'**
   String get homeContinue;
 
+  /// No description provided for @homeEpisodeNumber.
+  ///
+  /// In fr, this message translates to:
+  /// **'S{season} É{number}'**
+  String homeEpisodeNumber(int season, int number);
+
+  /// Épisode suivant pas encore commencé, dans Continuer à regarder.
+  ///
+  /// In fr, this message translates to:
+  /// **'À suivre'**
+  String get homeUpNext;
+
   /// No description provided for @homeSeries.
   ///
   /// In fr, this message translates to:

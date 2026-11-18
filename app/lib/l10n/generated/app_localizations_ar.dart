@@ -24,6 +24,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String get homeContinue => 'متابعة المشاهدة';
 
   @override
+  String homeEpisodeNumber(int season, int number) {
+    return 'م$season ح$number';
+  }
+
+  @override
+  String get homeUpNext => 'التالي';
+
+  @override
   String get homeSeries => 'المسلسلات الرائجة';
 
   @override

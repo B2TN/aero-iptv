@@ -23,6 +23,7 @@ import '../../../focus/dpad_shortcuts.dart';
 import '../../../focus/focus_guard.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../l10n/language_names.dart';
+import '../playback_time.dart';
 import '../player_target.dart';
 
 const Duration _overlayDuration = Duration(seconds: 5);
@@ -59,13 +60,6 @@ const double _seekBarHeight = 36;
 String _two(int number) => number.toString().padLeft(2, '0');
 
 String _timeOfDay(DateTime time) => '${_two(time.hour)}:${_two(time.minute)}';
-
-String _formatTime(Duration value) {
-  final hours = value.inHours;
-  final minutes = _two(value.inMinutes.remainder(60));
-  final seconds = _two(value.inSeconds.remainder(60));
-  return hours > 0 ? '$hours:$minutes:$seconds' : '$minutes:$seconds';
-}
 
 /// Action proposée sur la vidéo, sans ouvrir les commandes.
 enum _EpisodeAction { skipIntro, nextEpisode }
@@ -1116,7 +1110,7 @@ class _SeekBarState extends State<_SeekBar> {
       onFocusChange: (focused) => setState(() => _focused = focused),
       child: Semantics(
         slider: true,
-        value: _formatTime(shown),
+        value: formatPlaybackTime(shown),
         child: FocusFrame(
           focused: _focused,
           scale: 1,
@@ -1128,7 +1122,7 @@ class _SeekBarState extends State<_SeekBar> {
               child: Row(
                 children: [
                   Text(
-                    widget.waitingLabel ?? _formatTime(shown),
+                    widget.waitingLabel ?? formatPlaybackTime(shown),
                     style: AeroText.body,
                   ),
                   const SizedBox(width: 18),
@@ -1139,7 +1133,10 @@ class _SeekBarState extends State<_SeekBar> {
                     ),
                   ),
                   const SizedBox(width: 18),
-                  Text(_formatTime(widget.duration), style: AeroText.body),
+                  Text(
+                    formatPlaybackTime(widget.duration),
+                    style: AeroText.body,
+                  ),
                 ],
               ),
             ),

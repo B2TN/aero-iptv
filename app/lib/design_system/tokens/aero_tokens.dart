@@ -89,7 +89,6 @@ abstract final class AeroMetrics {
   static const double cardHeight = 192;
   static const double cardSpacing = 16;
 
-  /// Place du titre et de la barre d'avancement, sous l'image d'une carte.
+  /// Place du titre, sous l'image d'une carte.
   static const double cardTitleHeight = 24;
-  static const double cardProgressHeight = 14;
 }

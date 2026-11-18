@@ -18,6 +18,7 @@ import '../../favorites/favorites_state.dart';
 import '../../media_detail/open_series.dart';
 import '../../media_detail/title_menu.dart';
 import '../../settings/playlist/playlist_manager_screen.dart';
+import '../widgets/continue_card.dart';
 import '../widgets/hero_carousel.dart';
 
 /// Contenu de l'accueil, recalculé après chaque synchronisation.
@@ -213,7 +214,7 @@ class _HomeContent extends ConsumerWidget {
               icon: AeroAssets.rowContinue,
               memoryKey: 'home.continue',
               itemCount: feed.continueWatching.length,
-              withProgress: true,
+              wide: true,
               onSelect: (index) =>
                   openContinued(context, ref, feed.continueWatching[index]),
               onLongSelect: (index) => showContinueMenu(
@@ -224,15 +225,9 @@ class _HomeContent extends ConsumerWidget {
               ),
               itemBuilder: (context, index, focused) {
                 final item = feed.continueWatching[index];
-                return PosterCard(
-                  title: item.title,
-                  imageUrl: item.posterUrl,
+                return ContinueCard(
+                  item: item,
                   focused: focused,
-                  // Un épisode suivant pas encore commencé n'a pas de durée.
-                  progress: item.duration > Duration.zero
-                      ? item.position.inMilliseconds /
-                            item.duration.inMilliseconds
-                      : 0,
                   progressColor: Color.lerp(
                     AeroColors.progressStart,
                     AeroColors.progressEnd,
@@ -331,7 +326,7 @@ class _MediaRow extends ConsumerStatefulWidget {
     required this.itemBuilder,
     required this.onSelect,
     this.onLongSelect,
-    this.withProgress = false,
+    this.wide = false,
   });
 
   final String title;
@@ -344,7 +339,10 @@ class _MediaRow extends ConsumerStatefulWidget {
   final DpadItemBuilder itemBuilder;
   final ValueChanged<int> onSelect;
   final ValueChanged<int>? onLongSelect;
-  final bool withProgress;
+
+  /// Cartes sur deux emplacements, sans titre dessous : « Continuer à
+  /// regarder ».
+  final bool wide;
 
   @override
   ConsumerState<_MediaRow> createState() => _MediaRowState();
@@ -364,10 +362,10 @@ class _MediaRowState extends ConsumerState<_MediaRow> {
 
   @override
   Widget build(BuildContext context) {
+    final span = widget.wide ? 2 : 1;
     final height =
         AeroMetrics.cardHeight +
-        AeroMetrics.cardTitleHeight +
-        (widget.withProgress ? AeroMetrics.cardProgressHeight : 0) +
+        (widget.wide ? 0 : AeroMetrics.cardTitleHeight) +
         _rowInset * 2;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -407,7 +405,7 @@ class _MediaRowState extends ConsumerState<_MediaRow> {
               return Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  for (var slot = widget.itemCount; slot < slots; slot++)
+                  for (var slot = widget.itemCount * span; slot < slots; slot++)
                     PositionedDirectional(
                       start: AeroMetrics.rowGutter + slot * pitch,
                       top: _rowInset,
@@ -421,7 +419,11 @@ class _MediaRowState extends ConsumerState<_MediaRow> {
                   DpadCollection.horizontal(
                     memoryKey: widget.memoryKey,
                     itemCount: widget.itemCount,
-                    itemExtent: AeroMetrics.cardWidth,
+                    // Une carte large couvre deux emplacements et l'écart
+                    // entre eux : les colonnes restent alignées d'une
+                    // rangée à l'autre.
+                    itemExtent:
+                        AeroMetrics.cardWidth * span + spacing * (span - 1),
                     crossExtent: height,
                     spacing: spacing,
                     padding: const EdgeInsets.symmetric(
@@ -451,7 +453,7 @@ class _MediaRowState extends ConsumerState<_MediaRow> {
                         _Chevron(
                           lit:
                               index < widget.itemCount - 1 &&
-                              widget.itemCount > slots,
+                              widget.itemCount * span > slots,
                           forward: true,
                         ),
                       ],

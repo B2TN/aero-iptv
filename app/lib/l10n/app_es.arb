@@ -5,6 +5,8 @@
   "navSearch": "Buscar",
   "navSettings": "Ajustes",
   "homeContinue": "Seguir viendo",
+  "homeEpisodeNumber": "T{season} E{number}",
+  "homeUpNext": "A continuación",
   "homeSeries": "Series populares",
   "homeMovies": "Películas populares",
   "homePlay": "Reproducir",

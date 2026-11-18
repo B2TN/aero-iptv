@@ -24,6 +24,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get homeContinue => 'Seguir viendo';
 
   @override
+  String homeEpisodeNumber(int season, int number) {
+    return 'T$season E$number';
+  }
+
+  @override
+  String get homeUpNext => 'A continuación';
+
+  @override
   String get homeSeries => 'Series populares';
 
   @override

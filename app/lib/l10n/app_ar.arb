@@ -5,6 +5,8 @@
   "navSearch": "بحث",
   "navSettings": "الإعدادات",
   "homeContinue": "متابعة المشاهدة",
+  "homeEpisodeNumber": "م{season} ح{number}",
+  "homeUpNext": "التالي",
   "homeSeries": "المسلسلات الرائجة",
   "homeMovies": "الأفلام الرائجة",
   "homePlay": "تشغيل",
