@@ -94,6 +94,15 @@ void main() {
     });
   }
 
+  /// Défilement vertical de l'accueil.
+  double homeScroll(WidgetTester tester) {
+    for (final element in find.byType(Scrollable).evaluate()) {
+      final state = (element as StatefulElement).state as ScrollableState;
+      if (state.position.axis == Axis.vertical) return state.position.pixels;
+    }
+    return -1;
+  }
+
   /// Vérifie la promesse centrale : un élément a toujours le focus.
   void expectFocus(String where) {
     final primary = FocusManager.instance.primaryFocus;
@@ -205,6 +214,8 @@ void main() {
 
     // Une série à deux versions ouvre le sélecteur, puis le détail.
     await press(tester, LogicalKeyboardKey.arrowLeft, times: 2);
+    final cardBefore = FocusManager.instance.primaryFocus;
+    final scrollBefore = homeScroll(tester);
     await press(tester, LogicalKeyboardKey.enter);
     await wait(tester, 500);
     expectFocus('sélecteur de version');
@@ -234,6 +245,9 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await wait(tester, 400);
     expectFocus('retour du détail');
+    // Au retour, la même carte de la même rangée, au même défilement.
+    expect(FocusManager.instance.primaryFocus, same(cardBefore));
+    expect(homeScroll(tester), scrollBefore);
 
     // Live TV : barre, drapeaux, puis chaînes.
     await press(tester, LogicalKeyboardKey.arrowUp, times: 3);
@@ -444,6 +458,33 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await wait(tester, 800);
     expectFocus('retour du film');
+
+    // Un film de la dernière rangée : fiche, lecture, puis retour. L'accueil
+    // doit rendre la même carte, au même défilement.
+    where = 'retour_lecture';
+    await waitForFocus(tester, 'HeroAction');
+    await press(tester, LogicalKeyboardKey.arrowDown, times: 3);
+    await press(tester, LogicalKeyboardKey.arrowRight, times: 2);
+    await wait(tester, 400);
+    final movieCard = FocusManager.instance.primaryFocus;
+    final movieScroll = homeScroll(tester);
+    expect(movieScroll, greaterThan(0));
+    await press(tester, LogicalKeyboardKey.enter);
+    await wait(tester, 900);
+    expectFocus('fiche du film');
+    await press(tester, LogicalKeyboardKey.enter);
+    await wait(tester, 2000);
+    expectFocus('lecture depuis la fiche');
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await wait(tester, 400);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await wait(tester, 900);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await wait(tester, 1500);
+    expectFocus('accueil après la lecture');
+    await shot(tester, '19_retour_lecture');
+    expect(FocusManager.instance.primaryFocus, same(movieCard));
+    expect(homeScroll(tester), movieScroll);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await wait(tester, 400);

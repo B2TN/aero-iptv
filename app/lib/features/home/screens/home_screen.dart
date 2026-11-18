@@ -120,19 +120,24 @@ class HomeScreen extends ConsumerWidget {
         onAction: () => openPlaylistManager(context),
       );
     }
-    return ref
-        .watch(homeFeedProvider)
-        .when(
-          loading: () => AeroLoading(label: l10n.loading),
-          error: (error, _) => AeroMessage(
-            title: l10n.loadErrorTitle,
-            actionLabel: l10n.actionRetry,
-            onAction: () => ref.invalidate(homeFeedProvider),
-          ),
-          data: (feed) => feed == null || feed.isEmpty
-              ? _EmptyCatalog(onOpenSettings: openSettings)
-              : _HomeContent(feed: feed),
-        );
+    final feedState = ref.watch(homeFeedProvider);
+    // Pendant un rechargement, par exemple après une synchronisation, les
+    // rangées restent en place : les remplacer par « Chargement » perdrait la
+    // carte active et le défilement, et ramènerait tout en haut.
+    if (feedState.hasValue) {
+      final feed = feedState.value;
+      return feed == null || feed.isEmpty
+          ? _EmptyCatalog(onOpenSettings: openSettings)
+          : _HomeContent(feed: feed);
+    }
+    if (feedState.hasError) {
+      return AeroMessage(
+        title: l10n.loadErrorTitle,
+        actionLabel: l10n.actionRetry,
+        onAction: () => ref.invalidate(homeFeedProvider),
+      );
+    }
+    return AeroLoading(label: l10n.loading);
   }
 }
 

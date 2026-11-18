@@ -18,6 +18,21 @@ final class PlaylistSource {
   /// Pays ouvert directement dans Live TV, sans passer par les drapeaux.
   final String? defaultCountryCode;
   final DateTime? lastSyncedAt;
+
+  // Égalité de valeur : relire la même source ne doit pas faire croire aux
+  // écrans qui en dépendent qu'elle a changé, et les recharger.
+  @override
+  bool operator ==(Object other) =>
+      other is PlaylistSource &&
+      other.id == id &&
+      other.name == name &&
+      other.kind == kind &&
+      other.defaultCountryCode == defaultCountryCode &&
+      other.lastSyncedAt == lastSyncedAt;
+
+  @override
+  int get hashCode =>
+      Object.hash(id, name, kind, defaultCountryCode, lastSyncedAt);
 }
 
 /// Identifiants d'une source, conservés dans le stockage sécurisé.
