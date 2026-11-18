@@ -5,6 +5,8 @@ import 'package:aero_iptv/app/di/infrastructure_providers.dart';
 import 'package:aero_iptv/app/di/repository_providers.dart';
 import 'package:aero_iptv/app/platform/api_key_store.dart';
 import 'package:aero_iptv/features/player/player_target.dart';
+import 'package:aero_iptv/features/player/screens/player_screen.dart';
+import 'package:aero_iptv/focus/focus_frame.dart';
 import 'package:aero_iptv/focus/dpad_shortcuts.dart';
 import 'package:aero_iptv/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart' show Icons;
@@ -243,6 +245,13 @@ Future<_Engine> _pump(
         supportedLocales: AppLocalizations.supportedLocales,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         shortcuts: dpadShortcuts,
+        // Comme l'application : Retour ferme l'écran du dessus.
+        actions: {
+          ...WidgetsApp.defaultActions,
+          BackIntent: CallbackAction<BackIntent>(
+            onInvoke: (_) => navigator.currentState?.maybePop(),
+          ),
+        },
         home: home,
         pageRouteBuilder: <T>(settings, builder) => PageRouteBuilder<T>(
           settings: settings,
@@ -260,6 +269,32 @@ Future<_Engine> _pump(
   // Les chapitres arrivent juste après la durée.
   await tester.pump();
   return engine;
+}
+
+/// Vrai si l'élément qui a le focus le montre par son cadre.
+bool _focusIsVisible(WidgetTester tester) {
+  final context = FocusManager.instance.primaryFocus?.context;
+  if (context == null) return false;
+  var visible = false;
+  void visit(Element element) {
+    if (element.widget case FocusFrame(focused: true)) visible = true;
+    if (!visible) element.visitChildren(visit);
+  }
+
+  (context as Element).visitChildren(visit);
+  context.visitAncestorElements((element) {
+    if (element.widget case FocusFrame(focused: true)) visible = true;
+    return !visible;
+  });
+  return visible;
+}
+
+/// Touche de télécommande. Retour s'y simule par Échap : le simulateur n'a pas
+/// de touche physique pour le Retour d'Android, que le lecteur traite pareil.
+Future<void> _press(WidgetTester tester, LogicalKeyboardKey key) async {
+  await tester.sendKeyEvent(key);
+  await tester.pump();
+  await tester.pump();
 }
 
 /// Ferme l'écran, ce qui annule ses minuteries.
@@ -428,6 +463,95 @@ void main() {
     });
   });
 
+  group('télécommande', () {
+    testWidgets('Retour masque d abord les commandes, puis quitte', (
+      tester,
+    ) async {
+      await _pump(tester, _target(ContentKind.movie));
+      expect(find.text('Pause'), findsOneWidget);
+
+      await _press(tester, LogicalKeyboardKey.escape);
+      expect(find.text('Pause'), findsNothing);
+      expect(find.byType(PlayerScreen), findsOneWidget);
+
+      await _press(tester, LogicalKeyboardKey.escape);
+      expect(find.byType(PlayerScreen), findsNothing);
+      await _leave(tester);
+    });
+
+    testWidgets('Retour masque aussi les commandes en pause', (tester) async {
+      await _pump(
+        tester,
+        _target(ContentKind.movie),
+        state: const PlaybackState(
+          status: PlaybackStatus.paused,
+          position: Duration(minutes: 10),
+          duration: Duration(minutes: 40),
+        ),
+      );
+
+      await _press(tester, LogicalKeyboardKey.escape);
+
+      expect(find.byType(PlayerScreen), findsOneWidget);
+      expect(find.text('40:00'), findsNothing);
+      await _leave(tester);
+    });
+
+    testWidgets('la croix se rejoint au D-pad et ferme la lecture', (
+      tester,
+    ) async {
+      await _pump(tester, _target(ContentKind.movie));
+
+      await _press(tester, LogicalKeyboardKey.arrowUp);
+      expect(FocusManager.instance.primaryFocus?.debugLabel, 'PlayerSeekBar');
+      await _press(tester, LogicalKeyboardKey.arrowUp);
+      expect(_focusIsVisible(tester), isTrue);
+      await _press(tester, LogicalKeyboardKey.enter);
+
+      expect(find.byType(PlayerScreen), findsNothing);
+      await _leave(tester);
+    });
+
+    testWidgets('le focus reste visible partout dans les commandes', (
+      tester,
+    ) async {
+      await _pump(tester, _target(ContentKind.movie));
+      for (final key in [
+        LogicalKeyboardKey.arrowRight,
+        LogicalKeyboardKey.arrowRight,
+        LogicalKeyboardKey.arrowRight,
+        LogicalKeyboardKey.arrowRight,
+        LogicalKeyboardKey.arrowRight,
+        LogicalKeyboardKey.arrowRight,
+        LogicalKeyboardKey.arrowUp,
+        LogicalKeyboardKey.arrowUp,
+        LogicalKeyboardKey.arrowUp,
+        LogicalKeyboardKey.arrowDown,
+        LogicalKeyboardKey.arrowDown,
+        LogicalKeyboardKey.arrowDown,
+        LogicalKeyboardKey.arrowLeft,
+      ]) {
+        await _press(tester, key);
+        expect(_focusIsVisible(tester), isTrue, reason: key.keyLabel);
+      }
+      await _leave(tester);
+    });
+
+    testWidgets('un menu ouvert garde les commandes', (tester) async {
+      await _pump(tester, _target(ContentKind.movie));
+
+      await tester.tap(find.text('Audio'));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 8));
+      await _press(tester, LogicalKeyboardKey.escape);
+
+      expect(find.text('Pause'), findsOneWidget);
+      expect(_focusIsVisible(tester), isTrue);
+      await _leave(tester);
+    });
+  });
+
   group('épisode', () {
     const skipIntro = "Passer l'intro";
     const nextEpisode = 'Épisode suivant';
@@ -565,6 +689,44 @@ void main() {
       );
       expect(find.text(skipIntro), findsNothing);
       expect(engine.seeks, isEmpty);
+      await _leave(tester);
+    });
+
+    testWidgets('commandes fermées, le bouton d intro a le focus', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        _episode(),
+        state: _playingAt(inIntro),
+        chapters: chapters,
+      );
+      await tester.pump(const Duration(seconds: 6));
+      await tester.pump();
+
+      expect(FocusManager.instance.primaryFocus?.debugLabel, 'PlayerPrompt');
+      expect(_focusIsVisible(tester), isTrue);
+      await _leave(tester);
+    });
+
+    testWidgets('Retour retire le bouton d intro avant de quitter', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        _episode(),
+        state: _playingAt(inIntro),
+        chapters: chapters,
+      );
+      await tester.pump(const Duration(seconds: 6));
+      await tester.pump();
+
+      await _press(tester, LogicalKeyboardKey.escape);
+      expect(find.text(skipIntro), findsNothing);
+      expect(find.byType(PlayerScreen), findsOneWidget);
+
+      await _press(tester, LogicalKeyboardKey.escape);
+      expect(find.byType(PlayerScreen), findsNothing);
       await _leave(tester);
     });
 

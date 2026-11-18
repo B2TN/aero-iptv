@@ -95,6 +95,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   final FocusNode _firstAction = FocusNode(debugLabel: 'PlayerAction');
   final FocusNode _seekNode = FocusNode(debugLabel: 'PlayerSeekBar');
 
+  /// Bouton « Passer l'intro » ou « Épisode suivant » posé sur la vidéo.
+  final FocusNode _promptNode = FocusNode(debugLabel: 'PlayerPrompt');
+
   /// Distinct de [_firstAction] : un nœud repris par un autre bouton garde son
   /// focus sans le signaler, et le nouveau bouton n'afficherait pas son halo.
   final FocusNode _failureAction = FocusNode(debugLabel: 'PlayerFailure');
@@ -182,6 +185,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     _rootNode.dispose();
     _firstAction.dispose();
     _seekNode.dispose();
+    _promptNode.dispose();
     _failureAction.dispose();
     super.dispose();
   }
@@ -322,8 +326,31 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     _hideTimer?.cancel();
     _hideTimer = Timer(_overlayDuration, () {
       if (!mounted || _state.status == PlaybackStatus.paused) return;
-      setState(() => _overlayVisible = false);
-      _rootNode.requestFocus();
+      // Un menu ouvert par-dessus (audio, sous-titres, version) garde les
+      // commandes : à sa fermeture, le focus retrouve le bouton qui l'a ouvert.
+      if (!(ModalRoute.isCurrentOf(context) ?? true)) {
+        _scheduleHide();
+        return;
+      }
+      _hideOverlay();
+    });
+  }
+
+  /// Ferme les commandes. Le focus va au bouton posé sur la vidéo s'il y en a
+  /// un, pour que la validation l'active en le montrant.
+  void _hideOverlay() {
+    _hideTimer?.cancel();
+    setState(() => _overlayVisible = false);
+    _rootNode.requestFocus();
+    _focusPrompt();
+  }
+
+  /// Donne le focus au bouton posé sur la vidéo, une fois dessiné.
+  void _focusPrompt() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _floatingAction != null && _promptNode.context != null) {
+        _promptNode.requestFocus();
+      }
     });
   }
 
@@ -471,6 +498,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   void _propose(_EpisodeAction action) {
     _promptTimer?.cancel();
     setState(() => _prompt = action);
+    if (!_overlayVisible) _focusPrompt();
     _promptTimer = Timer(_promptDuration, () {
       if (mounted) _withdraw();
     });
@@ -660,6 +688,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     return title ?? track.language ?? fallback;
   }
 
+  static bool _isBackKey(LogicalKeyboardKey key) =>
+      key == LogicalKeyboardKey.escape ||
+      key == LogicalKeyboardKey.goBack ||
+      key == LogicalKeyboardKey.gameButtonB;
+
   /// Tant que la surcouche est masquée, toute touche la fait réapparaître.
   /// Les touches multimédias et de déplacement agissent directement.
   KeyEventResult _onKeyEvent(FocusNode node, KeyEvent event) {
@@ -673,12 +706,20 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
       _togglePlay();
       return KeyEventResult.handled;
     }
-    if (!_overlayVisible) {
-      if (key == LogicalKeyboardKey.escape ||
-          key == LogicalKeyboardKey.goBack ||
-          key == LogicalKeyboardKey.gameButtonB) {
-        return KeyEventResult.ignored;
+    if (_isBackKey(key)) {
+      if (_overlayVisible) {
+        _hideOverlay();
+        return KeyEventResult.handled;
       }
+      if (_floatingAction != null) {
+        _withdraw();
+        _rootNode.requestFocus();
+        return KeyEventResult.handled;
+      }
+      // Rien d'ouvert : Retour quitte la lecture.
+      return KeyEventResult.ignored;
+    }
+    if (!_overlayVisible) {
       final action = _floatingAction;
       if (action != null && isConfirmKey(key)) {
         _run(action);
@@ -719,6 +760,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
           : _rootNode,
       child: Focus(
         focusNode: _rootNode,
+        skipTraversal: true,
         onKeyEvent: _onKeyEvent,
         child: Stack(
           fit: StackFit.expand,
@@ -795,6 +837,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                     )
                   : floating != null
                   ? _FloatingAction(
+                      focusNode: _promptNode,
                       label: switch (floating) {
                         _EpisodeAction.skipIntro => l10n.playerSkipIntro,
                         _EpisodeAction.nextEpisode => l10n.playerNextEpisode,
@@ -810,13 +853,18 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   }
 }
 
-/// Bouton posé sur la vidéo. Il ne prend pas le focus : la touche de validation
-/// l'active tant que les commandes sont fermées, comme sur Netflix.
+/// Bouton posé sur la vidéo, commandes fermées. Il prend le focus en
+/// apparaissant : la validation l'active, et son halo montre ce qu'elle fera.
 class _FloatingAction extends StatelessWidget {
-  const _FloatingAction({required this.label, required this.onSelect});
+  const _FloatingAction({
+    required this.label,
+    required this.onSelect,
+    required this.focusNode,
+  });
 
   final String label;
   final VoidCallback onSelect;
+  final FocusNode focusNode;
 
   @override
   Widget build(BuildContext context) => Align(
@@ -827,12 +875,11 @@ class _FloatingAction extends StatelessWidget {
         end: AeroMetrics.pagePadding,
         bottom: 110,
       ),
-      child: ExcludeFocus(
-        child: AeroButton(
-          label: label,
-          icon: Icons.skip_next,
-          onSelect: onSelect,
-        ),
+      child: AeroButton(
+        label: label,
+        icon: Icons.skip_next,
+        focusNode: focusNode,
+        onSelect: onSelect,
       ),
     ),
   );
@@ -1087,45 +1134,52 @@ class _VolumeSliderState extends State<_VolumeSlider> {
     return Focus(
       onKeyEvent: _onKeyEvent,
       onFocusChange: (focused) => setState(() => _focused = focused),
-      child: SizedBox(
-        height: 48,
-        child: Padding(
-          // Le bouton du curseur dépasse de sa piste aux extrémités.
-          padding: const EdgeInsetsDirectional.only(end: 10),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                widget.level == 0 ? Icons.volume_off : Icons.volume_up,
-                color: color,
-                size: 22,
-              ),
-              const SizedBox(width: 10),
-              MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTapDown: (details) =>
-                      _setFromPosition(details.localPosition.dx),
-                  onHorizontalDragUpdate: (details) =>
-                      _setFromPosition(details.localPosition.dx),
-                  child: SizedBox(
-                    width: _trackWidth,
-                    height: 48,
-                    child: _SliderTrack(
-                      width: _trackWidth,
-                      fraction: widget.level / _maxVolume,
-                      color: color,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+      child: FocusFrame(
+        focused: _focused,
+        scale: 1,
+        halo: HaloShape.pill,
+        child: _volumeRow(color),
       ),
     );
   }
+
+  Widget _volumeRow(Color color) => SizedBox(
+    height: 48,
+    child: Padding(
+      // Le bouton du curseur dépasse de sa piste aux extrémités.
+      padding: const EdgeInsetsDirectional.only(end: 10),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            widget.level == 0 ? Icons.volume_off : Icons.volume_up,
+            color: color,
+            size: 22,
+          ),
+          const SizedBox(width: 10),
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTapDown: (details) =>
+                  _setFromPosition(details.localPosition.dx),
+              onHorizontalDragUpdate: (details) =>
+                  _setFromPosition(details.localPosition.dx),
+              child: SizedBox(
+                width: _trackWidth,
+                height: 48,
+                child: _SliderTrack(
+                  width: _trackWidth,
+                  fraction: widget.level / _maxVolume,
+                  color: color,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 /// Heure courante, et heure de fin d'une VOD. L'heure courante se met à jour
