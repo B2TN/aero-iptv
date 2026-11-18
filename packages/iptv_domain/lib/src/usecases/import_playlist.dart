@@ -11,11 +11,16 @@ final class ImportPlaylist {
   final CredentialStore _credentials;
   final CatalogImporter _importer;
 
-  Stream<ImportProgress> call(PlaylistSource source) async* {
+  /// [full] remplace le catalogue en entier, au lieu de n'appliquer que ses
+  /// différences.
+  Stream<ImportProgress> call(
+    PlaylistSource source, {
+    bool full = false,
+  }) async* {
     final credentials = await _credentials.read(source.id);
     if (credentials == null) {
       throw const AuthFailure('Identifiants absents du coffre.');
     }
-    yield* _importer.run(source, credentials);
+    yield* _importer.run(source, credentials, full: full);
   }
 }

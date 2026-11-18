@@ -10,8 +10,12 @@ abstract interface class CatalogImporter {
   /// termine par une erreur de type [Failure] si rien n'a pu être importé. Une
   /// section seule en échec n'arrête pas les autres : elle est signalée par
   /// [ImportProgress.failedSections].
+  ///
+  /// Un catalogue déjà affiché ne reçoit que ses différences avec celui qui
+  /// arrive ; [full] le remplace en entier.
   Stream<ImportProgress> run(
     PlaylistSource source,
-    PlaylistCredentials credentials,
-  );
+    PlaylistCredentials credentials, {
+    bool full = false,
+  });
 }

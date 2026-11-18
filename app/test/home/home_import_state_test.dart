@@ -32,7 +32,7 @@ class _Import extends ImportController {
   ImportStatus build() => _status;
 
   @override
-  void start(PlaylistSource source) => started.add(source);
+  void start(PlaylistSource source, {bool full = false}) => started.add(source);
 }
 
 Future<_Import> _pump(WidgetTester tester, ImportStatus status) async {

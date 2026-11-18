@@ -6,6 +6,7 @@ import 'package:iptv_domain/iptv_domain.dart';
 import '../adapters/playlist_source_adapter.dart';
 import '../database/app_database.dart';
 import '../database/daos/catalog_maintenance_dao.dart';
+import '../database/daos/catalog_merge_dao.dart';
 import '../epg/epg_source_adapter.dart';
 import 'catalog_session.dart';
 import 'import_failure.dart';
@@ -36,7 +37,8 @@ final class CatalogImportPipeline {
        _epgAdapter = epgAdapter,
        _clock = clock,
        _pause = pause,
-       _maintenance = CatalogMaintenanceDao(database);
+       _maintenance = CatalogMaintenanceDao(database),
+       _merge = CatalogMergeDao(database);
 
   final AppDatabase _db;
   final PlaylistSourceAdapter _catalogAdapter;
@@ -44,22 +46,31 @@ final class CatalogImportPipeline {
   final DateTime Function() _clock;
   final Future<void> Function(Duration duration) _pause;
   final CatalogMaintenanceDao _maintenance;
+  final CatalogMergeDao _merge;
 
   /// Exécute la synchronisation de la source [sourceId].
   ///
   /// Chaque section est téléchargée à part, et reprise en cas de panne
   /// passagère. Si l'une d'elles reste en échec, les autres sont tout de même
-  /// activées : elle garde alors son contenu précédent, et le dernier
+  /// appliquées : elle garde alors son contenu précédent, et le dernier
   /// avancement la signale.
+  ///
+  /// Quand un catalogue est déjà affiché, seules ses différences avec celui
+  /// qui vient d'arriver lui sont appliquées. [full] le remplace en entier,
+  /// comme au premier import : les règles de nettoyage ont changé, et tous
+  /// les titres avec elles.
   Stream<ImportProgress> run(
     int sourceId,
-    PlaylistCredentials credentials,
-  ) async* {
+    PlaylistCredentials credentials, {
+    bool full = false,
+  }) async* {
     yield const ImportProgress(ImportStage.connecting);
     await _maintenance.purgeOrphans();
     // Un accès refusé s'arrête ici, avant d'avoir réservé quoi que ce soit.
     final sections = await _catalogAdapter.open(credentials);
 
+    final shown = await _maintenance.activeCatalogOf(sourceId);
+    final merging = !full && shown != null && await _merge.canMergeInto(shown);
     final catalogId = await _maintenance.create(sourceId, _clock());
     final session = CatalogSession(_db, catalogId);
     final failed = <ContentKind, Failure>{};
@@ -105,8 +116,7 @@ final class CatalogImportPipeline {
         throw failed.values.firstOrNull ??
             const ParseFailure('La source ne contient aucune entrée.');
       }
-      final shown = await _maintenance.activeCatalogOf(sourceId);
-      if (shown != null) {
+      if (!merging && shown != null) {
         for (final kind in failed.keys) {
           await _maintenance.carryOver(shown, catalogId, kind);
         }
@@ -118,13 +128,16 @@ final class CatalogImportPipeline {
     }
 
     // Les finitions améliorent le catalogue, mais aucune ne doit empêcher de
-    // l'afficher : celle qui échoue est signalée, et l'import continue.
+    // l'afficher : celle qui échoue est signalée, et l'import continue. La
+    // synchronisation tient l'index de recherche à jour titre par titre.
     final refinements = <CatalogRefinement, Future<void> Function()>{
       CatalogRefinement.homonyms: () =>
           _maintenance.separateHomonyms(catalogId),
       CatalogRefinement.versions: () =>
           _maintenance.mergeTranslatedVersions(catalogId),
-      CatalogRefinement.search: () => _maintenance.buildSearchIndex(catalogId),
+      if (!merging)
+        CatalogRefinement.search: () =>
+            _maintenance.buildSearchIndex(catalogId),
     };
     final failedRefinements = <CatalogRefinement, Failure>{};
     for (final MapEntry(key: step, value: refine) in refinements.entries) {
@@ -135,14 +148,30 @@ final class CatalogImportPipeline {
       }
     }
 
-    final int? previous;
-    try {
-      previous = await _maintenance.activate(sourceId, catalogId, _clock());
-    } catch (_) {
-      await _discard(catalogId);
-      rethrow;
+    final int shownNow;
+    if (merging) {
+      try {
+        // Une source d'un seul tenant (M3U) n'a qu'une section, sans genre.
+        for (final kind in {for (final section in sections) section.kind}) {
+          if (failed.containsKey(kind)) continue;
+          await _merge.merge(catalogId, shown, kind);
+        }
+        await _maintenance.markSynced(sourceId, _clock());
+      } finally {
+        await _discard(catalogId);
+      }
+      shownNow = shown;
+    } else {
+      final int? previous;
+      try {
+        previous = await _maintenance.activate(sourceId, catalogId, _clock());
+      } catch (_) {
+        await _discard(catalogId);
+        rethrow;
+      }
+      if (previous != null) await _discard(previous);
+      shownNow = catalogId;
     }
-    if (previous != null) await _discard(previous);
 
     // Le catalogue est déjà consultable : le guide se télécharge ensuite.
     yield ImportProgress(
@@ -153,7 +182,7 @@ final class CatalogImportPipeline {
     );
     final epgFailed = !await _importEpg(
       sourceId,
-      catalogId,
+      shownNow,
       credentials,
       discoveredEpgUrl,
     ).catchError((Object error) => error is Failure ? false : throw error);

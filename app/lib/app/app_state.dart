@@ -141,11 +141,12 @@ class ImportController extends Notifier<ImportStatus> {
   void _keepAwake(bool enabled) =>
       unawaited(ref.read(screenAwakeProvider)(enabled: enabled));
 
-  /// Réimporte une fois le catalogue quand les règles de nettoyage ont changé :
-  /// elles ne s'appliquent qu'à l'import, et l'utilisateur n'a pas à y penser.
+  /// Réimporte une fois le catalogue en entier quand les règles de nettoyage
+  /// ont changé : elles ne s'appliquent qu'à l'import, et tous les titres
+  /// changent avec elles. L'utilisateur n'a pas à y penser.
   Future<void> refreshIfOutdated(PlaylistSource source) async {
     final settings = await ref.read(settingsRepositoryProvider).watch().first;
-    if (settings.catalogRules < catalogRulesVersion) start(source);
+    if (settings.catalogRules < catalogRulesVersion) start(source, full: true);
   }
 
   Future<void> _rememberRules() async {
@@ -154,13 +155,15 @@ class ImportController extends Notifier<ImportStatus> {
     await repository.save(settings.copyWith(catalogRules: catalogRulesVersion));
   }
 
-  void start(PlaylistSource source) {
+  /// Synchronise [source] : un catalogue déjà affiché ne reçoit que ses
+  /// différences avec celui du fournisseur ; [full] le remplace en entier.
+  void start(PlaylistSource source, {bool full = false}) {
     if (state.running) return;
     state = const ImportStatus(running: true, stage: ImportStage.connecting);
     _keepAwake(true);
     _subscription = ref
         .read(importPlaylistProvider)
-        .call(source)
+        .call(source, full: full)
         .listen(
           (progress) {
             final done = progress.stage == ImportStage.done;

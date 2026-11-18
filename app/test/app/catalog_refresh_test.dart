@@ -43,12 +43,17 @@ final class _Importer implements CatalogImporter {
   final Failure? failure;
   int runs = 0;
 
+  /// Pour chaque import : `true` s'il remplace tout le catalogue.
+  final List<bool> fulls = [];
+
   @override
   Stream<ImportProgress> run(
     PlaylistSource source,
-    PlaylistCredentials credentials,
-  ) async* {
+    PlaylistCredentials credentials, {
+    bool full = false,
+  }) async* {
     runs++;
+    fulls.add(full);
     final error = failure;
     if (error != null) throw error;
     yield const ImportProgress(ImportStage.done);
@@ -92,6 +97,8 @@ void main() {
     await settle();
 
     expect(importer.runs, 1);
+    // De nouvelles règles changent tous les titres : tout est remplacé.
+    expect(importer.fulls, [true]);
     expect(settings.current.catalogRules, catalogRulesVersion);
   });
 

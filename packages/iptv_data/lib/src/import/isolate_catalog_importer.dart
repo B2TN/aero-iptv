@@ -21,15 +21,16 @@ final class IsolateCatalogImporter implements CatalogImporter {
   @override
   Stream<ImportProgress> run(
     PlaylistSource source,
-    PlaylistCredentials credentials,
-  ) {
+    PlaylistCredentials credentials, {
+    bool full = false,
+  }) {
     final port = ReceivePort();
     final controller = StreamController<ImportProgress>();
 
     final subscription = port.cast<ImportProgress>().listen(controller.add);
 
     unawaited(
-      _spawn(_database, port.sendPort, source.id, credentials)
+      _spawn(_database, port.sendPort, source.id, credentials, full)
           .catchError(
             (Object error, StackTrace stack) =>
                 controller.addError(importFailureOf(error), stack),
@@ -53,9 +54,10 @@ final class IsolateCatalogImporter implements CatalogImporter {
     SendPort progress,
     int sourceId,
     PlaylistCredentials credentials,
+    bool full,
   ) => database.computeWithDatabase<void, AppDatabase>(
     computation: (isolateDatabase) =>
-        _runImport(isolateDatabase, progress, sourceId, credentials),
+        _runImport(isolateDatabase, progress, sourceId, credentials, full),
     connect: AppDatabase.new,
   );
 
@@ -64,6 +66,7 @@ final class IsolateCatalogImporter implements CatalogImporter {
     SendPort progress,
     int sourceId,
     PlaylistCredentials credentials,
+    bool full,
   ) async {
     final client = http.Client();
     try {
@@ -73,7 +76,9 @@ final class IsolateCatalogImporter implements CatalogImporter {
         catalogAdapter: adapters.catalogFor(credentials),
         epgAdapter: adapters.epgFor(credentials),
       );
-      await pipeline.run(sourceId, credentials).forEach(progress.send);
+      await pipeline
+          .run(sourceId, credentials, full: full)
+          .forEach(progress.send);
     } on Object catch (error, stack) {
       // Converti ici, où l'erreur est encore intacte : toutes ne survivent pas
       // au passage entre isolates.

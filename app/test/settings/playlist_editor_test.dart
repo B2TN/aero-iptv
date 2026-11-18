@@ -93,8 +93,9 @@ final class _Importer implements CatalogImporter {
   @override
   Stream<ImportProgress> run(
     PlaylistSource source,
-    PlaylistCredentials credentials,
-  ) {
+    PlaylistCredentials credentials, {
+    bool full = false,
+  }) {
     received.add(credentials);
     return const Stream.empty();
   }

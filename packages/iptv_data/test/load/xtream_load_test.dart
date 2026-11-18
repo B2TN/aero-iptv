@@ -171,6 +171,17 @@ void main() {
       close('fin');
       final total = watch.elapsed;
 
+      // Le lendemain : le même catalogue, dont seules les différences sont
+      // appliquées.
+      final syncWatch = Stopwatch()..start();
+      await CatalogImportPipeline(
+        database: db,
+        catalogAdapter: XtreamSourceAdapter(client),
+        epgAdapter: const FakeEpgAdapter(),
+      ).run(sourceId, _credentials).drain<void>();
+      final syncTotal = syncWatch.elapsed;
+      if (ProcessInfo.currentRss > peak) peak = ProcessInfo.currentRss;
+
       Future<void> timed(String name, Future<Object?> Function() query) async {
         final clock = Stopwatch()..start();
         await query();
@@ -223,6 +234,7 @@ void main() {
       print(
         '$report'
         'Import complet : ${total.inSeconds} s\n'
+        'Synchronisation du lendemain : ${syncTotal.inSeconds} s\n'
         'Pic RSS : ${peak ~/ _mebibyte} Mio\n'
         'Base : ${sizeMb.toStringAsFixed(0)} Mio',
       );

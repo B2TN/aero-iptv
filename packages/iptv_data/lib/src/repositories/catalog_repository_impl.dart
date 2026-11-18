@@ -290,8 +290,9 @@ final class CatalogRepositoryImpl implements CatalogRepository {
           });
 
   /// Demande la série au fournisseur, puis range ses épisodes, leurs résumés
-  /// et le sien. Les épisodes déjà connus gardent leur identifiant : seul
-  /// leur résumé change.
+  /// et le sien. Les épisodes déjà connus gardent leur identifiant, seul leur
+  /// résumé change ; les nouveaux s'ajoutent, et ceux que le fournisseur a
+  /// retirés s'effacent.
   Future<void> _fetchSeries(int sourceId, int seriesEntryId) async {
     final entry = await _db
         .seriesEntryById(id: seriesEntryId)
@@ -300,35 +301,52 @@ final class CatalogRepositoryImpl implements CatalogRepository {
     if (entry == null || seriesId == null) return;
 
     final series = await (await _api(sourceId)).seriesInfo(seriesId);
-    final known = await _db.episodesForEntry(entryId: seriesEntryId).get();
+    final known = {
+      for (final row
+          in await _db.episodesForEntry(entryId: seriesEntryId).get())
+        row.contentKey: row.id,
+    };
+    final fetched = {
+      for (final episode in series.episodes) 'x:e:${episode.id}': episode,
+    };
     await transactionKeepingCause(_db, () async {
-      if (known.isEmpty) {
-        await _db.batch((batch) {
-          batch.insertAll(_db.episodes, [
-            for (final episode in series.episodes)
+      await _db.batch((batch) {
+        batch.insertAll(_db.episodes, [
+          for (final MapEntry(key: contentKey, value: episode)
+              in fetched.entries)
+            if (!known.containsKey(contentKey))
               EpisodesCompanion.insert(
                 catalogId: entry.catalogId,
                 seriesEntryId: seriesEntryId,
                 season: episode.season,
                 number: episode.number,
                 title: episode.title,
-                contentKey: 'x:e:${episode.id}',
+                contentKey: contentKey,
                 xtreamStreamId: Value(episode.id),
                 containerExt: Value(episode.extension),
                 overview: Value(episode.overview),
               ),
-          ]);
-        });
-      } else {
-        for (final episode in series.episodes) {
-          final overview = episode.overview;
-          if (overview == null) continue;
-          await _db.saveEpisodeOverview(
-            overview: overview,
-            entryId: seriesEntryId,
-            contentKey: 'x:e:${episode.id}',
+        ]);
+        // Une réponse sans épisode ressemble plus à une panne passagère qu'à
+        // une série vidée : les épisodes connus restent alors.
+        if (fetched.isNotEmpty) {
+          batch.deleteWhere(
+            _db.episodes,
+            (row) => row.id.isIn([
+              for (final MapEntry(key: contentKey, value: id) in known.entries)
+                if (!fetched.containsKey(contentKey)) id,
+            ]),
           );
         }
+      });
+      for (final MapEntry(key: contentKey, value: episode) in fetched.entries) {
+        final overview = episode.overview;
+        if (overview == null || !known.containsKey(contentKey)) continue;
+        await _db.saveEpisodeOverview(
+          overview: overview,
+          entryId: seriesEntryId,
+          contentKey: contentKey,
+        );
       }
       await _db.saveSeriesDetails(
         id: seriesEntryId,

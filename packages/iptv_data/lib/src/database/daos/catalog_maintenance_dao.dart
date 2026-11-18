@@ -132,6 +132,12 @@ final class CatalogMaintenanceDao {
         return source.activeCatalogId;
       });
 
+  /// Note la synchronisation de [sourceId], dont le catalogue reste le même.
+  Future<void> markSynced(int sourceId, DateTime now) =>
+      (_db.update(_db.sources)..where((row) => row.id.equals(sourceId))).write(
+        SourcesCompanion(lastSyncedAt: Value(now.millisecondsSinceEpoch)),
+      );
+
   /// Catalogue affiché pour [sourceId], s'il y en a un.
   Future<int?> activeCatalogOf(int sourceId) async {
     final source = await (_db.select(
