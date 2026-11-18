@@ -6,6 +6,7 @@ import '../glass/glass_panel.dart';
 import '../tokens/aero_tokens.dart';
 import 'aero_button.dart';
 import 'aero_menu.dart';
+import 'keyboard_field.dart';
 import 'virtual_keyboard.dart';
 
 const double _entryWidth = 720;
@@ -13,15 +14,17 @@ const double _entryWidth = 720;
 /// Bouton supplémentaire, à côté de « Afficher ».
 typedef TextEntryAction = ({String label, VoidCallback onSelect});
 
-/// Saisie de texte au clavier virtuel.
+/// Saisie de texte. Retourne le texte validé, ou `null` si elle est annulée.
 ///
-/// Un clavier physique fonctionne aussi, y compris le collage d'une adresse sur
-/// PC. Retourne le texte validé, ou `null` si la saisie est annulée.
+/// Sur TV, au clavier virtuel, qui accepte aussi un clavier branché. Avec
+/// [physicalKeyboard], sur PC, dans un vrai champ : curseur, sélection et
+/// collage, et Entrée pour valider.
 Future<String?> showTextEntry(
   BuildContext context, {
   required String title,
   String initial = '',
   bool obscure = false,
+  bool physicalKeyboard = false,
   TextEntryAction? action,
 }) => showAeroOverlay<String>(
   context,
@@ -30,6 +33,7 @@ Future<String?> showTextEntry(
     title: title,
     initial: initial,
     obscure: obscure,
+    physicalKeyboard: physicalKeyboard,
     action: action,
   ),
 );
@@ -39,12 +43,14 @@ class _TextEntry extends StatefulWidget {
     required this.title,
     required this.initial,
     required this.obscure,
+    required this.physicalKeyboard,
     required this.action,
   });
 
   final String title;
   final String initial;
   final bool obscure;
+  final bool physicalKeyboard;
   final TextEntryAction? action;
 
   @override
@@ -54,6 +60,19 @@ class _TextEntry extends StatefulWidget {
 class _TextEntryState extends State<_TextEntry> {
   late String _text = widget.initial;
   bool _revealed = false;
+
+  /// Texte du vrai champ, sur PC.
+  late final TextEditingController _field = TextEditingController(
+    text: widget.initial,
+  );
+
+  @override
+  void dispose() {
+    _field.dispose();
+    super.dispose();
+  }
+
+  String get _value => widget.physicalKeyboard ? _field.text : _text;
 
   void _append(String value) => setState(() => _text += value);
 
@@ -102,7 +121,8 @@ class _TextEntryState extends State<_TextEntry> {
         child: Focus(
           canRequestFocus: false,
           skipTraversal: true,
-          onKeyEvent: _onKeyEvent,
+          // Le vrai champ reçoit lui-même la frappe.
+          onKeyEvent: widget.physicalKeyboard ? null : _onKeyEvent,
           child: GlassPanel(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -110,36 +130,45 @@ class _TextEntryState extends State<_TextEntry> {
               children: [
                 Text(widget.title, style: AeroText.heading),
                 const SizedBox(height: 12),
-                DecoratedBox(
-                  decoration: const BoxDecoration(
-                    color: AeroColors.veil,
-                    borderRadius: BorderRadius.all(Radius.circular(8)),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Text(
-                      '$shown|',
-                      style: AeroText.body,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                if (widget.physicalKeyboard)
+                  KeyboardField(
+                    controller: _field,
+                    autofocus: true,
+                    obscure: widget.obscure && !_revealed,
+                    onSubmitted: (value) => Navigator.of(context).pop(value),
+                  )
+                else ...[
+                  DecoratedBox(
+                    decoration: const BoxDecoration(
+                      color: AeroColors.veil,
+                      borderRadius: BorderRadius.all(Radius.circular(8)),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Text(
+                        '$shown|',
+                        style: AeroText.body,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                VirtualKeyboard(
-                  autofocus: true,
-                  columns: 13,
-                  keySize: 44,
-                  layouts: const [
-                    KeyboardLayout.lower,
-                    KeyboardLayout.upper,
-                    KeyboardLayout.symbols,
-                  ],
-                  onCharacter: _append,
-                  onAction: (action) => action == KeyboardAction.delete
-                      ? _delete()
-                      : _append(' '),
-                ),
+                  const SizedBox(height: 12),
+                  VirtualKeyboard(
+                    autofocus: true,
+                    columns: 13,
+                    keySize: 44,
+                    layouts: const [
+                      KeyboardLayout.lower,
+                      KeyboardLayout.upper,
+                      KeyboardLayout.symbols,
+                    ],
+                    onCharacter: _append,
+                    onAction: (action) => action == KeyboardAction.delete
+                        ? _delete()
+                        : _append(' '),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 Row(
                   children: [
@@ -179,7 +208,7 @@ class _TextEntryState extends State<_TextEntry> {
                     const SizedBox(width: 16),
                     AeroButton(
                       label: l10n.entryConfirm,
-                      onSelect: () => Navigator.of(context).pop(_text),
+                      onSelect: () => Navigator.of(context).pop(_value),
                     ),
                   ],
                 ),

@@ -306,7 +306,7 @@ void main() {
     await wait(tester, 800);
     expectFocus('retour du lecteur');
 
-    // Recherche au clavier virtuel.
+    // Recherche : clavier virtuel sur TV, vrai champ sur PC.
     container.read(currentTabProvider.notifier).show(AppTab.search);
     await wait(tester, 900);
     expectFocus('recherche');
@@ -342,10 +342,17 @@ void main() {
     await wait(tester, 600);
     container.read(currentTabProvider.notifier).show(AppTab.search);
     await wait(tester, 900);
-    await press(tester, LogicalKeyboardKey.enter);
-    await press(tester, LogicalKeyboardKey.arrowRight);
-    await press(tester, LogicalKeyboardKey.enter);
+    if (Platform.isWindows) {
+      // Sur PC, un vrai champ reçoit le clavier physique.
+      await tester.enterText(find.byType(EditableText), 'ab');
+    } else {
+      // Sur TV, le clavier virtuel : « a », puis « b ».
+      await press(tester, LogicalKeyboardKey.enter);
+      await press(tester, LogicalKeyboardKey.arrowRight);
+      await press(tester, LogicalKeyboardKey.enter);
+    }
     await wait(tester, 900);
+    expect(find.text('Abysses'), findsWidgets);
     await shot(tester, '12_recherche_resultats');
 
     // Paramètres et gestionnaire de playlists.
@@ -358,6 +365,7 @@ void main() {
     await press(tester, LogicalKeyboardKey.arrowLeft);
     await press(tester, LogicalKeyboardKey.arrowRight);
     await press(tester, LogicalKeyboardKey.arrowUp, times: 12);
+    await press(tester, LogicalKeyboardKey.arrowDown);
     await press(tester, LogicalKeyboardKey.enter);
     await wait(tester, 500);
     expectFocus('playlists');

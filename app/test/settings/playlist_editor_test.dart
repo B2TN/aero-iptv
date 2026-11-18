@@ -106,6 +106,7 @@ Future<void> _pumpEditor(
   _Importer importer, {
   String language = 'fr',
   Size window = const Size(1920, 1080),
+  bool physicalKeyboard = false,
 }) async {
   tester.view
     ..physicalSize = window
@@ -117,6 +118,8 @@ Future<void> _pumpEditor(
       overrides: [
         settingsProvider.overrideWithValue(const AppSettings()),
         settingsRepositoryProvider.overrideWithValue(_Settings()),
+        // Comme sur TV, sauf mention contraire : clavier virtuel.
+        physicalKeyboardProvider.overrideWithValue(physicalKeyboard),
         credentialStoreProvider.overrideWithValue(vault),
         playlistRepositoryProvider.overrideWithValue(_Repository(vault)),
         importPlaylistProvider.overrideWithValue(
@@ -276,6 +279,37 @@ void main() {
     await _press(tester, 'Actualiser');
 
     expect(vault.password, 'ancien');
+  });
+
+  group('sur PC', () {
+    testWidgets('la saisie se fait dans un vrai champ, sans clavier virtuel', (
+      tester,
+    ) async {
+      final vault = _Vault();
+      await _pumpEditor(tester, vault, _Importer(), physicalKeyboard: true);
+
+      await _openPassword(tester);
+      expect(find.text('a'), findsNothing);
+      await tester.enterText(find.byType(EditableText), 'nouveau');
+      await _press(tester, 'Valider');
+      await _press(tester, 'Enregistrer');
+
+      expect(vault.password, 'nouveau');
+    });
+
+    testWidgets('Entrée valide la saisie', (tester) async {
+      final vault = _Vault();
+      await _pumpEditor(tester, vault, _Importer(), physicalKeyboard: true);
+
+      await _openPassword(tester);
+      await tester.enterText(find.byType(EditableText), 'clavier');
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      await tester.pump();
+      await _press(tester, 'Enregistrer');
+
+      expect(vault.password, 'clavier');
+    });
   });
 
   testWidgets('Afficher révèle le texte d un champ masqué', (tester) async {

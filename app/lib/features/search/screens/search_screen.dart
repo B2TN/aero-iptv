@@ -1,3 +1,5 @@
+import '../../../design_system/components/keyboard_field.dart';
+import '../../../app/di/infrastructure_providers.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
@@ -178,32 +180,36 @@ class SearchScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    query.isEmpty ? l10n.searchPrompt : query,
-                    style: query.isEmpty ? AeroText.body : AeroText.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 12),
-                  VirtualKeyboard(
-                    autofocus: true,
-                    keySize: 44,
-                    memoryKey: 'search.keyboard',
-                    layouts: isArabic
-                        ? const [KeyboardLayout.arabic, KeyboardLayout.lower]
-                        : const [KeyboardLayout.lower],
-                    onCharacter: (value) => ref
-                        .read(searchQueryProvider.notifier)
-                        .set(query + value),
-                    onAction: (action) {
-                      final notifier = ref.read(searchQueryProvider.notifier);
-                      if (action == KeyboardAction.space) {
-                        notifier.set('$query ');
-                      } else if (query.isNotEmpty) {
-                        notifier.set(query.substring(0, query.length - 1));
-                      }
-                    },
-                  ),
+                  if (ref.watch(physicalKeyboardProvider))
+                    _SearchField(hint: l10n.searchPrompt)
+                  else ...[
+                    Text(
+                      query.isEmpty ? l10n.searchPrompt : query,
+                      style: query.isEmpty ? AeroText.body : AeroText.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 12),
+                    VirtualKeyboard(
+                      autofocus: true,
+                      keySize: 44,
+                      memoryKey: 'search.keyboard',
+                      layouts: isArabic
+                          ? const [KeyboardLayout.arabic, KeyboardLayout.lower]
+                          : const [KeyboardLayout.lower],
+                      onCharacter: (value) => ref
+                          .read(searchQueryProvider.notifier)
+                          .set(query + value),
+                      onAction: (action) {
+                        final notifier = ref.read(searchQueryProvider.notifier);
+                        if (action == KeyboardAction.space) {
+                          notifier.set('$query ');
+                        } else if (query.isNotEmpty) {
+                          notifier.set(query.substring(0, query.length - 1));
+                        }
+                      },
+                    ),
+                  ],
                   const SizedBox(height: 8),
                   Expanded(
                     child: DpadCollection.vertical(
@@ -294,6 +300,58 @@ class SearchScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Recherche au clavier physique, sur PC. Le texte suit la requête : choisir
+/// une suggestion le remplace.
+class _SearchField extends ConsumerStatefulWidget {
+  const _SearchField({required this.hint});
+
+  final String hint;
+
+  @override
+  ConsumerState<_SearchField> createState() => _SearchFieldState();
+}
+
+class _SearchFieldState extends ConsumerState<_SearchField> {
+  late final TextEditingController _controller = TextEditingController(
+    text: ref.read(searchQueryProvider),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_onEdit);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onEdit() {
+    if (_controller.text != ref.read(searchQueryProvider)) {
+      ref.read(searchQueryProvider.notifier).set(_controller.text);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen(searchQueryProvider, (_, query) {
+      if (query != _controller.text) {
+        _controller.value = TextEditingValue(
+          text: query,
+          selection: TextSelection.collapsed(offset: query.length),
+        );
+      }
+    });
+    return KeyboardField(
+      controller: _controller,
+      hint: widget.hint,
+      autofocus: true,
     );
   }
 }

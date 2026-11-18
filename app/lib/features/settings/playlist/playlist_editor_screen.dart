@@ -96,6 +96,7 @@ class _PlaylistEditorScreenState extends ConsumerState<PlaylistEditorScreen> {
     // invisible. Le valider vide conserve donc sa valeur.
     final value = await showTextEntry(
       context,
+      physicalKeyboard: ref.read(physicalKeyboardProvider),
       title: title,
       initial: obscure ? '' : current,
       obscure: obscure,

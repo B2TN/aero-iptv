@@ -101,6 +101,7 @@ class SettingsScreen extends ConsumerWidget {
     }
     final value = await showTextEntry(
       context,
+      physicalKeyboard: ref.read(physicalKeyboardProvider),
       title: service.title,
       obscure: true,
       action: (

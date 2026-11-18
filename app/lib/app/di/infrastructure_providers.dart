@@ -33,6 +33,12 @@ final webPageOpenerProvider = Provider<Future<bool> Function(String url)>(
   (ref) => openWebPage,
 );
 final screenAwakeProvider = Provider<ScreenAwake>((ref) => keepScreenAwake);
+
+/// Vrai sur PC : la saisie passe par le clavier physique, sans clavier
+/// virtuel. Sur TV, le clavier virtuel reste, pilotable à la télécommande.
+final physicalKeyboardProvider = Provider<bool>(
+  (ref) => Platform.isWindows || Platform.isLinux || Platform.isMacOS,
+);
 final posterCacheProvider = Provider<PosterCache>(
   (ref) => throw StateError('Cache non injecté.'),
 );
