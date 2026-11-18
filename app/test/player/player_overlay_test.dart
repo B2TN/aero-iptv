@@ -479,6 +479,37 @@ void main() {
       await _leave(tester);
     });
 
+    testWidgets('le retour système d Android suit la même règle', (
+      tester,
+    ) async {
+      await _pump(tester, _target(ContentKind.movie));
+
+      // Retour sans touche : geste, ou télécommande qui ne passe pas par
+      // Flutter.
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Pause'), findsNothing);
+      expect(find.byType(PlayerScreen), findsOneWidget);
+
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+      await tester.pump();
+      expect(find.byType(PlayerScreen), findsNothing);
+      await _leave(tester);
+    });
+
+    testWidgets('la croix ferme, même commandes ouvertes', (tester) async {
+      await _pump(tester, _target(ContentKind.movie));
+
+      await tester.tap(find.byIcon(Icons.close));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byType(PlayerScreen), findsNothing);
+      await _leave(tester);
+    });
+
     testWidgets('Retour masque aussi les commandes en pause', (tester) async {
       await _pump(
         tester,

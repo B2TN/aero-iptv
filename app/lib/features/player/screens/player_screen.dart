@@ -236,7 +236,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     // Le moteur émet encore des états après la fin : chaque retour de plus
     // remonterait l'accueil, jusqu'à quitter l'application.
     _closing = true;
-    Navigator.of(context).maybePop();
+    Navigator.of(context).pop();
   }
 
   /// En cas d'échec, le bouton du message est la seule issue : il reçoit le
@@ -344,6 +344,27 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     _rootNode.requestFocus();
     _focusPrompt();
   }
+
+  /// Retour ferme d'abord ce qui est ouvert : les commandes, puis le bouton
+  /// posé sur la vidéo. Faux s'il n'y avait rien : Retour quitte alors.
+  bool _closeOpenLayer() {
+    if (_state.status == PlaybackStatus.failed) return false;
+    if (_overlayVisible) {
+      _hideOverlay();
+      return true;
+    }
+    if (_floatingAction != null) {
+      _withdraw();
+      _rootNode.requestFocus();
+      return true;
+    }
+    return false;
+  }
+
+  /// Faux tant qu'un Retour a quelque chose à fermer avant de quitter.
+  bool get _canLeave =>
+      _state.status == PlaybackStatus.failed ||
+      (!_overlayVisible && _floatingAction == null);
 
   /// Donne le focus au bouton posé sur la vidéo, une fois dessiné.
   void _focusPrompt() {
@@ -688,11 +709,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     return title ?? track.language ?? fallback;
   }
 
-  static bool _isBackKey(LogicalKeyboardKey key) =>
-      key == LogicalKeyboardKey.escape ||
-      key == LogicalKeyboardKey.goBack ||
-      key == LogicalKeyboardKey.gameButtonB;
-
   /// Tant que la surcouche est masquée, toute touche la fait réapparaître.
   /// Les touches multimédias et de déplacement agissent directement.
   KeyEventResult _onKeyEvent(FocusNode node, KeyEvent event) {
@@ -721,19 +737,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
       );
       return KeyEventResult.handled;
     }
-    if (_isBackKey(key)) {
-      if (_overlayVisible) {
-        _hideOverlay();
-        return KeyEventResult.handled;
-      }
-      if (_floatingAction != null) {
-        _withdraw();
-        _rootNode.requestFocus();
-        return KeyEventResult.handled;
-      }
-      // Rien d'ouvert : Retour quitte la lecture.
-      return KeyEventResult.ignored;
-    }
+    // Retour suit son chemin jusqu'au `PopScope` de l'écran, qui ferme d'abord
+    // ce qui est ouvert : il ne doit pas non plus rouvrir les commandes.
+    if (isBackKey(key)) return KeyEventResult.ignored;
     if (!_overlayVisible) {
       final action = _floatingAction;
       if (action != null && isConfirmKey(key)) {
@@ -768,100 +774,110 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     final isLive = widget.target.isLive;
     final floating = _floatingAction;
     final shown = _shownAction;
-    return FocusGuard(
-      // Un bouton qui disparaît sous le focus le rend aux commandes ouvertes.
-      fallback: () => _overlayVisible && _firstAction.context != null
-          ? _firstAction
-          : _rootNode,
-      child: Focus(
-        focusNode: _rootNode,
-        skipTraversal: true,
-        onKeyEvent: _onKeyEvent,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            const ColoredBox(color: Color(0xFF000000)),
-            RepaintBoundary(child: surface(_engine)),
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: _onVideoTap,
-            ),
-            AeroScale(
-              child: SubtitleLayer(
-                text: _cue,
-                style: ref.watch(
-                  settingsProvider.select((settings) => settings.subtitleStyle),
-                ),
-                raised: _overlayVisible,
+    // Le retour système d'Android, sans touche (geste, autre télécommande),
+    // suit la même règle que la touche Retour.
+    return PopScope(
+      canPop: _canLeave,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _closeOpenLayer();
+      },
+      child: FocusGuard(
+        // Un bouton qui disparaît sous le focus le rend aux commandes ouvertes.
+        fallback: () => _overlayVisible && _firstAction.context != null
+            ? _firstAction
+            : _rootNode,
+        child: Focus(
+          focusNode: _rootNode,
+          skipTraversal: true,
+          onKeyEvent: _onKeyEvent,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              const ColoredBox(color: Color(0xFF000000)),
+              RepaintBoundary(child: surface(_engine)),
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: _onVideoTap,
               ),
-            ),
-            AeroScale(
-              child: _explaining
-                  ? AeroLoading(label: l10n.playerConnecting)
-                  : failed
-                  ? AeroMessage(
-                      title: connectionsFull
-                          ? l10n.playerConnectionsFullTitle
-                          : l10n.playerFailedTitle,
-                      body: [
-                        if (connectionsFull)
-                          l10n.playerConnectionsFullBody
-                        else ...[
-                          l10n.playerFailedBody,
-                          ?detail,
-                        ],
-                        ?_describeAnswer(l10n),
-                      ].join('\n\n'),
-                      actionLabel: l10n.actionBack,
-                      onAction: () => Navigator.of(context).maybePop(),
-                      focusNode: _failureAction,
-                    )
-                  : _overlayVisible
-                  ? _Overlay(
-                      title: widget.target.item.title,
-                      state: _state,
-                      position: _seekTarget ?? _state.position,
-                      isLive: isLive,
-                      notice: _notice,
-                      volume: Platform.isWindows ? _volume : null,
-                      firstAction: _firstAction,
-                      seekNode: _seekNode,
-                      focusSeekBar: _focusSeekBar,
-                      onSeekStep: (forward) =>
-                          _seekBy(forward ? _seekStep : -_seekStep),
-                      onSeek: _seekTo,
-                      onClose: () => Navigator.of(context).maybePop(),
-                      onTogglePlay: _togglePlay,
-                      onVolume: _setVolume,
-                      onVersion: widget.target.versions == null
-                          ? null
-                          : _chooseVersion,
-                      onExternal: _openExternally,
-                      onAudio: !isLive && _state.audioTracks.length > 1
-                          ? _chooseAudio
-                          : null,
-                      onSubtitles: isLive ? null : _chooseSubtitles,
-                      onSkipIntro: shown == _EpisodeAction.skipIntro
-                          ? _skipIntro
-                          : null,
-                      onNextEpisode: shown == _EpisodeAction.nextEpisode
-                          ? _openNext
-                          : null,
-                      fullscreen: fullscreen?.isActive,
-                      onFullscreen: _toggleFullscreen,
-                    )
-                  : floating != null
-                  ? _FloatingAction(
-                      focusNode: _promptNode,
-                      label: switch (floating) {
-                        _EpisodeAction.skipIntro => l10n.playerSkipIntro,
-                        _EpisodeAction.nextEpisode => l10n.playerNextEpisode,
-                      },
-                      onSelect: () => _run(floating),
-                    )
-                  : const SizedBox.shrink(),
-            ),
-          ],
+              AeroScale(
+                child: SubtitleLayer(
+                  text: _cue,
+                  style: ref.watch(
+                    settingsProvider.select(
+                      (settings) => settings.subtitleStyle,
+                    ),
+                  ),
+                  raised: _overlayVisible,
+                ),
+              ),
+              AeroScale(
+                child: _explaining
+                    ? AeroLoading(label: l10n.playerConnecting)
+                    : failed
+                    ? AeroMessage(
+                        title: connectionsFull
+                            ? l10n.playerConnectionsFullTitle
+                            : l10n.playerFailedTitle,
+                        body: [
+                          if (connectionsFull)
+                            l10n.playerConnectionsFullBody
+                          else ...[
+                            l10n.playerFailedBody,
+                            ?detail,
+                          ],
+                          ?_describeAnswer(l10n),
+                        ].join('\n\n'),
+                        actionLabel: l10n.actionBack,
+                        onAction: () => Navigator.of(context).maybePop(),
+                        focusNode: _failureAction,
+                      )
+                    : _overlayVisible
+                    ? _Overlay(
+                        title: widget.target.item.title,
+                        state: _state,
+                        position: _seekTarget ?? _state.position,
+                        isLive: isLive,
+                        notice: _notice,
+                        volume: Platform.isWindows ? _volume : null,
+                        firstAction: _firstAction,
+                        seekNode: _seekNode,
+                        focusSeekBar: _focusSeekBar,
+                        onSeekStep: (forward) =>
+                            _seekBy(forward ? _seekStep : -_seekStep),
+                        onSeek: _seekTo,
+                        onClose: () => Navigator.of(context).pop(),
+                        onTogglePlay: _togglePlay,
+                        onVolume: _setVolume,
+                        onVersion: widget.target.versions == null
+                            ? null
+                            : _chooseVersion,
+                        onExternal: _openExternally,
+                        onAudio: !isLive && _state.audioTracks.length > 1
+                            ? _chooseAudio
+                            : null,
+                        onSubtitles: isLive ? null : _chooseSubtitles,
+                        onSkipIntro: shown == _EpisodeAction.skipIntro
+                            ? _skipIntro
+                            : null,
+                        onNextEpisode: shown == _EpisodeAction.nextEpisode
+                            ? _openNext
+                            : null,
+                        fullscreen: fullscreen?.isActive,
+                        onFullscreen: _toggleFullscreen,
+                      )
+                    : floating != null
+                    ? _FloatingAction(
+                        focusNode: _promptNode,
+                        label: switch (floating) {
+                          _EpisodeAction.skipIntro => l10n.playerSkipIntro,
+                          _EpisodeAction.nextEpisode => l10n.playerNextEpisode,
+                        },
+                        onSelect: () => _run(floating),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            ],
+          ),
         ),
       ),
     );

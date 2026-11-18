@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
@@ -5,6 +7,12 @@ import 'package:flutter/widgets.dart';
 class BackIntent extends Intent {
   const BackIntent();
 }
+
+/// Touches de retour : celle de la télécommande, Échap et B de la manette.
+bool isBackKey(LogicalKeyboardKey key) =>
+    key == LogicalKeyboardKey.goBack ||
+    key == LogicalKeyboardKey.escape ||
+    key == LogicalKeyboardKey.gameButtonB;
 
 /// Touches qui valident, sur une télécommande comme sur un clavier.
 bool isConfirmKey(LogicalKeyboardKey key) =>
@@ -14,7 +22,12 @@ bool isConfirmKey(LogicalKeyboardKey key) =>
     key == LogicalKeyboardKey.gameButtonA;
 
 /// Touches de la télécommande et du clavier, valables dans toute l'application.
-const Map<ShortcutActivator, Intent> dpadShortcuts =
+///
+/// Sur Android, la touche Retour n'y figure pas : Android en fait lui-même un
+/// retour système, que reçoivent le navigateur et les `PopScope`. La traiter
+/// aussi ici ferait deux retours pour un appui : la fiche fermée, puis le
+/// focus rendu à la barre ; le HUD masqué, puis la lecture quittée.
+final Map<ShortcutActivator, Intent> dpadShortcuts =
     <ShortcutActivator, Intent>{
       SingleActivator(LogicalKeyboardKey.arrowUp): DirectionalFocusIntent(
         TraversalDirection.up,
@@ -39,7 +52,11 @@ const Map<ShortcutActivator, Intent> dpadShortcuts =
           ActivateIntent(),
       SingleActivator(LogicalKeyboardKey.gameButtonA, includeRepeats: false):
           ActivateIntent(),
-      SingleActivator(LogicalKeyboardKey.escape): BackIntent(),
-      SingleActivator(LogicalKeyboardKey.goBack): BackIntent(),
-      SingleActivator(LogicalKeyboardKey.gameButtonB): BackIntent(),
+      SingleActivator(LogicalKeyboardKey.escape, includeRepeats: false):
+          BackIntent(),
+      if (!Platform.isAndroid)
+        const SingleActivator(LogicalKeyboardKey.goBack, includeRepeats: false):
+            const BackIntent(),
+      SingleActivator(LogicalKeyboardKey.gameButtonB, includeRepeats: false):
+          BackIntent(),
     };
