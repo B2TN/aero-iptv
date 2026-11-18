@@ -17,6 +17,7 @@ import '../../../design_system/glass/glass_panel.dart';
 import '../../../design_system/tokens/aero_tokens.dart';
 import '../../../focus/dpad_collection.dart';
 import '../../../l10n/country_names.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../favorites/favorites_state.dart';
 import '../../player/player_target.dart';
 import '../../settings/playlist/playlist_manager_screen.dart';
@@ -358,9 +359,7 @@ class _ChannelBrowserState extends ConsumerState<_ChannelBrowser> {
                             _channelsNode.requestFocus();
                           },
                           itemBuilder: (context, index, focused) => _GroupRow(
-                            name: groups[index].displayName.isEmpty
-                                ? l10n.liveAllChannels
-                                : groups[index].displayName,
+                            name: _groupLabel(l10n, groups[index]),
                             focused: focused,
                             selected: index == _group,
                           ),
@@ -474,6 +473,14 @@ class _ChannelList extends ConsumerWidget {
     );
   }
 }
+
+/// Nom d'un groupe : « Toutes les chaînes » pour celui qui réunit le pays,
+/// « Général » pour un groupe que la playlist ne nommait que par son pays.
+String _groupLabel(AppLocalizations l10n, ChannelGroup group) => group.isAll
+    ? l10n.liveAllChannels
+    : group.displayName.isEmpty
+    ? l10n.liveGeneralChannels
+    : group.displayName;
 
 class _GroupRow extends StatelessWidget {
   const _GroupRow({

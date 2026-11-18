@@ -76,6 +76,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get liveAllChannels => 'كل القنوات';
 
   @override
+  String get liveGeneralChannels => 'عام';
+
+  @override
   String get liveNoChannels => 'لا توجد قنوات في هذه المجموعة';
 
   @override

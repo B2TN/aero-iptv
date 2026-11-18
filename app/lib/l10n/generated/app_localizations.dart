@@ -236,6 +236,12 @@ abstract class AppLocalizations {
   /// **'Toutes les chaînes'**
   String get liveAllChannels;
 
+  /// No description provided for @liveGeneralChannels.
+  ///
+  /// In fr, this message translates to:
+  /// **'Général'**
+  String get liveGeneralChannels;
+
   /// No description provided for @liveNoChannels.
   ///
   /// In fr, this message translates to:

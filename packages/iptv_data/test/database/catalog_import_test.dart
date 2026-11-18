@@ -196,7 +196,9 @@ void main() {
 
     test('rétablit la vue brute sans réimport', () async {
       final groups = await liveTv.groups(sourceId, 'FR', grouped: false);
-      expect(groups.map((g) => g.displayName), [
+      // « Toutes les chaînes » d'abord, puis les groupes de la playlist.
+      expect(groups.first.isAll, isTrue);
+      expect(groups.skip(1).map((g) => g.displayName), [
         'FRANCE FHD',
         'FRANCE HD',
         'FRANCE SD',
@@ -205,7 +207,7 @@ void main() {
       final page = await liveTv.channels(
         sourceId,
         'FR',
-        groups.first,
+        groups[1],
         const PageRequest(),
         grouped: false,
       );
@@ -213,6 +215,37 @@ void main() {
       expect(channel.name, 'FR: TF1 FHD');
       final streams = await liveTv.streamsOf(sourceId, channel, grouped: false);
       expect(streams, hasLength(1));
+    });
+
+    test('Toutes les chaînes réunit les groupes du pays', () async {
+      final raw = await liveTv.groups(sourceId, 'FR', grouped: false);
+      final all = await liveTv.channels(
+        sourceId,
+        'FR',
+        raw.first,
+        const PageRequest(),
+        grouped: false,
+      );
+      expect(all.items.map((c) => c.name), [
+        'FR: TF1 FHD',
+        'FR: TF1 HD',
+        'FR: TF1 SD',
+      ]);
+
+      // Regroupée, la même chaîne n'apparaît qu'une fois.
+      final merged = await liveTv.channels(
+        sourceId,
+        'FR',
+        raw.first,
+        const PageRequest(),
+        grouped: true,
+      );
+      expect(merged.items.single.name, 'TF1');
+    });
+
+    test('un seul groupe se passe de Toutes les chaînes', () async {
+      final groups = await liveTv.groups(sourceId, 'FR', grouped: true);
+      expect(groups.single.isAll, isFalse);
     });
 
     test('écarte les lignes de séparation', () async {

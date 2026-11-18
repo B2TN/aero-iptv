@@ -22,6 +22,7 @@
   "liveChooseCountry": "Choisissez un pays",
   "liveUnknownCountry": "Autres",
   "liveAllChannels": "Toutes les chaînes",
+  "liveGeneralChannels": "Général",
   "liveNoChannels": "Aucune chaîne dans ce groupe",
   "liveChooseStream": "Choisissez un flux",
   "liveStreamDefault": "Flux {number}",

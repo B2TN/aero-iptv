@@ -77,6 +77,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get liveAllChannels => 'Todos los canales';
 
   @override
+  String get liveGeneralChannels => 'General';
+
+  @override
   String get liveNoChannels => 'No hay canales en este grupo';
 
   @override

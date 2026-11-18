@@ -24,6 +24,24 @@ final class LiveTvRepositoryImpl implements LiveTvRepository {
     String? countryCode, {
     required bool grouped,
   }) async {
+    final groups = await _groups(sourceId, countryCode, grouped: grouped);
+    // « Toutes les chaînes » d'abord, dès qu'il y a de quoi choisir.
+    if (groups.length < 2) return groups;
+    return [
+      ChannelGroup(
+        key: ChannelGroup.allKey,
+        displayName: '',
+        channelCount: groups.fold(0, (sum, group) => sum + group.channelCount),
+      ),
+      ...groups,
+    ];
+  }
+
+  Future<List<ChannelGroup>> _groups(
+    int sourceId,
+    String? countryCode, {
+    required bool grouped,
+  }) async {
     if (grouped) {
       final rows = await _db
           .groupsMerged(sourceId: sourceId, country: countryCode)
@@ -83,6 +101,17 @@ final class LiveTvRepositoryImpl implements LiveTvRepository {
     PageRequest page, {
     required bool grouped,
   }) async {
+    if (group.isAll) {
+      return Page(
+        items: await _channelsOfCountry(
+          sourceId,
+          countryCode,
+          page,
+          grouped: grouped,
+        ),
+        request: page,
+      );
+    }
     final rawGroupId = group.rawGroupId;
     final List<Channel> items;
     if (grouped || rawGroupId == null) {
@@ -128,6 +157,56 @@ final class LiveTvRepositoryImpl implements LiveTvRepository {
       ];
     }
     return Page(items: items, request: page);
+  }
+
+  /// Toutes les chaînes du pays, fusionnées ou telles que la playlist les
+  /// nomme.
+  Future<List<Channel>> _channelsOfCountry(
+    int sourceId,
+    String? countryCode,
+    PageRequest page, {
+    required bool grouped,
+  }) async {
+    if (grouped) {
+      final rows = await _db
+          .channelsOfCountryMerged(
+            sourceId: sourceId,
+            country: countryCode,
+            limit: page.limit,
+            offset: page.offset,
+          )
+          .get();
+      return [
+        for (final row in rows)
+          Channel(
+            id: row.channelId!,
+            name: row.displayName ?? '',
+            groupingKey: row.channelKey,
+            countryCode: countryCode,
+            logoUrl: row.logoUrl,
+            epgKey: row.epgKey,
+          ),
+      ];
+    }
+    final rows = await _db
+        .channelsOfCountryRaw(
+          sourceId: sourceId,
+          country: countryCode,
+          limit: page.limit,
+          offset: page.offset,
+        )
+        .get();
+    return [
+      for (final row in rows)
+        Channel(
+          id: row.id,
+          name: row.rawName,
+          groupingKey: row.groupingKey,
+          countryCode: row.countryCode,
+          logoUrl: row.logoUrl,
+          epgKey: row.epgKey,
+        ),
+    ];
   }
 
   @override

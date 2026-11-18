@@ -22,6 +22,7 @@
   "liveChooseCountry": "اختر بلدًا",
   "liveUnknownCountry": "أخرى",
   "liveAllChannels": "كل القنوات",
+  "liveGeneralChannels": "عام",
   "liveNoChannels": "لا توجد قنوات في هذه المجموعة",
   "liveChooseStream": "اختر بثًا",
   "liveStreamDefault": "بث {number}",

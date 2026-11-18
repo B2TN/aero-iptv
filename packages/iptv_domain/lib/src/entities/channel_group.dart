@@ -16,4 +16,11 @@ final class ChannelGroup {
 
   /// Identifiant du groupe d'origine, renseigné seulement en vue brute.
   final int? rawGroupId;
+
+  /// Clé du groupe qui réunit toutes les chaînes du pays.
+  static const String allKey = '*';
+
+  /// Vrai pour « Toutes les chaînes » : toutes celles du pays, quel que soit
+  /// leur groupe.
+  bool get isAll => key == allKey;
 }

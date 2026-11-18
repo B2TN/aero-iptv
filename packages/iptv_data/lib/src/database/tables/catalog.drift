@@ -189,6 +189,27 @@ channelsMerged(:country AS TEXT OR NULL):
   ORDER BY position
   LIMIT :limit OFFSET :offset;
 
+channelsOfCountryMerged(:country AS TEXT OR NULL):
+  SELECT MIN(c.id) AS channel_id,
+         MIN(c.display_name) AS display_name,
+         c.grouping_key AS channel_key,
+         MAX(c.logo_url) AS logo_url,
+         MAX(c.epg_key) AS epg_key,
+         MIN(c.sort_order) AS position
+  FROM live_channels c
+  WHERE c.catalog_id = (SELECT active_catalog_id FROM sources WHERE id = :source_id)
+    AND c.country_code IS :country
+  GROUP BY c.grouping_key
+  ORDER BY position
+  LIMIT :limit OFFSET :offset;
+
+channelsOfCountryRaw(:country AS TEXT OR NULL):
+  SELECT * FROM live_channels
+  WHERE catalog_id = (SELECT active_catalog_id FROM sources WHERE id = :source_id)
+    AND country_code IS :country
+  ORDER BY sort_order
+  LIMIT :limit OFFSET :offset;
+
 channelsRaw:
   SELECT * FROM live_channels
   WHERE group_id = :group_id
