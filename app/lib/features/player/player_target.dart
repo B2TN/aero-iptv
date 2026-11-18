@@ -25,6 +25,32 @@ typedef PlayerVersionLoader =
 /// Cherche ce qui suit le contenu en cours, `null` s'il n'y a rien.
 typedef PlayerNextLoader = Future<PlayerTarget?> Function(WidgetRef ref);
 
+/// Les saisons de la version en cours de lecture, et l'épisode lu.
+typedef PlayerEpisodes = ({
+  Series series,
+  List<Season> seasons,
+  Episode current,
+});
+
+/// Charge les épisodes de la série, seulement si l'utilisateur les demande ;
+/// `null` si le catalogue ne connaît plus l'épisode.
+typedef PlayerEpisodesLoader = Future<PlayerEpisodes?> Function(WidgetRef ref);
+
+/// Lecture de [episode] : commencé dans n'importe quelle version, il reprend
+/// où il en était ; fini ou jamais commencé, il part du début.
+PlayerTarget episodeTarget(
+  int sourceId,
+  Series series,
+  Episode episode,
+  SeriesProgress seen,
+) {
+  final target = PlayerTarget.episode(sourceId, series, episode);
+  final watched = seen.of(episode.season, episode.number);
+  return watched != null && watched.inProgress
+      ? target.resumingAt(watched.position)
+      : target;
+}
+
 /// Contenu à ouvrir dans le lecteur.
 final class PlayerTarget {
   const PlayerTarget({
@@ -32,6 +58,7 @@ final class PlayerTarget {
     this.resumeAt,
     this.versions,
     this.next,
+    this.episodes,
   });
 
   factory PlayerTarget.movie(int sourceId, Movie movie) => PlayerTarget(
@@ -73,6 +100,13 @@ final class PlayerTarget {
               ? null
               : PlayerTarget.episode(sourceId, series, following);
         },
+        episodes: (ref) async => (
+          series: series,
+          seasons: await ref
+              .read(catalogRepositoryProvider)
+              .seasonsOf(sourceId, episode.seriesEntryId),
+          current: episode,
+        ),
         versions: (ref, context) async {
           final l10n = context.l10n;
           final language = ref.read(settingsProvider).languageCode;
@@ -162,6 +196,20 @@ final class PlayerTarget {
       final current = PlayerTarget.episode(progress.sourceId, series, episode);
       return current.next?.call(ref);
     },
+    episodes: progress.kind != ContentKind.series
+        ? null
+        : (ref) async {
+            final found = await ref
+                .read(catalogRepositoryProvider)
+                .episodeByContentKey(progress.sourceId, progress.contentKey);
+            if (found == null) return null;
+            final (series, episode) = found;
+            return PlayerTarget.episode(
+              progress.sourceId,
+              series,
+              episode,
+            ).episodes?.call(ref);
+          },
     versions: (ref, context) async {
       final catalog = ref.read(catalogRepositoryProvider);
       final sourceId = progress.sourceId;
@@ -202,6 +250,9 @@ final class PlayerTarget {
   /// `null` pour un contenu sans suite, comme un film.
   final PlayerNextLoader? next;
 
+  /// `null` hors d'une série : le lecteur n'a alors pas de bouton Épisodes.
+  final PlayerEpisodesLoader? episodes;
+
   bool get isLive => item.kind == ContentKind.live;
 
   /// Même contenu, repris à [position].
@@ -210,6 +261,7 @@ final class PlayerTarget {
     resumeAt: position,
     versions: versions,
     next: next,
+    episodes: episodes,
   );
 }
 

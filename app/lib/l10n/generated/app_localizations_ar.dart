@@ -520,6 +520,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get playerVersion => 'النسخة';
 
   @override
+  String get playerEpisodes => 'الحلقات';
+
+  @override
+  String get playerNowPlaying => 'قيد التشغيل';
+
+  @override
   String get playerExternal => 'مشغل خارجي';
 
   @override

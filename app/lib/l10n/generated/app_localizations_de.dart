@@ -523,6 +523,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get playerVersion => 'Version';
 
   @override
+  String get playerEpisodes => 'Folgen';
+
+  @override
+  String get playerNowPlaying => 'Läuft gerade';
+
+  @override
   String get playerExternal => 'Externer Player';
 
   @override

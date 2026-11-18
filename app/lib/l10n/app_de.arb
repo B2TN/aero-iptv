@@ -142,6 +142,8 @@
   "homeRestart": "Von vorne beginnen",
   "homeRemoveContinue": "Aus Weiterschauen entfernen",
   "playerVersion": "Version",
+  "playerEpisodes": "Folgen",
+  "playerNowPlaying": "Läuft gerade",
   "playerExternal": "Externer Player",
   "playerExternalMissing": "Kein externer Player gefunden. Installieren Sie VLC oder mpv.",
   "playerNoOtherVersion": "Keine andere Version verfügbar",

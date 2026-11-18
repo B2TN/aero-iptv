@@ -4,6 +4,7 @@ import 'package:aero_iptv/app/app_state.dart';
 import 'package:aero_iptv/app/di/infrastructure_providers.dart';
 import 'package:aero_iptv/app/di/repository_providers.dart';
 import 'package:aero_iptv/app/platform/api_key_store.dart';
+import 'package:aero_iptv/design_system/components/progress_track.dart';
 import 'package:aero_iptv/features/player/player_target.dart';
 import 'package:aero_iptv/features/player/screens/player_screen.dart';
 import 'package:aero_iptv/focus/focus_frame.dart';
@@ -92,11 +93,17 @@ final class _LateKeyStore implements ApiKeyStore {
 }
 
 final class _NoProgress implements WatchProgressRepository {
+  _NoProgress([this.known = const []]);
+
+  /// Positions déjà enregistrées, toutes versions confondues.
+  final List<WatchProgress> known;
   final List<WatchProgress> saved = [];
 
   @override
-  Future<List<WatchProgress>> progressOf(int sourceId, String key) async =>
-      const [];
+  Future<List<WatchProgress>> progressOf(int sourceId, String key) async => [
+    for (final item in known)
+      if (item.workKey == key || item.seriesKey == key) item,
+  ];
 
   @override
   Future<List<WatchProgress>> history(int sourceId, {int limit = 500}) async =>
@@ -225,6 +232,7 @@ Future<_Engine> _pump(
   SubtitleTranslator? translator,
   List<MediaChapter> chapters = const [],
   _NoProgress? progress,
+  CatalogRepository? catalog,
 }) async {
   tester.view
     ..physicalSize = window
@@ -253,6 +261,8 @@ Future<_Engine> _pump(
         resolveStreamUrlProvider.overrideWithValue(
           ResolveStreamUrl(_NoCredentials()),
         ),
+        if (catalog != null)
+          catalogRepositoryProvider.overrideWithValue(catalog),
       ],
       child: WidgetsApp(
         navigatorKey: navigator,
@@ -1297,4 +1307,160 @@ void main() {
       });
     }
   }
+
+  group('choix des épisodes', () {
+    const abysses = Series(
+      id: 7,
+      title: 'Abysses',
+      groupingKey: 'abysses',
+      versionCount: 1,
+    );
+    Episode episode(int season, int number) => Episode(
+      id: season * 10 + number,
+      seriesEntryId: 7,
+      season: season,
+      number: number,
+      title: 'Abysses',
+      contentKey: 'x:e:$season$number',
+      locator: DirectStream('http://127.0.0.1/e$season$number'),
+    );
+    final seasons = [
+      Season(
+        number: 1,
+        episodes: [episode(1, 1), episode(1, 2), episode(1, 3)],
+      ),
+      Season(number: 2, episodes: [episode(2, 1)]),
+    ];
+
+    /// S1 É2 commencé dans une autre version, à 12 minutes.
+    final started = WatchProgress(
+      sourceId: 1,
+      contentKey: 'y:e:12',
+      kind: ContentKind.series,
+      title: 'Abysses',
+      position: const Duration(minutes: 12),
+      duration: const Duration(minutes: 40),
+      updatedAt: DateTime.utc(2026, 11, 18),
+      locator: const DirectStream('http://127.0.0.1/vo/e12'),
+      workKey: WorkKeys.episode('abysses', 1, 2),
+      seriesKey: 'abysses',
+      season: 1,
+      episode: 2,
+    );
+
+    Future<_Engine> openPicker(WidgetTester tester) async {
+      final engine = await _pump(
+        tester,
+        PlayerTarget.episode(1, abysses, episode(1, 1)),
+        catalog: _Seasons(seasons),
+        progress: _NoProgress([started]),
+      );
+      await tester.tap(find.text('Épisodes'));
+      for (var i = 0; i < 4; i++) {
+        await tester.pump();
+      }
+      return engine;
+    }
+
+    testWidgets('un film n a pas de bouton Épisodes', (tester) async {
+      await _pump(tester, _target(ContentKind.movie));
+
+      expect(find.text('Épisodes'), findsNothing);
+      await _leave(tester);
+    });
+
+    testWidgets('s ouvre sur l épisode en cours, avec ce qui a été vu', (
+      tester,
+    ) async {
+      await openPicker(tester);
+
+      expect(find.text('Saison 1'), findsOneWidget);
+      expect(find.text('Saison 2'), findsOneWidget);
+      expect(find.text('Épisode 3'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Icon && widget.semanticLabel == 'En cours de lecture',
+        ),
+        findsOneWidget,
+      );
+      // L'épisode 2, commencé dans une autre version, a sa barre.
+      final bar = tester.widget<ProgressTrack>(find.byType(ProgressTrack));
+      expect(bar.fraction, 12 / 40);
+      expect(_focusIsVisible(tester), isTrue);
+      await _leave(tester);
+    });
+
+    testWidgets('change d épisode au D-pad, en le reprenant', (tester) async {
+      final engine = await openPicker(tester);
+      final before = engine.opened.length;
+
+      await _press(tester, LogicalKeyboardKey.arrowDown);
+      await _press(tester, LogicalKeyboardKey.enter);
+      for (var i = 0; i < 4; i++) {
+        await tester.pump();
+      }
+
+      expect(engine.opened, hasLength(before + 1));
+      expect(engine.opened.last.stream.url, 'http://127.0.0.1/e12');
+      expect(engine.opened.last.startAt, const Duration(minutes: 12));
+      await _leave(tester);
+    });
+
+    testWidgets('passe à une autre saison', (tester) async {
+      final engine = await openPicker(tester);
+
+      await _press(tester, LogicalKeyboardKey.arrowLeft);
+      await _press(tester, LogicalKeyboardKey.arrowDown);
+      expect(find.text('Épisode 3'), findsNothing);
+      await _press(tester, LogicalKeyboardKey.arrowRight);
+      await _press(tester, LogicalKeyboardKey.enter);
+      for (var i = 0; i < 4; i++) {
+        await tester.pump();
+      }
+
+      expect(engine.opened.last.stream.url, 'http://127.0.0.1/e21');
+      // Jamais commencé : depuis le début.
+      expect(engine.opened.last.startAt ?? Duration.zero, Duration.zero);
+      await _leave(tester);
+    });
+
+    testWidgets('Retour referme le choix et garde la lecture', (tester) async {
+      final engine = await openPicker(tester);
+      final before = engine.opened.length;
+
+      await _press(tester, LogicalKeyboardKey.escape);
+
+      expect(find.text('Saison 1'), findsNothing);
+      expect(find.text('Pause'), findsOneWidget);
+      expect(engine.opened, hasLength(before));
+      expect(_focusIsVisible(tester), isTrue);
+      await _leave(tester);
+    });
+
+    testWidgets('choisir l épisode en cours ne relance rien', (tester) async {
+      final engine = await openPicker(tester);
+      final before = engine.opened.length;
+
+      await _press(tester, LogicalKeyboardKey.enter);
+      for (var i = 0; i < 4; i++) {
+        await tester.pump();
+      }
+
+      expect(find.text('Saison 1'), findsNothing);
+      expect(engine.opened, hasLength(before));
+      await _leave(tester);
+    });
+  });
+}
+
+/// Saisons d'une série, pour le choix des épisodes et l'épisode suivant.
+final class _Seasons extends Fake implements CatalogRepository {
+  _Seasons(this.seasons);
+
+  final List<Season> seasons;
+
+  @override
+  Future<List<Season>> seasonsOf(int sourceId, int seriesEntryId) async =>
+      seasons;
 }

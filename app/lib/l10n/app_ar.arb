@@ -142,6 +142,8 @@
   "homeRestart": "البدء من جديد",
   "homeRemoveContinue": "إزالة من متابعة المشاهدة",
   "playerVersion": "النسخة",
+  "playerEpisodes": "الحلقات",
+  "playerNowPlaying": "قيد التشغيل",
   "playerExternal": "مشغل خارجي",
   "playerExternalMissing": "لم يتم العثور على مشغل خارجي. ثبّت VLC أو mpv.",
   "playerNoOtherVersion": "لا توجد نسخة أخرى",

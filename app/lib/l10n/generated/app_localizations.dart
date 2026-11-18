@@ -956,6 +956,18 @@ abstract class AppLocalizations {
   /// **'Version'**
   String get playerVersion;
 
+  /// Bouton du lecteur qui ouvre le choix des épisodes, et titre de ce choix.
+  ///
+  /// In fr, this message translates to:
+  /// **'Épisodes'**
+  String get playerEpisodes;
+
+  /// Épisode en cours, dans le choix des épisodes.
+  ///
+  /// In fr, this message translates to:
+  /// **'En cours de lecture'**
+  String get playerNowPlaying;
+
   /// No description provided for @playerExternal.
   ///
   /// In fr, this message translates to:

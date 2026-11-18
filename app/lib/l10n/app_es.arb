@@ -142,6 +142,8 @@
   "homeRestart": "Empezar de nuevo",
   "homeRemoveContinue": "Quitar de Seguir viendo",
   "playerVersion": "Versión",
+  "playerEpisodes": "Episodios",
+  "playerNowPlaying": "Reproduciendo",
   "playerExternal": "Reproductor externo",
   "playerExternalMissing": "No se ha encontrado ningún reproductor externo. Instala VLC o mpv.",
   "playerNoOtherVersion": "No hay otra versión disponible",

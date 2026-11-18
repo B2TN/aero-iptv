@@ -525,6 +525,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get playerVersion => 'Versión';
 
   @override
+  String get playerEpisodes => 'Episodios';
+
+  @override
+  String get playerNowPlaying => 'Reproduciendo';
+
+  @override
   String get playerExternal => 'Reproductor externo';
 
   @override

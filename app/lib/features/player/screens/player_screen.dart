@@ -25,6 +25,7 @@ import '../../../l10n/generated/app_localizations.dart';
 import '../../../l10n/language_names.dart';
 import '../playback_time.dart';
 import '../player_target.dart';
+import '../widgets/episode_picker.dart';
 
 const Duration _overlayDuration = Duration(seconds: 5);
 const Duration _noticeDuration = Duration(seconds: 4);
@@ -617,6 +618,39 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     );
   }
 
+  /// Ouvre le choix des épisodes de la série, sur l'épisode en cours.
+  Future<void> _chooseEpisode() async {
+    final load = widget.target.episodes;
+    if (load == null) return;
+    final navigator = Navigator.of(context);
+    final sourceId = widget.target.item.sourceId;
+    // La barre de l'épisode en cours part de sa position du moment.
+    await _session.saveNow();
+    final found = await load(ref);
+    if (!mounted || found == null) return;
+    final seen = SeriesProgress(
+      await ref
+          .read(watchProgressRepositoryProvider)
+          .progressOf(sourceId, found.series.groupingKey),
+    );
+    if (!mounted) return;
+    final picked = await showEpisodePicker(
+      context,
+      series: found.series,
+      seasons: found.seasons,
+      current: found.current,
+      seen: seen,
+    );
+    if (picked == null ||
+        !mounted ||
+        picked.contentKey == found.current.contentKey) {
+      return;
+    }
+    await navigator.pushReplacement(
+      playerRoute(episodeTarget(sourceId, found.series, picked, seen)),
+    );
+  }
+
   Future<void> _openExternally() async {
     final l10n = context.l10n;
     final item = widget.target.item;
@@ -869,6 +903,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                         onClose: () => Navigator.of(context).pop(),
                         onTogglePlay: _togglePlay,
                         onVolume: _setVolume,
+                        onEpisodes: widget.target.episodes == null
+                            ? null
+                            : _chooseEpisode,
                         onVersion: widget.target.versions == null
                             ? null
                             : _chooseVersion,
@@ -1305,6 +1342,7 @@ class _Overlay extends StatelessWidget {
     required this.onClose,
     required this.onTogglePlay,
     required this.onVolume,
+    required this.onEpisodes,
     required this.onVersion,
     required this.onExternal,
     required this.onAudio,
@@ -1333,6 +1371,9 @@ class _Overlay extends StatelessWidget {
   final VoidCallback onClose;
   final VoidCallback onTogglePlay;
   final ValueChanged<double> onVolume;
+
+  /// `null` hors d'une série.
+  final VoidCallback? onEpisodes;
   final VoidCallback? onVersion;
   final VoidCallback onExternal;
   final VoidCallback? onAudio;
@@ -1355,6 +1396,12 @@ class _Overlay extends StatelessWidget {
         onSelect: onTogglePlay,
       ),
       if (level != null) _VolumeSlider(level: level, onChanged: onVolume),
+      if (onEpisodes != null)
+        AeroButton(
+          label: l10n.playerEpisodes,
+          icon: Icons.format_list_bulleted_rounded,
+          onSelect: onEpisodes,
+        ),
       if (onVersion != null)
         AeroButton(label: l10n.playerVersion, onSelect: onVersion),
       AeroButton(label: l10n.playerExternal, onSelect: onExternal),

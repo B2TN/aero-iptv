@@ -521,6 +521,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get playerVersion => 'Version';
 
   @override
+  String get playerEpisodes => 'Episodes';
+
+  @override
+  String get playerNowPlaying => 'Now playing';
+
+  @override
   String get playerExternal => 'External player';
 
   @override
