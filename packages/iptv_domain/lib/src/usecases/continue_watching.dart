@@ -3,7 +3,7 @@ import '../entities/episode.dart';
 import '../entities/watch_progress.dart';
 import '../ports/catalog_repository.dart';
 import '../ports/watch_progress_repository.dart';
-import 'next_episode.dart';
+import 'series_progress.dart';
 
 /// Compose « Continuer à regarder » : une entrée par film ou par série, toutes
 /// versions confondues.
@@ -50,66 +50,51 @@ final class ContinueWatching {
     final target = group.reduce(
       (best, item) => _order(item) > _order(best) ? item : best,
     );
-    // Les épisodes de la dernière version regardée.
-    final List<Episode> episodes;
     try {
       final found = await _catalog.episodeByContentKey(
         sourceId,
         latest.contentKey,
       );
       if (found == null) return target.finished ? null : target;
-      final seasons = await _catalog.seasonsOf(
-        sourceId,
-        found.$2.seriesEntryId,
-      );
-      episodes = [for (final season in seasons) ...season.episodes];
-      if (target.finished) {
-        final current = episodes
-            .where((episode) => _matches(episode, target))
-            .firstOrNull;
-        final following = current == null
-            ? null
-            : nextEpisode(seasons, current);
-        return following == null ? null : _episodeEntry(latest, following);
+      // Dans la version regardée en dernier : l'épisode le plus avancé à la
+      // position où il en était, quelle que soit sa version, ou le suivant.
+      final resume = SeriesProgress(
+        group,
+      ).resumeIn(await _catalog.seasonsOf(sourceId, found.$2.seriesEntryId));
+      if (resume == null) return target.finished ? null : target;
+      if (!target.finished && target.contentKey == latest.contentKey) {
+        return latest;
       }
+      return _episodeEntry(latest, resume);
     } on Failure {
       // Sans catalogue, la reprise elle-même reste lisible.
       return target.finished ? null : target;
     }
-    if (target.contentKey == latest.contentKey) return latest;
-    // L'épisode le plus avancé, dans la version regardée en dernier, à la
-    // position où il en était, quelle que soit sa version.
-    final same = episodes.where((episode) => _matches(episode, target));
-    return same.isEmpty
-        ? target
-        : _episodeEntry(latest, same.first, from: target);
   }
 
   /// Rang d'un épisode dans la série : saison, puis numéro.
   static int _order(WatchProgress item) =>
       (item.season ?? 0) * 10000 + (item.episode ?? 0);
 
-  static bool _matches(Episode episode, WatchProgress item) =>
-      episode.season == item.season && episode.number == item.episode;
-
-  /// Entrée pour [episode] de la version de [latest], reprise à la position de
-  /// [from] s'il en avait une.
+  /// Entrée pour [resume], dans la version de son épisode.
   static WatchProgress _episodeEntry(
     WatchProgress latest,
-    Episode episode, {
-    WatchProgress? from,
-  }) => latest.copyWith(
-    contentKey: episode.contentKey,
-    locator: episode.locator,
-    workKey: WorkKeys.episode(
-      latest.seriesKey!,
-      episode.season,
-      episode.number,
-    ),
-    season: episode.season,
-    episode: episode.number,
-    position: from?.position ?? Duration.zero,
-    duration: from?.duration ?? Duration.zero,
-    finished: false,
-  );
+    SeriesResume resume,
+  ) {
+    final Episode episode = resume.episode;
+    return latest.copyWith(
+      contentKey: episode.contentKey,
+      locator: episode.locator,
+      workKey: WorkKeys.episode(
+        latest.seriesKey!,
+        episode.season,
+        episode.number,
+      ),
+      season: episode.season,
+      episode: episode.number,
+      position: resume.position,
+      duration: resume.duration,
+      finished: false,
+    );
+  }
 }

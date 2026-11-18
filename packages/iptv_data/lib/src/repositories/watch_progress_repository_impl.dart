@@ -62,6 +62,13 @@ final class WatchProgressRepositoryImpl implements WatchProgressRepository {
   ];
 
   @override
+  Future<List<WatchProgress>> progressOf(int sourceId, String key) async => [
+    for (final row
+        in await _db.progressOfKey(sourceId: sourceId, key: key).get())
+      _toProgress(row),
+  ];
+
+  @override
   Future<void> hide(int sourceId, String groupKey) =>
       _db.hideProgress(sourceId: sourceId, groupKey: groupKey);
 

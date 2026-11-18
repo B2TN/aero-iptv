@@ -28,7 +28,27 @@ final _detailsProvider = FutureProvider.autoDispose
       }
     });
 
+/// Positions du film dans toutes ses versions, relues après chaque lecture.
+final _progressProvider = FutureProvider.autoDispose
+    .family<List<WatchProgress>, ({int sourceId, String workKey})>((ref, key) {
+      ref.watch(watchedRevisionProvider);
+      return ref
+          .watch(watchProgressRepositoryProvider)
+          .progressOf(key.sourceId, key.workKey);
+    });
+
+/// Position où reprendre un film d'après ses positions, la plus récente
+/// d'abord : celle de la dernière version regardée, sauf s'il a été vu
+/// jusqu'au bout.
+Duration? movieResumeAt(List<WatchProgress> history) {
+  final latest = history.firstOrNull;
+  return latest == null || latest.finished || latest.position <= Duration.zero
+      ? null
+      : latest.position;
+}
+
 /// Fiche d'un film : reprise, lecture depuis le début et choix de la version.
+/// La reprise vaut pour toutes les versions.
 class MovieDetailScreen extends ConsumerStatefulWidget {
   const MovieDetailScreen({
     required this.sourceId,
@@ -40,7 +60,8 @@ class MovieDetailScreen extends ConsumerStatefulWidget {
   final int sourceId;
   final Movie movie;
 
-  /// Position où la lecture s'était arrêtée, pour cette version du film.
+  /// Position où la lecture s'était arrêtée, toutes versions confondues : la
+  /// fiche propose de reprendre dès la première image.
   final Duration? resumeAt;
 
   @override
@@ -84,10 +105,6 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
     );
   }
 
-  /// La reprise ne vaut que pour la version qui avait été regardée.
-  Duration? get _resumeAt =>
-      _movie.contentKey == widget.movie.contentKey ? widget.resumeAt : null;
-
   void _play({Duration? at}) {
     final target = PlayerTarget.movie(widget.sourceId, _movie);
     openPlayer(context, at == null ? target : target.resumingAt(at));
@@ -108,7 +125,15 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final resumeAt = _resumeAt;
+    final progress = ref.watch(
+      _progressProvider((
+        sourceId: widget.sourceId,
+        workKey: WorkKeys.movie(_movie.title),
+      )),
+    );
+    final resumeAt = progress.hasValue
+        ? movieResumeAt(progress.requireValue)
+        : widget.resumeAt;
     final year = _movie.year;
     final details =
         ref

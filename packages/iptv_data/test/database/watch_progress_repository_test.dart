@@ -76,6 +76,30 @@ void main() {
     expect(await progress.continueWatching(sourceId), isEmpty);
   });
 
+  test('donne les positions d une œuvre ou d une série, retirées '
+      'comprises', () async {
+    await progress.save(episode(1, minute: 1, finished: true));
+    await progress.save(episode(2, minute: 3));
+    await progress.save(
+      episode(
+        2,
+        minute: 2,
+      ).copyWith(contentKey: 'y:e:2', position: Duration.zero),
+    );
+    await progress.hide(sourceId, 'abysses');
+
+    final series = await progress.progressOf(sourceId, 'abysses');
+    // La plus récente d'abord.
+    expect(
+      [for (final item in series) item.contentKey],
+      ['x:e:2', 'y:e:2', 'x:e:1'],
+    );
+
+    final second = await progress.progressOf(sourceId, 'e:abysses:1:2');
+    expect([for (final item in second) item.contentKey], ['x:e:2', 'y:e:2']);
+    expect(await progress.progressOf(sourceId, 'autre'), isEmpty);
+  });
+
   test('relire un épisode retiré le remet', () async {
     await progress.save(episode(1, minute: 1));
     await progress.hide(sourceId, 'abysses');

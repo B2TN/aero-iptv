@@ -48,6 +48,7 @@ final class _Engine extends Fake implements PlaybackEngine {
   final StreamController<PlaybackState> _states =
       StreamController<PlaybackState>.broadcast();
   final List<String> opened = [];
+  final List<Duration?> starts = [];
 
   @override
   PlaybackState get state => const PlaybackState();
@@ -59,14 +60,26 @@ final class _Engine extends Fake implements PlaybackEngine {
   Stream<String> get subtitleCues => const Stream.empty();
 
   @override
-  Future<void> open(PlaybackRequest request) async =>
-      opened.add(request.stream.url);
+  Future<void> open(PlaybackRequest request) async {
+    opened.add(request.stream.url);
+    starts.add(request.startAt);
+  }
 
   @override
   Future<void> dispose() => _states.close();
 }
 
-final class _NoProgress extends Fake implements WatchProgressRepository {
+final class _Progress extends Fake implements WatchProgressRepository {
+  _Progress(this.items);
+
+  final List<WatchProgress> items;
+
+  @override
+  Future<List<WatchProgress>> progressOf(int sourceId, String key) async => [
+    for (final item in items)
+      if (item.workKey == key) item,
+  ];
+
   @override
   Future<void> save(WatchProgress progress) async {}
 }
@@ -78,6 +91,7 @@ Future<_Engine> _open(
   List<Movie> movies, {
   AppSettings settings = const AppSettings(),
   _Opener opener = playMovie,
+  List<WatchProgress> progress = const [],
 }) async {
   final engine = _Engine();
   await tester.pumpWidget(
@@ -90,7 +104,7 @@ Future<_Engine> _open(
         videoSurfaceBuilderProvider.overrideWithValue(
           (_) => const SizedBox.expand(),
         ),
-        watchProgressRepositoryProvider.overrideWithValue(_NoProgress()),
+        watchProgressRepositoryProvider.overrideWithValue(_Progress(progress)),
         resolveStreamUrlProvider.overrideWithValue(
           ResolveStreamUrl(_NoCredentials()),
         ),
@@ -153,16 +167,26 @@ void main() {
     await _leave(tester);
   });
 
-  testWidgets('la fiche s ouvre sur la version de la langue', (tester) async {
+  testWidgets('demande la version avant d ouvrir la fiche', (tester) async {
     final engine = await _open(tester, [
       _movie(1, 'EN'),
       _movie(2, 'FR'),
     ], opener: openMovie);
 
+    expect(find.byType(MovieDetailScreen), findsNothing);
+    final first = tester.getTopLeft(find.text('Français')).dy;
+    final second = tester.getTopLeft(find.text('Anglais')).dy;
+    expect(first, lessThan(second));
+
+    await tester.tap(find.text('Anglais'));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
+
     final page = tester.widget<MovieDetailScreen>(
       find.byType(MovieDetailScreen),
     );
-    expect(page.movie.languageTag, 'FR');
+    expect(page.movie.languageTag, 'EN');
     expect(engine.opened, isEmpty);
     expect(find.text('Version'), findsOneWidget);
 
@@ -171,7 +195,51 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(engine.opened, ['http://s/2.mkv']);
+    expect(engine.opened, ['http://s/1.mkv']);
+    await _leave(tester);
+  });
+
+  testWidgets('la reprise vaut pour toutes les versions', (tester) async {
+    // Commencé en français, ouvert en anglais.
+    final engine = await _open(
+      tester,
+      [_movie(1, 'EN'), _movie(2, 'FR')],
+      opener: openMovie,
+      progress: [
+        WatchProgress(
+          sourceId: 1,
+          contentKey: 'cle2',
+          kind: ContentKind.movie,
+          title: 'Lagon',
+          position: const Duration(minutes: 21),
+          duration: const Duration(minutes: 95),
+          updatedAt: DateTime.utc(2026, 11, 13),
+          locator: const DirectStream('http://s/2.mkv'),
+          workKey: WorkKeys.movie('Lagon'),
+        ),
+      ],
+    );
+    await tester.tap(find.text('Anglais'));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(find.text('Reprendre'));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
+
+    expect(engine.opened, ['http://s/1.mkv']);
+    expect(engine.starts, [const Duration(minutes: 21)]);
+    await _leave(tester);
+  });
+
+  testWidgets('une seule version ouvre la fiche sans demander', (tester) async {
+    await _open(tester, [_movie(1, 'FR')], opener: openMovie);
+
+    expect(find.text('Choisissez une version'), findsNothing);
+    expect(find.byType(MovieDetailScreen), findsOneWidget);
+    expect(find.text('Version'), findsNothing);
     await _leave(tester);
   });
 

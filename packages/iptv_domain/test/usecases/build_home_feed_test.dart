@@ -144,6 +144,10 @@ final class FakeTrending implements TrendingRepository {
 
 final class EmptyProgress implements WatchProgressRepository {
   @override
+  Future<List<WatchProgress>> progressOf(int sourceId, String key) async =>
+      const [];
+
+  @override
   Future<List<WatchProgress>> history(int sourceId, {int limit = 500}) async =>
       const [];
 

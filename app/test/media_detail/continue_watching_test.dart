@@ -51,6 +51,12 @@ WatchProgress _progress(ContentKind kind, String key) => WatchProgress(
   duration: const Duration(minutes: 45),
   updatedAt: DateTime.utc(2026, 11, 13),
   locator: const DirectStream('http://s/reprise.mkv'),
+  workKey: kind == ContentKind.movie
+      ? WorkKeys.movie('Lagon')
+      : WorkKeys.episode('abysses', 2, 3),
+  seriesKey: kind == ContentKind.series ? 'abysses' : null,
+  season: kind == ContentKind.series ? 2 : null,
+  episode: kind == ContentKind.series ? 3 : null,
 );
 
 final class _Catalog extends Fake implements CatalogRepository {
@@ -84,6 +90,12 @@ final class _Catalog extends Fake implements CatalogRepository {
   @override
   Future<String?> tmdbIdOfEpisode(int sourceId, String contentKey) async =>
       null;
+
+  @override
+  Future<List<MediaVersion>> versionsOf(
+    int sourceId,
+    String groupingKey,
+  ) async => const [];
 
   @override
   Future<TitleDetails> movieDetails(int sourceId, int movieId) async =>
@@ -121,7 +133,17 @@ final class _Engine extends Fake implements PlaybackEngine {
   Future<void> dispose() => _states.close();
 }
 
-final class _NoProgress extends Fake implements WatchProgressRepository {
+/// La reprise ouverte, seule position enregistrée.
+final class _Progress extends Fake implements WatchProgressRepository {
+  _Progress(this.item);
+
+  final WatchProgress item;
+
+  @override
+  Future<List<WatchProgress>> progressOf(int sourceId, String key) async => [
+    if (item.workKey == key || item.seriesKey == key) item,
+  ];
+
   @override
   Future<void> save(WatchProgress progress) async {}
 }
@@ -149,7 +171,7 @@ Future<_Engine> _open(
         videoSurfaceBuilderProvider.overrideWithValue(
           (_) => const SizedBox.expand(),
         ),
-        watchProgressRepositoryProvider.overrideWithValue(_NoProgress()),
+        watchProgressRepositoryProvider.overrideWithValue(_Progress(item)),
         resolveStreamUrlProvider.overrideWithValue(
           ResolveStreamUrl(_NoCredentials()),
         ),
@@ -256,6 +278,42 @@ void main() {
       final request = engine.opened.single;
       expect(request.stream.url, 'http://s/e23.mkv');
       expect(request.startAt, const Duration(minutes: 21));
+      await _leave(tester);
+    });
+
+    testWidgets('choisir l épisode commencé dans la liste le reprend', (
+      tester,
+    ) async {
+      final engine = await _open(
+        tester,
+        _progress(ContentKind.series, 'x:e:23'),
+      );
+
+      await tester.tap(find.textContaining('Épisode 3'));
+      for (var i = 0; i < 4; i++) {
+        await tester.pump();
+      }
+
+      final request = engine.opened.single;
+      expect(request.stream.url, 'http://s/e23.mkv');
+      expect(request.startAt, const Duration(minutes: 21));
+      await _leave(tester);
+    });
+
+    testWidgets('un épisode jamais commencé part du début', (tester) async {
+      final engine = await _open(
+        tester,
+        _progress(ContentKind.series, 'x:e:23'),
+      );
+
+      await tester.tap(find.textContaining('Épisode 1'));
+      for (var i = 0; i < 4; i++) {
+        await tester.pump();
+      }
+
+      final request = engine.opened.single;
+      expect(request.stream.url, 'http://s/e21.mkv');
+      expect(request.startAt ?? Duration.zero, Duration.zero);
       await _leave(tester);
     });
   });

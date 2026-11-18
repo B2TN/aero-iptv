@@ -79,6 +79,10 @@ final class _PrefixTranslator implements SubtitleTranslator {
 
 final class _NoProgress implements WatchProgressRepository {
   @override
+  Future<List<WatchProgress>> progressOf(int sourceId, String key) async =>
+      const [];
+
+  @override
   Future<void> save(WatchProgress progress) async {}
 
   @override
@@ -86,6 +90,13 @@ final class _NoProgress implements WatchProgressRepository {
     int sourceId, {
     int limit = 20,
   }) async => const [];
+
+  @override
+  Future<List<WatchProgress>> history(int sourceId, {int limit = 500}) async =>
+      const [];
+
+  @override
+  Future<void> hide(int sourceId, String groupKey) async {}
 
   @override
   Future<void> remove(int sourceId, String contentKey) async {}

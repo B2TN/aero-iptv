@@ -11,6 +11,7 @@ import '../player/player_target.dart';
 import 'open_continued.dart';
 import 'open_movie.dart';
 import 'open_series.dart';
+import 'screens/movie_detail_screen.dart';
 
 /// Reprises gardées au plus : de quoi couvrir largement celles de l'accueil.
 const int _progressScanned = 200;
@@ -282,7 +283,8 @@ Future<WatchProgress?> _seriesProgress(
   return null;
 }
 
-/// Lit une version d'un film, en reprenant où elle en était.
+/// Lit une version d'un film, en reprenant où le film en était, quelle que
+/// soit la version regardée.
 Future<void> _playMovieVersion(
   BuildContext context,
   WidgetRef ref,
@@ -301,17 +303,16 @@ Future<void> _playMovieVersion(
   );
   if (picked == null || !context.mounted) return;
   final chosen = versions[picked];
-  final progress = await _latestProgress(
-    ref,
-    sourceId,
-    (item) => item.contentKey == chosen.contentKey,
+  final resumeAt = movieResumeAt(
+    await ref
+        .read(watchProgressRepositoryProvider)
+        .progressOf(sourceId, WorkKeys.movie(chosen.title)),
   );
   if (!context.mounted) return;
+  final target = PlayerTarget.movie(sourceId, chosen);
   await openPlayer(
     context,
-    progress == null
-        ? PlayerTarget.movie(sourceId, chosen)
-        : PlayerTarget.resume(progress),
+    resumeAt == null ? target : target.resumingAt(resumeAt),
   );
 }
 

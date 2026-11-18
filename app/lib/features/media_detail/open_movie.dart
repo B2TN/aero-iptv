@@ -9,34 +9,27 @@ import '../../l10n/version_names.dart';
 import '../player/player_target.dart';
 import 'screens/movie_detail_screen.dart';
 
-/// Ouvre la fiche d'un film. Avec le regroupement, elle montre la version dans
-/// la langue de l'application, et son bouton « Version » propose les autres.
+/// Ouvre la fiche d'un film. Si plusieurs versions existent, le sélecteur de
+/// version s'affiche d'abord, comme pour une série. La fiche propose de
+/// reprendre là où le film en était, quelle que soit la version regardée.
 Future<void> openMovie(BuildContext context, WidgetRef ref, Movie movie) async {
   final source = ref.read(activeSourceProvider);
   if (source == null) return;
-  final settings = ref.read(settingsProvider);
   final navigator = Navigator.of(context);
-  var shown = movie;
-  if (settings.groupMovies) {
-    final movies = await ref.read(catalogRepositoryProvider).moviesByTitleKeys(
-      source.id,
-      {GroupingKey.of(movie.title)},
-    );
-    if (!context.mounted) return;
-    if (movies.isNotEmpty) {
-      shown = versionsByLanguage(
-        movies,
-        (version) => version.languageTag ?? version.rawTitle,
-        settings.languageCode,
-      ).first;
-    }
-  }
+  final chosen = await _chooseVersion(context, ref, source.id, movie);
+  if (chosen == null || !context.mounted) return;
+  final history = await ref
+      .read(watchProgressRepositoryProvider)
+      .progressOf(source.id, WorkKeys.movie(chosen.title));
   await navigator.push(
     PageRouteBuilder<void>(
       transitionDuration: Duration.zero,
       reverseTransitionDuration: Duration.zero,
-      pageBuilder: (context, _, _) =>
-          MovieDetailScreen(sourceId: source.id, movie: shown),
+      pageBuilder: (context, _, _) => MovieDetailScreen(
+        sourceId: source.id,
+        movie: chosen,
+        resumeAt: movieResumeAt(history),
+      ),
     ),
   );
 }
@@ -46,33 +39,38 @@ Future<void> openMovie(BuildContext context, WidgetRef ref, Movie movie) async {
 Future<void> playMovie(BuildContext context, WidgetRef ref, Movie movie) async {
   final source = ref.read(activeSourceProvider);
   if (source == null) return;
-  final l10n = context.l10n;
+  final chosen = await _chooseVersion(context, ref, source.id, movie);
+  if (chosen == null || !context.mounted) return;
+  await openPlayer(context, PlayerTarget.movie(source.id, chosen));
+}
+
+/// La version de [movie] à ouvrir : la seule, ou celle choisie dans le
+/// sélecteur. `null` si l'utilisateur renonce.
+Future<Movie?> _chooseVersion(
+  BuildContext context,
+  WidgetRef ref,
+  int sourceId,
+  Movie movie,
+) async {
   final settings = ref.read(settingsProvider);
-  if (!settings.groupMovies) {
-    await openPlayer(context, PlayerTarget.movie(source.id, movie));
-    return;
-  }
-  final language = settings.languageCode;
+  // Sans regroupement, chaque version est un film à part.
+  if (!settings.groupMovies) return movie;
+  final l10n = context.l10n;
   final movies = await ref.read(catalogRepositoryProvider).moviesByTitleKeys(
-    source.id,
+    sourceId,
     {GroupingKey.of(movie.title)},
   );
-  if (!context.mounted) return;
-
-  var chosen = movie;
-  if (movies.length > 1) {
-    final versions = versionsByLanguage(
-      movies,
-      (version) => version.languageTag ?? version.rawTitle,
-      language,
-    );
-    final picked = await showAeroMenu(
-      context,
-      title: l10n.detailChooseVersion,
-      options: movieVersionNames(versions, l10n, language),
-    );
-    if (picked == null || !context.mounted) return;
-    chosen = versions[picked];
-  }
-  await openPlayer(context, PlayerTarget.movie(source.id, chosen));
+  if (!context.mounted) return null;
+  if (movies.length <= 1) return movies.firstOrNull ?? movie;
+  final versions = versionsByLanguage(
+    movies,
+    (version) => version.languageTag ?? version.rawTitle,
+    settings.languageCode,
+  );
+  final picked = await showAeroMenu(
+    context,
+    title: l10n.detailChooseVersion,
+    options: movieVersionNames(versions, l10n, settings.languageCode),
+  );
+  return picked == null ? null : versions[picked];
 }

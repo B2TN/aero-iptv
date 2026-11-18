@@ -17,46 +17,104 @@ const Series _series = Series(
   year: 2024,
 );
 
-Episode _episode(int season, int number, {String? overview}) => Episode(
-  id: season * 100 + number,
-  seriesEntryId: 7,
-  season: season,
-  number: number,
-  title: 'Abysses',
-  contentKey: 'x:e:$season$number',
-  locator: DirectStream('http://s/e$season$number.mkv'),
-  overview: overview,
-);
+Episode _episode(int season, int number, {String? overview, int entry = 7}) =>
+    Episode(
+      id: entry * 1000 + season * 100 + number,
+      seriesEntryId: entry,
+      season: season,
+      number: number,
+      title: 'Abysses',
+      contentKey: 'x:e:$entry:$season$number',
+      locator: DirectStream('http://s/$entry/e$season$number.mkv'),
+      overview: overview,
+    );
+
+/// Deux versions : la VF (entrée 7, deux saisons) et la VO (entrée 8, une
+/// saison de trois épisodes).
+const List<MediaVersion> _twoVersions = [
+  MediaVersion(seriesEntryId: 8, label: 'EN', rawTitle: 'EN - Abysses'),
+  MediaVersion(seriesEntryId: 7, label: 'FR', rawTitle: 'FR - Abysses'),
+];
 
 const String _overview =
     'Une équipe de plongeurs découvre une station sous-marine abandonnée.';
 
 final class _Catalog extends Fake implements CatalogRepository {
-  _Catalog({required this.details, this.overviews = true});
+  _Catalog({
+    required this.details,
+    this.overviews = true,
+    this.versions = const [],
+  });
 
   final TitleDetails details;
   final bool overviews;
+  final List<MediaVersion> versions;
 
   @override
-  Future<List<Season>> seasonsOf(int sourceId, int seriesEntryId) async => [
-    Season(
-      number: 1,
-      episodes: [
-        _episode(
-          1,
-          1,
-          overview: overviews ? 'Léa rejoint l équipe de Marc.' : null,
-        ),
-        _episode(1, 2),
-      ],
-    ),
-    Season(number: 2, episodes: [_episode(2, 1)]),
-  ];
+  Future<List<MediaVersion>> versionsOf(
+    int sourceId,
+    String groupingKey,
+  ) async => versions;
+
+  @override
+  Future<List<Season>> seasonsOf(int sourceId, int seriesEntryId) async =>
+      seriesEntryId == 8
+      ? [
+          Season(
+            number: 1,
+            episodes: [
+              for (final number in [1, 2, 3]) _episode(1, number, entry: 8),
+            ],
+          ),
+        ]
+      : [
+          Season(
+            number: 1,
+            episodes: [
+              _episode(
+                1,
+                1,
+                overview: overviews ? 'Léa rejoint l équipe de Marc.' : null,
+              ),
+              _episode(1, 2),
+            ],
+          ),
+          Season(number: 2, episodes: [_episode(2, 1)]),
+        ];
 
   @override
   Future<TitleDetails> seriesDetails(int sourceId, int seriesEntryId) async =>
       details;
 }
+
+/// Positions enregistrées, toutes versions confondues.
+final class _Progress extends Fake implements WatchProgressRepository {
+  _Progress(this.items);
+
+  final List<WatchProgress> items;
+
+  @override
+  Future<List<WatchProgress>> progressOf(int sourceId, String key) async => [
+    for (final item in items)
+      if (item.workKey == key || item.seriesKey == key) item,
+  ];
+}
+
+/// S1 É2 commencé en VO, à 21 minutes.
+final WatchProgress _startedInEnglish = WatchProgress(
+  sourceId: 1,
+  contentKey: 'x:e:8:12',
+  kind: ContentKind.series,
+  title: 'Abysses',
+  position: const Duration(minutes: 21),
+  duration: const Duration(minutes: 45),
+  updatedAt: DateTime.utc(2026, 11, 13),
+  locator: const DirectStream('http://s/8/e12.mkv'),
+  workKey: WorkKeys.episode('abysses', 1, 2),
+  seriesKey: 'abysses',
+  season: 1,
+  episode: 2,
+);
 
 final class _Schedule implements ScheduleRepository {
   const _Schedule(this.schedule, {this.fails = false});
@@ -115,6 +173,8 @@ Future<void> _open(
   ),
   ScheduleRepository? schedule,
   bool overviews = true,
+  List<MediaVersion> versions = const [],
+  List<WatchProgress> progress = const [],
   String language = 'fr',
   Size size = const Size(1280, 720),
 }) async {
@@ -127,8 +187,9 @@ Future<void> _open(
       overrides: [
         settingsProvider.overrideWithValue(AppSettings(languageCode: language)),
         catalogRepositoryProvider.overrideWithValue(
-          _Catalog(details: details, overviews: overviews),
+          _Catalog(details: details, overviews: overviews, versions: versions),
         ),
+        watchProgressRepositoryProvider.overrideWithValue(_Progress(progress)),
         scheduleRepositoryProvider.overrideWithValue(
           schedule ?? _Schedule(_running),
         ),
@@ -244,6 +305,65 @@ void main() {
     expect(find.text("Retard sur l'IPTV"), findsNWidgets(3));
   });
 
+  testWidgets('une seule version n a pas de bouton Version', (tester) async {
+    await _open(tester, versions: [_twoVersions.last]);
+
+    expect(find.text('Version'), findsNothing);
+    expect(find.text('Français'), findsNothing);
+  });
+
+  testWidgets('change de version sans quitter la fiche', (tester) async {
+    await _open(tester, versions: _twoVersions);
+
+    expect(find.text('Français'), findsOneWidget);
+    expect(find.text('Épisode 3'), findsNothing);
+
+    await tester.tap(find.text('Version'));
+    await tester.pump();
+    await tester.pump();
+    await tester.tap(find.text('Anglais'));
+    for (var i = 0; i < 4; i++) {
+      await tester.pump();
+    }
+
+    expect(find.byType(MediaDetailScreen), findsOneWidget);
+    expect(find.text('Anglais'), findsOneWidget);
+    expect(find.text('Saison 2'), findsNothing);
+    expect(find.text('Épisode 3'), findsOneWidget);
+    // Le focus reste sur le bouton Version.
+    expect(FocusManager.instance.primaryFocus?.debugLabel, 'DetailVersion');
+  });
+
+  testWidgets('propose de reprendre un épisode commencé dans une autre '
+      'version', (tester) async {
+    await _open(tester, versions: _twoVersions, progress: [_startedInEnglish]);
+
+    expect(find.text('Saison 1, épisode 2'), findsOneWidget);
+    expect(find.text('Reprendre'), findsOneWidget);
+  });
+
+  testWidgets('sans l épisode dans cette version, pas de reprise', (
+    tester,
+  ) async {
+    final third = WatchProgress(
+      sourceId: 1,
+      contentKey: 'x:e:8:13',
+      kind: ContentKind.series,
+      title: 'Abysses',
+      position: const Duration(minutes: 5),
+      duration: const Duration(minutes: 45),
+      updatedAt: DateTime.utc(2026, 11, 14),
+      locator: const DirectStream('http://s/8/e13.mkv'),
+      workKey: WorkKeys.episode('abysses', 1, 3),
+      seriesKey: 'abysses',
+      season: 1,
+      episode: 3,
+    );
+    await _open(tester, versions: _twoVersions, progress: [third]);
+
+    expect(find.text('Reprendre'), findsNothing);
+  });
+
   testWidgets('une série terminée n a ni panneau ni étiquette', (tester) async {
     await _open(
       tester,
@@ -279,8 +399,11 @@ void main() {
           tester,
           language: locale.languageCode,
           size: size,
-          // Le cas le plus haut : trois épisodes en retard.
+          // Le cas le plus haut : trois épisodes en retard, une reprise et
+          // le bouton Version.
           schedule: _Schedule(_behind),
+          versions: _twoVersions,
+          progress: [_startedInEnglish],
           details: TitleDetails(
             overview: List.filled(12, _overview).join(' '),
             genre: 'Drame, Science-fiction, Mystère, Aventure',

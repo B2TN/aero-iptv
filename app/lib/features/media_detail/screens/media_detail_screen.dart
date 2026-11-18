@@ -7,12 +7,14 @@ import '../../../app/app_state.dart';
 import '../../../app/di/repository_providers.dart';
 import '../../../design_system/components/aero_button.dart';
 import '../../../design_system/components/aero_canvas.dart';
+import '../../../design_system/components/aero_menu.dart';
 import '../../../design_system/components/aero_states.dart';
 import '../../../design_system/components/poster_image.dart';
 import '../../../design_system/glass/glass_panel.dart';
 import '../../../design_system/tokens/aero_tokens.dart';
 import '../../../focus/dpad_collection.dart';
 import '../../../focus/focus_guard.dart';
+import '../../../l10n/version_names.dart';
 import '../../player/player_target.dart';
 import '../widgets/detail_parts.dart';
 
@@ -51,10 +53,27 @@ final _scheduleProvider = FutureProvider.autoDispose
       }
     });
 
+/// Ce qui a été vu de la série, toutes versions confondues, relu après
+/// chaque lecture.
+final _progressProvider = FutureProvider.autoDispose
+    .family<SeriesProgress, ({int sourceId, String seriesKey})>((
+      ref,
+      key,
+    ) async {
+      ref.watch(watchedRevisionProvider);
+      return SeriesProgress(
+        await ref
+            .watch(watchProgressRepositoryProvider)
+            .progressOf(key.sourceId, key.seriesKey),
+      );
+    });
+
 /// Épisode à reprendre, et la position où la lecture s'était arrêtée.
 typedef EpisodeResume = ({Episode episode, Duration position});
 
-/// Saisons et épisodes d'une version de série.
+/// Saisons et épisodes d'une version de série. Le bouton « Version » passe à
+/// une autre sans quitter la fiche ; la reprise et les positions des épisodes
+/// valent pour toutes les versions.
 class MediaDetailScreen extends ConsumerStatefulWidget {
   const MediaDetailScreen({
     required this.sourceId,
@@ -66,10 +85,12 @@ class MediaDetailScreen extends ConsumerStatefulWidget {
 
   final int sourceId;
   final Series series;
+
+  /// Version montrée à l'ouverture.
   final int seriesEntryId;
 
-  /// Ouverte depuis « Continuer à regarder » : la fiche propose de reprendre,
-  /// et s'ouvre sur la saison et l'épisode en cours.
+  /// Ouverte depuis « Continuer à regarder » : la fiche propose de reprendre
+  /// dès la première image, le bouton a le focus.
   final EpisodeResume? resume;
 
   @override
@@ -78,23 +99,116 @@ class MediaDetailScreen extends ConsumerStatefulWidget {
 
 class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
   final FocusNode _backNode = FocusNode(debugLabel: 'DetailBack');
+  final FocusNode _versionNode = FocusNode(debugLabel: 'DetailVersion');
+
+  /// Après un changement de version, le focus reste sur le bouton Version :
+  /// la nouvelle liste d'épisodes ne le prend pas.
+  bool _versionChanged = false;
+
+  /// Version montrée.
+  late int _entryId = widget.seriesEntryId;
+
+  /// Les versions de la série, connues une fois chargées.
+  List<MediaVersion> _versions = const [];
 
   /// `null` tant que les saisons ne sont pas connues : la première est alors
   /// celle de l'épisode à reprendre.
   int? _season;
 
+  /// Saison à rouvrir après un changement de version.
+  int? _wantedSeason;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVersions();
+  }
+
   @override
   void dispose() {
     _backNode.dispose();
+    _versionNode.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadVersions() async {
+    final settings = ref.read(settingsProvider);
+    // Sans regroupement, chaque version est une série à part.
+    if (!settings.groupSeries) return;
+    final all = await ref
+        .read(catalogRepositoryProvider)
+        .versionsOf(widget.sourceId, widget.series.groupingKey);
+    if (!mounted) return;
+    setState(
+      () => _versions = versionsByLanguage(
+        all,
+        (version) => version.label,
+        settings.languageCode,
+      ),
+    );
+  }
+
+  String _versionName(MediaVersion version) => versionName(
+    version.label,
+    context.l10n,
+    ref.read(settingsProvider).languageCode,
+    variant: version.variant,
+  );
+
+  Future<void> _chooseVersion() async {
+    final picked = await showAeroMenu(
+      context,
+      title: context.l10n.detailChooseVersion,
+      options: [for (final version in _versions) _versionName(version)],
+    );
+    if (picked == null || !mounted) return;
+    final entryId = _versions[picked].seriesEntryId;
+    if (entryId == _entryId) return;
+    final shown = ref
+        .read(_seasonsProvider((sourceId: widget.sourceId, entryId: _entryId)))
+        .value;
+    final season = _season;
+    setState(() {
+      // La même saison, si la nouvelle version l'a.
+      _wantedSeason = shown == null || shown.isEmpty || season == null
+          ? null
+          : shown[season.clamp(0, shown.length - 1)].number;
+      _season = null;
+      _entryId = entryId;
+      _versionChanged = true;
+    });
+    _versionNode.requestFocus();
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final key = (sourceId: widget.sourceId, entryId: widget.seriesEntryId);
+    final key = (sourceId: widget.sourceId, entryId: _entryId);
     final seasons = ref.watch(_seasonsProvider(key));
     final details = ref.watch(_detailsProvider(key)).value ?? TitleDetails.none;
+    final progress = ref.watch(
+      _progressProvider((
+        sourceId: widget.sourceId,
+        seriesKey: widget.series.groupingKey,
+      )),
+    );
+    // Sans positions lisibles, la fiche reste utilisable, sans reprise.
+    final seen = switch (progress) {
+      AsyncValue(:final value?) => value,
+      AsyncError() => SeriesProgress(const []),
+      _ => null,
+    };
+    final shownSeasons = seasons.value;
+    final EpisodeResume? resume = seen == null || shownSeasons == null
+        // En attendant : la reprise demandée, pour la version demandée.
+        ? (_entryId == widget.seriesEntryId ? widget.resume : null)
+        : switch (seen.resumeIn(shownSeasons)) {
+            final found? => (episode: found.episode, position: found.position),
+            null => null,
+          };
+    final current = _versions
+        .where((version) => version.seriesEntryId == _entryId)
+        .firstOrNull;
     final schedule = ref
         .watch(
           _scheduleProvider((
@@ -147,7 +261,7 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                         ],
                       ),
                     ),
-                    if (widget.resume case final resume?) ...[
+                    if (resume != null) ...[
                       const SizedBox(height: 16),
                       Text(
                         l10n.detailResumeEpisode(
@@ -161,7 +275,7 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                         label: l10n.detailResume,
                         icon: Icons.play_arrow,
                         tone: AeroTone.green,
-                        autofocus: true,
+                        autofocus: widget.resume != null,
                         onSelect: () => openPlayer(
                           context,
                           PlayerTarget.episode(
@@ -170,6 +284,14 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                             resume.episode,
                           ).resumingAt(resume.position),
                         ),
+                      ),
+                    ],
+                    if (_versions.length > 1) ...[
+                      const SizedBox(height: 16),
+                      AeroButton(
+                        label: l10n.playerVersion,
+                        focusNode: _versionNode,
+                        onSelect: _chooseVersion,
                       ),
                     ],
                   ],
@@ -187,6 +309,8 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                         ?details.genre,
                         if (seasonCount > 0)
                           l10n.detailSeasonCount(seasonCount),
+                        if (current != null && _versions.length > 1)
+                          _versionName(current),
                       ],
                       highlight: schedule?.running ?? false
                           ? l10n.detailRunning
@@ -202,11 +326,15 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                           actionLabel: l10n.actionBack,
                           onAction: () => Navigator.of(context).maybePop(),
                         ),
-                        data: (seasons) => _buildSeasons(
-                          seasons,
-                          schedule?.upcoming ?? const [],
-                          schedule?.lateAfter(seasons) ?? const [],
-                        ),
+                        data: (seasons) => seen == null
+                            ? AeroLoading(label: l10n.loading)
+                            : _buildSeasons(
+                                seasons,
+                                seen,
+                                resume,
+                                schedule?.upcoming ?? const [],
+                                schedule?.lateAfter(seasons) ?? const [],
+                              ),
                       ),
                     ),
                   ],
@@ -221,6 +349,8 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
 
   Widget _buildSeasons(
     List<Season> seasons,
+    SeriesProgress seen,
+    EpisodeResume? resume,
     List<UpcomingEpisode> upcoming,
     List<UpcomingEpisode> late,
   ) {
@@ -228,16 +358,18 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
     if (seasons.isEmpty) {
       return AeroMessage(title: l10n.detailNoEpisodes, autofocus: false);
     }
-    final resumed = widget.resume?.episode;
-    final selected = (_season ??= _seasonOf(
+    final resumed = resume?.episode;
+    final selected = (_season ??= _seasonIndex(
       seasons,
-      resumed,
+      _wantedSeason ?? resumed?.season,
     )).clamp(0, seasons.length - 1);
     final season = seasons[selected];
     final resumedIndex = resumed == null
         ? -1
         : season.episodes.indexWhere(
-            (episode) => episode.contentKey == resumed.contentKey,
+            (episode) =>
+                episode.season == resumed.season &&
+                episode.number == resumed.number,
           );
     // Avec des résumés, chaque épisode prend deux lignes de plus.
     final described = season.episodes.any(
@@ -270,21 +402,14 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
           child: GlassPanel(
             padding: const EdgeInsets.all(12),
             child: DpadCollection.vertical(
-              key: ValueKey(season.number),
+              key: ValueKey((_entryId, season.number)),
               // Le bouton de reprise a le focus quand la fiche en propose un.
-              autofocus: widget.resume == null,
+              autofocus: widget.resume == null && !_versionChanged,
               initialIndex: resumedIndex < 0 ? 0 : resumedIndex,
               itemCount: season.episodes.length,
               itemExtent: described ? 96 : 56,
               padding: const EdgeInsets.all(4),
-              onSelect: (index) => openPlayer(
-                context,
-                PlayerTarget.episode(
-                  widget.sourceId,
-                  widget.series,
-                  season.episodes[index],
-                ),
-              ),
+              onSelect: (index) => _playEpisode(seen, season.episodes[index]),
               itemBuilder: (context, index, focused) {
                 final episode = season.episodes[index];
                 final label = l10n.detailEpisode(episode.number);
@@ -309,12 +434,28 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
       ],
     );
   }
+
+  /// Lit [episode]. Commencé dans n'importe quelle version, il reprend où il
+  /// en était ; fini, il repart du début.
+  void _playEpisode(SeriesProgress seen, Episode episode) {
+    final target = PlayerTarget.episode(
+      widget.sourceId,
+      widget.series,
+      episode,
+    );
+    final watched = seen.of(episode.season, episode.number);
+    openPlayer(
+      context,
+      watched == null || watched.finished || watched.position <= Duration.zero
+          ? target
+          : target.resumingAt(watched.position),
+    );
+  }
 }
 
-/// Index de la saison de [episode], ou la première.
-int _seasonOf(List<Season> seasons, Episode? episode) {
-  if (episode == null) return 0;
-  final index = seasons.indexWhere((season) => season.number == episode.season);
+/// Index de la saison [number], ou la première.
+int _seasonIndex(List<Season> seasons, int? number) {
+  final index = seasons.indexWhere((season) => season.number == number);
   return index < 0 ? 0 : index;
 }
 

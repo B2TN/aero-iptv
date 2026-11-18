@@ -6,6 +6,7 @@ import 'package:aero_iptv/app/app_state.dart';
 import 'package:aero_iptv/app/di/repository_providers.dart';
 import 'package:aero_iptv/bootstrap.dart';
 import 'package:aero_iptv/features/home/screens/home_screen.dart';
+import 'package:aero_iptv/features/media_detail/screens/media_detail_screen.dart';
 import 'package:aero_iptv/features/media_detail/screens/movie_detail_screen.dart';
 import 'package:aero_iptv/features/player/screens/player_screen.dart';
 import 'package:aero_iptv/focus/focus_memory.dart';
@@ -212,6 +213,21 @@ void main() {
     ]) {
       await press(tester, key);
     }
+    // Le bouton Version, sous l'affiche, change de version sans quitter la
+    // fiche.
+    await press(tester, LogicalKeyboardKey.arrowLeft, times: 3);
+    final versionButton = FocusManager.instance.primaryFocus;
+    await press(tester, LogicalKeyboardKey.enter);
+    await wait(tester, 500);
+    expectFocus('versions de la fiche');
+    await press(tester, LogicalKeyboardKey.arrowDown);
+    await press(tester, LogicalKeyboardKey.enter);
+    await wait(tester, 700);
+    expect(find.byType(MediaDetailScreen), findsOneWidget);
+    expectFocus('fiche après le changement de version');
+    // Le focus reste sur le bouton, là où était l'utilisateur.
+    expect(FocusManager.instance.primaryFocus, same(versionButton));
+    await shot(tester, '06b_autre_version');
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await wait(tester, 400);
     expectFocus('retour du détail');

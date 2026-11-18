@@ -95,6 +95,12 @@ final class _Progress extends Fake implements WatchProgressRepository {
   }) async => items;
 
   @override
+  Future<List<WatchProgress>> progressOf(int sourceId, String key) async => [
+    for (final item in items)
+      if (item.workKey == key || item.seriesKey == key) item,
+  ];
+
+  @override
   Future<void> hide(int sourceId, String groupKey) async =>
       removed.add(groupKey);
 }
