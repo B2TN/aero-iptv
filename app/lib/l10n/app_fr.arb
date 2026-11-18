@@ -61,6 +61,7 @@
     }
   },
   "detailNoEpisodes": "Aucun épisode disponible pour cette version",
+  "searchSearching": "Recherche en cours…",
   "menuOpenPage": "Voir la fiche",
   "menuChooseVersion": "Choisir la version",
   "menuAddFavorite": "Ajouter aux favoris",

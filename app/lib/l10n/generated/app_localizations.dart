@@ -302,6 +302,12 @@ abstract class AppLocalizations {
   /// **'Aucun épisode disponible pour cette version'**
   String get detailNoEpisodes;
 
+  /// No description provided for @searchSearching.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recherche en cours…'**
+  String get searchSearching;
+
   /// No description provided for @menuOpenPage.
   ///
   /// In fr, this message translates to:

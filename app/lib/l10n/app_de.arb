@@ -33,6 +33,7 @@
   "detailSeason": "Staffel {number}",
   "detailEpisode": "Folge {number}",
   "detailNoEpisodes": "Für diese Version sind keine Folgen verfügbar",
+  "searchSearching": "Suche läuft…",
   "menuOpenPage": "Seite öffnen",
   "menuChooseVersion": "Version wählen",
   "menuAddFavorite": "Zu Favoriten hinzufügen",

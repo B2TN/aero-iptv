@@ -33,6 +33,7 @@
   "detailSeason": "الموسم {number}",
   "detailEpisode": "الحلقة {number}",
   "detailNoEpisodes": "لا توجد حلقات متاحة لهذه النسخة",
+  "searchSearching": "جارٍ البحث…",
   "menuOpenPage": "عرض الصفحة",
   "menuChooseVersion": "اختيار النسخة",
   "menuAddFavorite": "إضافة إلى المفضلة",

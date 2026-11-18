@@ -119,6 +119,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'No hay episodios disponibles para esta versión';
 
   @override
+  String get searchSearching => 'Buscando…';
+
+  @override
   String get menuOpenPage => 'Ver la ficha';
 
   @override

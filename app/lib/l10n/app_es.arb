@@ -33,6 +33,7 @@
   "detailSeason": "Temporada {number}",
   "detailEpisode": "Episodio {number}",
   "detailNoEpisodes": "No hay episodios disponibles para esta versión",
+  "searchSearching": "Buscando…",
   "menuOpenPage": "Ver la ficha",
   "menuChooseVersion": "Elegir la versión",
   "menuAddFavorite": "Añadir a favoritos",

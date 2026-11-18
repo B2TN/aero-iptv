@@ -152,7 +152,11 @@ class SearchScreen extends ConsumerWidget {
     final query = ref.watch(searchQueryProvider);
     final isSearching = query.trim().isNotEmpty;
     final suggestions = ref.watch(_suggestionsProvider).value ?? const [];
-    final hits = ref.watch(_resultsProvider).value ?? const <SearchHit>[];
+    final results = ref.watch(_resultsProvider);
+    final hits = results.value ?? const <SearchHit>[];
+    // « Aucun résultat » attend la fin de la recherche : pendant la frappe et
+    // la requête, la liste vide n'est qu'en attente.
+    final pending = isSearching && (results.isLoading || !results.hasValue);
     final items = isSearching
         ? [
             for (final hit in hits)
@@ -254,12 +258,16 @@ class SearchScreen extends ConsumerWidget {
                 const SizedBox(height: 8),
                 Expanded(
                   child: isSearching && items.isEmpty
-                      ? Center(
-                          child: Text(
-                            l10n.searchNoResult(query.trim()),
-                            style: AeroText.body,
-                          ),
-                        )
+                      ? pending
+                            ? AeroLoading(label: l10n.searchSearching)
+                            : Center(
+                                child: Text(
+                                  results.hasError
+                                      ? l10n.loadErrorTitle
+                                      : l10n.searchNoResult(query.trim()),
+                                  style: AeroText.body,
+                                ),
+                              )
                       : LayoutBuilder(
                           builder: (context, constraints) {
                             final room =

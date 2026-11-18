@@ -118,6 +118,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get detailNoEpisodes => 'Aucun épisode disponible pour cette version';
 
   @override
+  String get searchSearching => 'Recherche en cours…';
+
+  @override
   String get menuOpenPage => 'Voir la fiche';
 
   @override

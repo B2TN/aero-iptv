@@ -117,6 +117,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get detailNoEpisodes => 'لا توجد حلقات متاحة لهذه النسخة';
 
   @override
+  String get searchSearching => 'جارٍ البحث…';
+
+  @override
   String get menuOpenPage => 'عرض الصفحة';
 
   @override

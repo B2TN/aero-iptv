@@ -33,6 +33,7 @@
   "detailSeason": "Season {number}",
   "detailEpisode": "Episode {number}",
   "detailNoEpisodes": "No episodes available for this version",
+  "searchSearching": "Searching…",
   "menuOpenPage": "Open the page",
   "menuChooseVersion": "Choose the version",
   "menuAddFavorite": "Add to favorites",
