@@ -554,6 +554,12 @@ abstract class AppLocalizations {
   /// **'Playlists'**
   String get settingsPlaylists;
 
+  /// Synchronisation de la playlist au premier lancement du jour, puis toutes les 24 h, jamais pendant une lecture.
+  ///
+  /// In fr, this message translates to:
+  /// **'Synchroniser chaque jour'**
+  String get settingsDailySync;
+
   /// No description provided for @settingsPlaylistCount.
   ///
   /// In fr, this message translates to:

@@ -12,6 +12,7 @@ final class AppSettings {
     this.activeSourceId,
     this.catalogRules = 0,
     this.subtitleStyle = const SubtitleStyle(),
+    this.dailySync = true,
   });
 
   /// Fusion des versions d'une série. Désactivée : vue brute de la playlist.
@@ -43,6 +44,9 @@ final class AppSettings {
   /// Apparence des sous-titres dans le lecteur.
   final SubtitleStyle subtitleStyle;
 
+  /// Synchronisation automatique de la playlist, une fois par jour.
+  final bool dailySync;
+
   AppSettings copyWith({
     bool? groupSeries,
     bool? groupChannels,
@@ -53,6 +57,7 @@ final class AppSettings {
     int? activeSourceId,
     int? catalogRules,
     SubtitleStyle? subtitleStyle,
+    bool? dailySync,
   }) => AppSettings(
     groupSeries: groupSeries ?? this.groupSeries,
     groupChannels: groupChannels ?? this.groupChannels,
@@ -63,5 +68,6 @@ final class AppSettings {
     activeSourceId: activeSourceId ?? this.activeSourceId,
     catalogRules: catalogRules ?? this.catalogRules,
     subtitleStyle: subtitleStyle ?? this.subtitleStyle,
+    dailySync: dailySync ?? this.dailySync,
   );
 }

@@ -278,6 +278,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsPlaylists => 'قوائم التشغيل';
 
   @override
+  String get settingsDailySync => 'المزامنة يوميًا';
+
+  @override
   String settingsPlaylistCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

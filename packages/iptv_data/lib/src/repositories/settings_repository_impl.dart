@@ -10,6 +10,7 @@ const String _liveDelayKey = 'live_delay_seconds';
 const String _languageKey = 'language';
 const String _activeSourceKey = 'active_source_id';
 const String _catalogRulesKey = 'catalog_rules';
+const String _dailySyncKey = 'daily_sync';
 const String _subtitleSizeKey = 'subtitle_size';
 const String _subtitleFontKey = 'subtitle_font';
 const String _subtitleColorKey = 'subtitle_color';
@@ -39,6 +40,7 @@ final class SettingsRepositoryImpl implements SettingsRepository {
       _row(_liveDelayKey, '${settings.liveDelaySeconds}'),
       _row(_languageKey, settings.languageCode),
       _row(_catalogRulesKey, '${settings.catalogRules}'),
+      _row(_dailySyncKey, '${settings.dailySync}'),
       ..._subtitleRows(settings.subtitleStyle),
       if (settings.activeSourceId != null)
         _row(_activeSourceKey, '${settings.activeSourceId}'),
@@ -82,6 +84,7 @@ final class SettingsRepositoryImpl implements SettingsRepository {
       catalogRules:
           int.tryParse(values[_catalogRulesKey] ?? '') ?? defaults.catalogRules,
       subtitleStyle: _readSubtitleStyle(values),
+      dailySync: _readBool(values[_dailySyncKey], defaults.dailySync),
     );
   }
 

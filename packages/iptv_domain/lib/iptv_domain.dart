@@ -62,6 +62,7 @@ export 'src/ports/watch_progress_repository.dart';
 export 'src/usecases/build_home_feed.dart';
 export 'src/usecases/choose_subtitle.dart';
 export 'src/usecases/continue_watching.dart';
+export 'src/usecases/daily_sync.dart';
 export 'src/usecases/find_media_segments.dart';
 export 'src/usecases/import_playlist.dart';
 export 'src/usecases/next_episode.dart';

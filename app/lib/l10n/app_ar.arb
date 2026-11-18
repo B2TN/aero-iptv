@@ -75,6 +75,7 @@
   "settingsDelayValue": "{seconds, plural, =0{بدون} other{{seconds} ث}}",
   "settingsLanguage": "لغة التطبيق",
   "settingsPlaylists": "قوائم التشغيل",
+  "settingsDailySync": "المزامنة يوميًا",
   "settingsPlaylistCount": "{count, plural, =0{لا شيء} other{{count}}}",
   "settingsOn": "مفعّل",
   "settingsOff": "معطّل",

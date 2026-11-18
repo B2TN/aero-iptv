@@ -75,6 +75,7 @@
   "settingsDelayValue": "{seconds, plural, =0{None} other{{seconds} s}}",
   "settingsLanguage": "App language",
   "settingsPlaylists": "Playlists",
+  "settingsDailySync": "Sync every day",
   "settingsPlaylistCount": "{count, plural, =0{None} =1{1 playlist} other{{count} playlists}}",
   "settingsOn": "On",
   "settingsOff": "Off",

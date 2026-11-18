@@ -139,6 +139,15 @@ class SettingsScreen extends ConsumerWidget {
             toggled: null,
           ),
           (
+            label: l10n.settingsDailySync,
+            value: onOff(settings.dailySync),
+            action: () => updateSettings(
+              ref,
+              (current) => current.copyWith(dailySync: !current.dailySync),
+            ),
+            toggled: settings.dailySync,
+          ),
+          (
             label: l10n.settingsGroupSeries,
             value: onOff(settings.groupSeries),
             action: () => updateSettings(

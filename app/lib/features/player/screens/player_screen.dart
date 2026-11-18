@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iptv_domain/iptv_domain.dart';
 
 import '../../../app/app_state.dart';
+import '../../../app/daily_sync.dart';
 import '../../../app/di/repository_providers.dart';
 import '../../../app/platform/external_player.dart';
 import '../../../app/platform/window_fullscreen.dart';
@@ -155,11 +156,16 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     watchedRevisionProvider.notifier,
   );
 
+  /// La synchronisation quotidienne attend la fermeture du lecteur.
+  late final OpenPlayers _openPlayers = ref.read(openPlayersProvider.notifier);
+
   @override
   void initState() {
     super.initState();
     _lifecycle = AppLifecycleListener(onStateChange: _onLifecycle);
     _watched;
+    // Un fournisseur ne change pas pendant la construction de l'écran.
+    unawaited(Future.microtask(_openPlayers.opened));
     _states = _session.states.listen(_onState);
     _cues = _session.subtitleCues.listen((text) => _cue.value = text);
     // La clé DeepL sort du coffre de façon asynchrone, parfois après ce point.
@@ -184,8 +190,14 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     _fullscreen?.exit();
     unawaited(_states?.cancel());
     unawaited(_cues?.cancel());
-    // La position finale enregistrée, l'accueil met ses reprises à jour.
-    unawaited(_session.close().whenComplete(_watched.bump));
+    // La position finale enregistrée, l'accueil met ses reprises à jour, et
+    // la synchronisation quotidienne peut partir.
+    unawaited(
+      _session.close().whenComplete(() {
+        _watched.bump();
+        _openPlayers.closed();
+      }),
+    );
     _cue.dispose();
     _rootNode.dispose();
     _firstAction.dispose();

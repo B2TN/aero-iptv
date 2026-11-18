@@ -75,6 +75,7 @@
   "settingsDelayValue": "{seconds, plural, =0{Ninguno} other{{seconds} s}}",
   "settingsLanguage": "Idioma de la aplicación",
   "settingsPlaylists": "Listas",
+  "settingsDailySync": "Sincronizar cada día",
   "settingsPlaylistCount": "{count, plural, =0{Ninguna} =1{1 lista} other{{count} listas}}",
   "settingsOn": "Activado",
   "settingsOff": "Desactivado",

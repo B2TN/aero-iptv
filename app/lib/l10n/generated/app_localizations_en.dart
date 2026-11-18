@@ -276,6 +276,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsPlaylists => 'Playlists';
 
   @override
+  String get settingsDailySync => 'Sync every day';
+
+  @override
   String settingsPlaylistCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

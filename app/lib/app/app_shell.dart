@@ -19,6 +19,7 @@ import '../focus/focus_guard.dart';
 import '../focus/focusable.dart';
 import 'aero_iptv_app.dart';
 import 'app_state.dart';
+import 'daily_sync.dart';
 
 /// Structure commune : barre supérieure et onglet actif.
 ///
@@ -42,24 +43,42 @@ class _AppShellState extends ConsumerState<AppShell> {
   /// voisin que la géométrie aurait choisi.
   bool _climbing = false;
 
+  /// Synchronisation quotidienne : retour au premier plan, et vérification
+  /// de chaque heure, application ouverte.
+  late final AppLifecycleListener _lifecycle;
+  late final Timer _hourly;
+
   @override
   void initState() {
     super.initState();
     FocusManager.instance.addListener(_onFocusMoved);
+    final daily = ref.read(dailySyncProvider.notifier);
     ref.listenManual(activeSourceProvider.select((source) => source?.id), (
       _,
       id,
     ) {
       final source = ref.read(activeSourceProvider);
       if (id == null || source == null) return;
+      // De nouvelles règles réimportent tout ; sinon, la synchronisation du
+      // jour, si elle n'a pas encore eu lieu.
       unawaited(
-        ref.read(importControllerProvider.notifier).refreshIfOutdated(source),
+        ref
+            .read(importControllerProvider.notifier)
+            .refreshIfOutdated(source)
+            .then((_) => daily.check(atLaunch: true)),
       );
     }, fireImmediately: true);
+    _lifecycle = AppLifecycleListener(onResume: () => unawaited(daily.check()));
+    _hourly = Timer.periodic(
+      const Duration(hours: 1),
+      (_) => unawaited(daily.check()),
+    );
   }
 
   @override
   void dispose() {
+    _lifecycle.dispose();
+    _hourly.cancel();
     FocusManager.instance.removeListener(_onFocusMoved);
     for (final node in _tabNodes.values) {
       node.dispose();
