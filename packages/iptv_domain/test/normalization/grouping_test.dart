@@ -121,6 +121,31 @@ void main() {
       expect(CountryCatalog.fromText('AFRICA'), 'AFR');
     });
 
+    test('connaît les pays d Afrique, du monde arabe et d ex-Yougoslavie', () {
+      expect(CountryCatalog.fromPrefix('SN'), 'SN');
+      expect(CountryCatalog.fromPrefix('RS'), 'RS');
+      expect(CountryCatalog.fromPrefix('SLO'), 'SI');
+      expect(CountryCatalog.fromText('CANAL+ SÉNÉGAL'), 'SN');
+      expect(CountryCatalog.fromText("RTS CÔTE D'IVOIRE"), 'CI');
+      expect(CountryCatalog.fromText('RDC'), 'CD');
+      expect(CountryCatalog.fromText('TÉLÉ CONGO'), 'CG');
+      expect(CountryCatalog.fromText('NIGERIA'), 'NG');
+      expect(CountryCatalog.fromText('NIGER'), 'NE');
+      expect(CountryCatalog.fromText('MBC MASR'), 'EG');
+      expect(CountryCatalog.fromText('قناة تونس'), 'TN');
+    });
+
+    test('les codes ambigus ne sont pas des préfixes de pays', () {
+      for (final code in ['TV', 'SD', 'MR', 'CO', 'CD', 'DJ', 'IL', 'OM']) {
+        expect(CountryCatalog.fromPrefix(code), isNull, reason: code);
+      }
+    });
+
+    test('un prénom n est pas un pays', () {
+      expect(CountryCatalog.fromText('MAURICE TV'), isNull);
+      expect(CountryCatalog.fromText('ILE MAURICE'), 'MU');
+    });
+
     test('distingue l arabe de l Argentine', () {
       expect(CountryCatalog.fromPrefix('AR'), 'ARB');
       expect(CountryCatalog.fromPrefix('ARG'), 'AR');
