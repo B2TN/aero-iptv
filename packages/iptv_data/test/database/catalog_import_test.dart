@@ -373,6 +373,26 @@ void main() {
       );
     });
 
+    test('retrouve une série par sa clé de regroupement', () async {
+      final page = await catalog.series(
+        sourceId,
+        const PageRequest(),
+        grouped: true,
+        language: 'fr',
+      );
+      final breakingBad = page.items.firstWhere(
+        (s) => s.title == 'Breaking Bad',
+      );
+
+      final found = await catalog.seriesByGroupingKeys(sourceId, [
+        'inconnue',
+        breakingBad.groupingKey,
+      ], language: 'fr');
+
+      expect(found.single.title, 'Breaking Bad');
+      expect(found.single.versionCount, breakingBad.versionCount);
+    });
+
     test('range les épisodes par saison', () async {
       final page = await catalog.series(
         sourceId,

@@ -104,6 +104,13 @@ final class FakeCatalog implements CatalogRepository {
       TitleDetails.none;
 
   @override
+  Future<List<Series>> seriesByGroupingKeys(
+    int sourceId,
+    List<String> groupingKeys, {
+    required String language,
+  }) async => const [];
+
+  @override
   Future<TitleDetails> seriesDetails(int sourceId, int seriesEntryId) async =>
       TitleDetails.none;
 

@@ -54,6 +54,15 @@ abstract interface class CatalogRepository {
     required String language,
   });
 
+  /// Séries fusionnées de clés [groupingKeys], dans leur ordre, chacune avec le
+  /// titre et l'affiche de sa version la plus proche de [language]. Une clé
+  /// absente du catalogue est ignorée.
+  Future<List<Series>> seriesByGroupingKeys(
+    int sourceId,
+    List<String> groupingKeys, {
+    required String language,
+  });
+
   /// Versions d'une série, pour le sélecteur de version.
   Future<List<MediaVersion>> versionsOf(int sourceId, String groupingKey);
 

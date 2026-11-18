@@ -11,12 +11,17 @@ const Map<String, List<String>> _detailColumns = {
   'episodes': ['overview'],
 };
 
-/// Ramène une base neuve au schéma de la version 3, sans les colonnes de la
-/// version 4, puis la marque de [version].
+/// Ramène une base neuve au schéma de [version] : sans les favoris avant la
+/// version 5, sans les colonnes de résumés avant la version 4.
 Future<void> _downgrade(AppDatabase database, int version) async {
-  for (final MapEntry(key: table, value: columns) in _detailColumns.entries) {
-    for (final column in columns) {
-      await database.customStatement('ALTER TABLE $table DROP COLUMN $column');
+  if (version < 5) await database.customStatement('DROP TABLE favorites');
+  if (version < 4) {
+    for (final MapEntry(key: table, value: columns) in _detailColumns.entries) {
+      for (final column in columns) {
+        await database.customStatement(
+          'ALTER TABLE $table DROP COLUMN $column',
+        );
+      }
     }
   }
   await database.customStatement('PRAGMA user_version = $version');
@@ -92,5 +97,18 @@ void main() {
     expect(movie.read<String>('display_title'), 'Dune');
     // Les résumés restent à demander au fournisseur.
     expect(movie.read<bool>('details_loaded'), isFalse);
+  });
+
+  test('la version 5 ajoute les favoris', () async {
+    final before = AppDatabase(NativeDatabase(file));
+    await before.customSelect('SELECT 1').get();
+    await _downgrade(before, 4);
+    await before.close();
+
+    final after = AppDatabase(NativeDatabase(file));
+    final columns = await _columnsOf(after, 'favorites');
+    await after.close();
+
+    expect(columns, containsAll(['source_id', 'kind', 'favorite_key']));
   });
 }

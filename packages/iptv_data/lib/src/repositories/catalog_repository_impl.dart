@@ -357,6 +357,20 @@ final class CatalogRepositoryImpl implements CatalogRepository {
     runtime: runtimeMinutes == null ? null : Duration(minutes: runtimeMinutes),
   );
 
+  @override
+  Future<List<Series>> seriesByGroupingKeys(
+    int sourceId,
+    List<String> groupingKeys, {
+    required String language,
+  }) async {
+    final versions = await _versionsByGroup(sourceId, groupingKeys);
+    return [
+      for (final key in groupingKeys)
+        if (versions[key] case final entries? when entries.isNotEmpty)
+          _mergedSeries(key, entries, language),
+    ];
+  }
+
   Future<Map<String, List<SeriesEntryRow>>> _versionsByGroup(
     int sourceId,
     List<String> keys,

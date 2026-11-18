@@ -22,6 +22,19 @@ CREATE TABLE watch_progress (
 
 CREATE INDEX watch_progress_recent ON watch_progress (source_id, updated_at DESC);
 
+-- Favoris. `favorite_key` regroupe toutes les versions d'un contenu et survit
+-- aux synchronisations : clé de titre d'un film, clé de regroupement d'une
+-- série ou d'une chaîne.
+CREATE TABLE favorites (
+  source_id INTEGER NOT NULL REFERENCES sources (id) ON DELETE CASCADE,
+  kind INTEGER NOT NULL,
+  favorite_key TEXT NOT NULL,
+  title TEXT NOT NULL,
+  poster_url TEXT,
+  added_at INTEGER NOT NULL,
+  PRIMARY KEY (source_id, kind, favorite_key)
+) WITHOUT ROWID AS FavoriteRow;
+
 CREATE TABLE app_settings (
   setting_key TEXT NOT NULL PRIMARY KEY,
   setting_value TEXT NOT NULL
