@@ -30,6 +30,8 @@ final homeFeedProvider = FutureProvider.autoDispose<HomeFeed?>((ref) async {
   final groupSeries = ref.watch(
     settingsProvider.select((settings) => settings.groupSeries),
   );
+  // « Continuer à regarder » suit la dernière lecture.
+  ref.watch(watchedRevisionProvider);
   return ref.watch(buildHomeFeedProvider)(
     source.id,
     language: language,

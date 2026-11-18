@@ -22,6 +22,19 @@ class CurrentTab extends Notifier<AppTab> {
 
 final currentTabProvider = NotifierProvider<CurrentTab, AppTab>(CurrentTab.new);
 
+/// Compteur de lectures terminées : chaque fermeture du lecteur l'avance, et
+/// les écrans qui montrent les reprises, comme l'accueil, se mettent à jour.
+class WatchedRevision extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void bump() => state++;
+}
+
+final watchedRevisionProvider = NotifierProvider<WatchedRevision, int>(
+  WatchedRevision.new,
+);
+
 final _settingsStreamProvider = StreamProvider<AppSettings>(
   (ref) => ref.watch(settingsRepositoryProvider).watch(),
 );

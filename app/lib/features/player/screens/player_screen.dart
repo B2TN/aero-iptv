@@ -155,10 +155,16 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   String? _notice;
   late final AppLifecycleListener _lifecycle;
 
+  /// Lu dès l'ouverture : `dispose` ne peut plus lire les fournisseurs.
+  late final WatchedRevision _watched = ref.read(
+    watchedRevisionProvider.notifier,
+  );
+
   @override
   void initState() {
     super.initState();
     _lifecycle = AppLifecycleListener(onStateChange: _onLifecycle);
+    _watched;
     _states = _session.states.listen(_onState);
     _cues = _session.subtitleCues.listen((text) => _cue.value = text);
     // La clé DeepL sort du coffre de façon asynchrone, parfois après ce point.
@@ -183,7 +189,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     _fullscreen?.exit();
     unawaited(_states?.cancel());
     unawaited(_cues?.cancel());
-    unawaited(_session.close());
+    // La position finale enregistrée, l'accueil met ses reprises à jour.
+    unawaited(_session.close().whenComplete(_watched.bump));
     _cue.dispose();
     _rootNode.dispose();
     _firstAction.dispose();
