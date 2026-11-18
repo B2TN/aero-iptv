@@ -537,6 +537,53 @@ void main() {
       await _leave(tester);
     });
 
+    testWidgets('avance et retour rapides sautent de 30 secondes', (
+      tester,
+    ) async {
+      final engine = await _pump(tester, _target(ContentKind.movie));
+
+      await _press(tester, LogicalKeyboardKey.mediaFastForward);
+      await tester.pump(const Duration(seconds: 1));
+      await _press(tester, LogicalKeyboardKey.mediaRewind);
+      await _press(tester, LogicalKeyboardKey.mediaRewind);
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(engine.seeks, [
+        const Duration(minutes: 10, seconds: 30),
+        const Duration(minutes: 9, seconds: 30),
+      ]);
+      await _leave(tester);
+    });
+
+    testWidgets('OK maintenu ne valide qu une fois', (tester) async {
+      final engine = await _pump(
+        tester,
+        _episode(),
+        state: _playingAt(const Duration(seconds: 45)),
+        chapters: const [
+          MediaChapter(title: 'Intro', start: Duration(seconds: 30)),
+          MediaChapter(
+            title: 'Épisode',
+            start: Duration(minutes: 1, seconds: 30),
+          ),
+        ],
+      );
+      await tester.pump(const Duration(seconds: 6));
+      await tester.pump();
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.enter);
+      for (var i = 0; i < 5; i++) {
+        await tester.sendKeyRepeatEvent(LogicalKeyboardKey.enter);
+      }
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.enter);
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(engine.seeks, [const Duration(minutes: 1, seconds: 30)]);
+      // Les commandes ne se sont pas ouvertes sous les répétitions.
+      expect(find.text('Pause'), findsNothing);
+      await _leave(tester);
+    });
+
     testWidgets('un menu ouvert garde les commandes', (tester) async {
       await _pump(tester, _target(ContentKind.movie));
 

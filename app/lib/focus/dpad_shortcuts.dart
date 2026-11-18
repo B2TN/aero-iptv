@@ -28,10 +28,17 @@ const Map<ShortcutActivator, Intent> dpadShortcuts =
       SingleActivator(LogicalKeyboardKey.arrowRight): DirectionalFocusIntent(
         TraversalDirection.right,
       ),
-      SingleActivator(LogicalKeyboardKey.select): ActivateIntent(),
-      SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
-      SingleActivator(LogicalKeyboardKey.numpadEnter): ActivateIntent(),
-      SingleActivator(LogicalKeyboardKey.gameButtonA): ActivateIntent(),
+      // Une seule validation par appui : maintenu, OK se répète sur Android,
+      // et chaque répétition validerait l'écran ou le menu qui vient de
+      // s'ouvrir.
+      SingleActivator(LogicalKeyboardKey.select, includeRepeats: false):
+          ActivateIntent(),
+      SingleActivator(LogicalKeyboardKey.enter, includeRepeats: false):
+          ActivateIntent(),
+      SingleActivator(LogicalKeyboardKey.numpadEnter, includeRepeats: false):
+          ActivateIntent(),
+      SingleActivator(LogicalKeyboardKey.gameButtonA, includeRepeats: false):
+          ActivateIntent(),
       SingleActivator(LogicalKeyboardKey.escape): BackIntent(),
       SingleActivator(LogicalKeyboardKey.goBack): BackIntent(),
       SingleActivator(LogicalKeyboardKey.gameButtonB): BackIntent(),

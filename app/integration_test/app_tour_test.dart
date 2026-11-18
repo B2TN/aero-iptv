@@ -16,6 +16,7 @@ import 'package:iptv_domain/iptv_domain.dart';
 import 'package:path/path.dart' as p;
 
 import 'support/demo_server.dart';
+import 'support/visible_focus.dart';
 
 /// Tendances simulées : elles imposent une image large, comme le ferait TMDb.
 final class FakeTrending implements TrendingRepository {
@@ -111,6 +112,9 @@ void main() {
     expect(FocusManager.instance.primaryFocus?.debugLabel, label);
   }
 
+  /// Écran en cours, pour nommer la capture d'un focus invisible.
+  var where = 'accueil';
+
   Future<void> press(
     WidgetTester tester,
     LogicalKeyboardKey key, {
@@ -120,6 +124,19 @@ void main() {
       await tester.sendKeyEvent(key);
       await wait(tester, 170);
       expectFocus('après ${key.keyLabel}');
+      // Le focus se voit toujours : jamais de curseur « disparu ». Le cadre
+      // peut n'apparaître qu'à l'image suivante, ce qui ne se voit pas.
+      for (var frame = 0; frame < 6 && !focusIsVisible(); frame++) {
+        await wait(tester, 50);
+      }
+      if (!focusIsVisible()) await shot(tester, 'focus_invisible_$where');
+      expect(
+        focusIsVisible(),
+        isTrue,
+        reason:
+            'focus invisible sur $where après ${key.keyLabel} : '
+            '${describeFocus()}',
+      );
     }
   }
 
@@ -196,6 +213,24 @@ void main() {
     await wait(tester, 700);
     expectFocus('détail de la série');
     await shot(tester, '06_detail_serie');
+    where = 'fiche_serie';
+    for (final key in [
+      LogicalKeyboardKey.arrowDown,
+      LogicalKeyboardKey.arrowDown,
+      LogicalKeyboardKey.arrowRight,
+      LogicalKeyboardKey.arrowLeft,
+      LogicalKeyboardKey.arrowLeft,
+      LogicalKeyboardKey.arrowLeft,
+      LogicalKeyboardKey.arrowUp,
+      LogicalKeyboardKey.arrowUp,
+      LogicalKeyboardKey.arrowUp,
+      LogicalKeyboardKey.arrowRight,
+      LogicalKeyboardKey.arrowDown,
+      LogicalKeyboardKey.arrowRight,
+      LogicalKeyboardKey.arrowRight,
+    ]) {
+      await press(tester, key);
+    }
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await wait(tester, 400);
     expectFocus('retour du détail');
@@ -214,6 +249,25 @@ void main() {
     await wait(tester, 900);
     expectFocus('groupes');
     await shot(tester, '08_groupes_chaines');
+    where = 'chaines';
+    for (final key in [
+      LogicalKeyboardKey.arrowDown,
+      LogicalKeyboardKey.arrowRight,
+      LogicalKeyboardKey.arrowDown,
+      LogicalKeyboardKey.arrowDown,
+      LogicalKeyboardKey.arrowRight,
+      LogicalKeyboardKey.arrowLeft,
+      LogicalKeyboardKey.arrowUp,
+      LogicalKeyboardKey.arrowUp,
+      LogicalKeyboardKey.arrowUp,
+      LogicalKeyboardKey.arrowDown,
+      LogicalKeyboardKey.arrowDown,
+      LogicalKeyboardKey.arrowUp,
+    ]) {
+      await press(tester, key);
+    }
+    // Retour au premier groupe, comme au début de l'étape.
+    await press(tester, LogicalKeyboardKey.arrowUp, times: 3);
 
     // Une chaîne à trois qualités ouvre le menu de flux, puis le lecteur.
     await press(tester, LogicalKeyboardKey.arrowRight);
@@ -225,6 +279,24 @@ void main() {
     await wait(tester, 2500);
     expectFocus('lecteur');
     await shot(tester, '10_lecteur');
+    where = 'lecteur';
+    for (final key in [
+      LogicalKeyboardKey.arrowUp,
+      LogicalKeyboardKey.arrowUp,
+      LogicalKeyboardKey.arrowRight,
+      LogicalKeyboardKey.arrowDown,
+      LogicalKeyboardKey.arrowDown,
+      LogicalKeyboardKey.arrowRight,
+      LogicalKeyboardKey.arrowRight,
+      LogicalKeyboardKey.arrowRight,
+      LogicalKeyboardKey.arrowLeft,
+      LogicalKeyboardKey.arrowUp,
+    ]) {
+      await press(tester, key);
+    }
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await wait(tester, 400);
+    expect(find.text('Pause'), findsNothing);
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await wait(tester, 800);
     expectFocus('retour du lecteur');
@@ -234,6 +306,37 @@ void main() {
     await wait(tester, 900);
     expectFocus('recherche');
     await shot(tester, '11_recherche_tendances');
+    where = 'recherche';
+    for (final key in [
+      LogicalKeyboardKey.arrowRight,
+      LogicalKeyboardKey.arrowRight,
+      LogicalKeyboardKey.arrowDown,
+      LogicalKeyboardKey.arrowDown,
+      LogicalKeyboardKey.arrowDown,
+      LogicalKeyboardKey.arrowDown,
+      LogicalKeyboardKey.arrowDown,
+      LogicalKeyboardKey.arrowRight,
+      LogicalKeyboardKey.arrowRight,
+      LogicalKeyboardKey.arrowRight,
+      LogicalKeyboardKey.arrowRight,
+      LogicalKeyboardKey.arrowRight,
+      LogicalKeyboardKey.arrowRight,
+      LogicalKeyboardKey.arrowRight,
+      LogicalKeyboardKey.arrowRight,
+      LogicalKeyboardKey.arrowUp,
+      LogicalKeyboardKey.arrowUp,
+      LogicalKeyboardKey.arrowUp,
+      LogicalKeyboardKey.arrowUp,
+      LogicalKeyboardKey.arrowUp,
+      LogicalKeyboardKey.arrowUp,
+    ]) {
+      await press(tester, key);
+    }
+    // Le clavier reprend sa première touche, comme au début de l'étape.
+    container.read(currentTabProvider.notifier).show(AppTab.home);
+    await wait(tester, 600);
+    container.read(currentTabProvider.notifier).show(AppTab.search);
+    await wait(tester, 900);
     await press(tester, LogicalKeyboardKey.enter);
     await press(tester, LogicalKeyboardKey.arrowRight);
     await press(tester, LogicalKeyboardKey.enter);
@@ -245,6 +348,11 @@ void main() {
     await wait(tester, 600);
     expectFocus('paramètres');
     await shot(tester, '13_parametres');
+    where = 'parametres';
+    await press(tester, LogicalKeyboardKey.arrowDown, times: 12);
+    await press(tester, LogicalKeyboardKey.arrowLeft);
+    await press(tester, LogicalKeyboardKey.arrowRight);
+    await press(tester, LogicalKeyboardKey.arrowUp, times: 12);
     await press(tester, LogicalKeyboardKey.enter);
     await wait(tester, 500);
     expectFocus('playlists');
@@ -316,6 +424,8 @@ void main() {
     await wait(tester, 1200);
     expectFocus('lecteur de film');
     await shot(tester, '18_lecteur_film');
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await wait(tester, 400);
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await wait(tester, 800);
     expectFocus('retour du film');

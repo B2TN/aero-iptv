@@ -2,6 +2,7 @@ import 'package:aero_iptv/app/app_state.dart';
 import 'package:aero_iptv/app/di/repository_providers.dart';
 import 'package:aero_iptv/features/media_detail/screens/media_detail_screen.dart';
 import 'package:aero_iptv/focus/dpad_shortcuts.dart';
+import 'package:aero_iptv/focus/focus_frame.dart';
 import 'package:aero_iptv/l10n/generated/app_localizations.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -132,7 +133,30 @@ Future<void> _open(
   }
 }
 
+/// Vrai si l'élément qui a le focus le montre par son cadre.
+bool _focusIsVisible() {
+  final context = FocusManager.instance.primaryFocus?.context;
+  if (context is! Element) return false;
+  var visible = false;
+  void visit(Element element) {
+    if (element.widget case FocusFrame(focused: true)) visible = true;
+    if (!visible) element.visitChildren(visit);
+  }
+
+  context.visitChildren(visit);
+  return visible;
+}
+
 void main() {
+  testWidgets('à l ouverture, le focus se voit', (tester) async {
+    await _open(tester);
+    expect(
+      _focusIsVisible(),
+      isTrue,
+      reason: '${FocusManager.instance.primaryFocus}',
+    );
+  });
+
   testWidgets('montre le résumé, le genre et le nombre de saisons', (
     tester,
   ) async {

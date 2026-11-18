@@ -700,10 +700,25 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
       return KeyEventResult.ignored;
     }
     final key = event.logicalKey;
+    // OK maintenu se répète : une seule action par appui.
+    if (event is KeyRepeatEvent && isConfirmKey(key)) {
+      return KeyEventResult.handled;
+    }
     if (key == LogicalKeyboardKey.mediaPlayPause ||
         key == LogicalKeyboardKey.mediaPlay ||
         key == LogicalKeyboardKey.mediaPause) {
       _togglePlay();
+      return KeyEventResult.handled;
+    }
+    // Touches avance et retour rapides des télécommandes Fire TV et Android TV.
+    if ((key == LogicalKeyboardKey.mediaFastForward ||
+            key == LogicalKeyboardKey.mediaRewind) &&
+        !widget.target.isLive &&
+        _state.duration > Duration.zero) {
+      _showOverlay(onSeekBar: true);
+      _seekBy(
+        key == LogicalKeyboardKey.mediaFastForward ? _seekStep : -_seekStep,
+      );
       return KeyEventResult.handled;
     }
     if (_isBackKey(key)) {
