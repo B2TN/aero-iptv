@@ -114,6 +114,16 @@ flutter test integration_test/video_surface_test.dart -d emulator-5554
 
 On this emulator, the app shows "This stream can't be played": its EGL layer refuses mpv's OpenGL ES context unless `gpu-debug=yes` is set, which the test enables and the app doesn't. This only affects the emulator.
 
+The Back key needs a real key press from Android, which simulated key events don't reproduce: on Android, one press reaches the app both as a key event and as a system back. `integration_test/system_back_test.dart` prints `ATTENTE RETOUR 1`, then `ATTENTE RETOUR 2`, and waits each time for a real Back. Run it on the emulator and answer each line from another terminal:
+
+```bash
+flutter test integration_test/system_back_test.dart -d emulator-5554
+```
+
+```bash
+adb shell input keyevent KEYCODE_BACK
+```
+
 Regenerating the Frutiger Aero textures, from `app`:
 
 ```bash
