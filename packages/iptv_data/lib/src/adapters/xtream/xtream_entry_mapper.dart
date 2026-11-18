@@ -60,6 +60,7 @@ final class XtreamEntryMapper {
       logoUrl: readString(json['cover']),
       xtreamSeriesId: id,
       tmdbId: readString(json['tmdb']) ?? readString(json['tmdb_id']),
+      lastModified: readInt(json['last_modified']),
     );
   }
 

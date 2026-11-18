@@ -308,6 +308,18 @@ void main() {
   });
 
   group('Séries', () {
+    test('une série M3U a une identité tirée de son titre', () async {
+      await importFixture();
+
+      final keys = await db
+          .customSelect('SELECT entry_key FROM series_entries')
+          .get();
+      expect(keys, isNotEmpty);
+      for (final key in keys) {
+        expect(key.read<String>('entry_key'), startsWith('m:s:'));
+      }
+    });
+
     setUp(importFixture);
 
     test('fusionne les versions multi-langues', () async {
@@ -499,6 +511,37 @@ void main() {
   });
 
   group('séries Xtream', () {
+    test(
+      'garde l identité de chaque version et sa date de modification',
+      () async {
+        await runImport(
+          const FakeCatalogAdapter([
+            CatalogBatch([
+              SeriesEntry(
+                rawName: 'FR - Lost',
+                rawGroup: 'SERIES',
+                xtreamSeriesId: 9,
+                lastModified: 1763400000,
+              ),
+            ]),
+          ]),
+        );
+
+        final row = await db
+            .customSelect(
+              'SELECT id, entry_key, last_modified FROM series_entries',
+            )
+            .getSingle();
+        expect(row.read<String>('entry_key'), 'x:s:9');
+        expect(row.read<int>('last_modified'), 1763400000);
+        // La ligne de recherche d'une série porte le numéro tiré du sien.
+        final indexed = await db
+            .customSelect('SELECT rowid AS n FROM search_index WHERE kind = 2')
+            .getSingle();
+        expect(indexed.read<int>('n'), row.read<int>('id') * 2 + 1);
+      },
+    );
+
     test('charge les épisodes à la première ouverture seulement', () async {
       var requests = 0;
       final client = MockClient((request) async {

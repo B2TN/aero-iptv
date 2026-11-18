@@ -17,7 +17,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   /// Retrouve, dans le catalogue actif, l'identité commune aux versions des
   /// reprises enregistrées avant qu'elle n'existe. Une reprise dont le
@@ -93,6 +93,21 @@ class AppDatabase extends _$AppDatabase {
           await migrator.addColumn(watchProgress, column);
         }
         await _identifyProgress();
+      }
+      if (from < 7) {
+        // Identité des versions de séries et date de modification Xtream :
+        // la synchronisation quotidienne compare le catalogue à ses
+        // prédécesseurs. Le réimport qu'entraîne `catalogRulesVersion` les
+        // remplit.
+        await migrator.addColumn(seriesEntries, seriesEntries.entryKey);
+        await migrator.addColumn(seriesEntries, seriesEntries.lastModified);
+        await migrator.createIndex(moviesContent);
+        await migrator.createIndex(seriesEntryKey);
+        await migrator.createIndex(episodesContent);
+        // Les lignes de l'index de recherche prennent un numéro tiré du
+        // titre, que les anciennes pourraient déjà occuper. Le réimport le
+        // reconstruit.
+        await customStatement('DELETE FROM search_index');
       }
     },
   );

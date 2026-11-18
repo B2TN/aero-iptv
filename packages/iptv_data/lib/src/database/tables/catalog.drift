@@ -1,8 +1,10 @@
 -- Catalogue local.
 --
--- Chaque synchronisation écrit un nouveau `catalog_id`. L'application continue
--- de lire `sources.active_catalog_id`, qui ne bascule qu'à la fin de l'import :
--- une erreur réseau ne peut donc pas laisser un catalogue à moitié écrit.
+-- Chaque synchronisation écrit un nouveau `catalog_id`. Un premier import, ou
+-- un import complet, bascule `sources.active_catalog_id` à la fin : une erreur
+-- réseau ne peut donc pas laisser un catalogue à moitié écrit. La
+-- synchronisation quotidienne, elle, n'applique au catalogue actif que ses
+-- différences avec le nouveau, puis efface ce dernier.
 
 CREATE TABLE sources (
   id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -80,6 +82,7 @@ CREATE TABLE movies (
 
 CREATE INDEX movies_browse ON movies (catalog_id, sort_order);
 CREATE INDEX movies_title ON movies (catalog_id, title_key);
+CREATE INDEX movies_content ON movies (catalog_id, content_key);
 
 -- Une ligne par version d'une série. `title_key` identifie le titre ;
 -- `grouping_key` y ajoute l'année lorsque deux séries portent le même nom.
@@ -101,10 +104,17 @@ CREATE TABLE series_entries (
   overview TEXT,
   genre TEXT,
   runtime_minutes INTEGER,
-  details_loaded BOOLEAN NOT NULL DEFAULT FALSE
+  details_loaded BOOLEAN NOT NULL DEFAULT FALSE,
+  -- Identité de la version d'un catalogue à l'autre : `x:s:` et l'identifiant
+  -- Xtream, sinon `m:s:` et le titre, l'année, la langue et le groupe.
+  entry_key TEXT NOT NULL DEFAULT '',
+  -- Dernière modification annoncée par le panneau Xtream, en secondes : une
+  -- nouvelle valeur signale de nouveaux épisodes.
+  last_modified INTEGER
 ) AS SeriesEntryRow;
 
 CREATE INDEX series_browse ON series_entries (catalog_id, grouping_key);
+CREATE INDEX series_entry_key ON series_entries (catalog_id, entry_key);
 CREATE INDEX series_order ON series_entries (catalog_id, sort_order);
 CREATE INDEX series_title ON series_entries (catalog_id, title_key);
 
@@ -126,9 +136,12 @@ CREATE TABLE episodes (
 
 CREATE INDEX episodes_of_entry ON episodes (series_entry_id, season, number);
 CREATE INDEX episodes_of_catalog ON episodes (catalog_id);
+CREATE INDEX episodes_content ON episodes (catalog_id, content_key);
 
 -- Index plein texte des films et séries. `remove_diacritics` rend la recherche
 -- insensible aux accents, `prefix` accélère les suggestions pendant la saisie.
+-- Chaque ligne a pour `rowid` le double de l'identifiant du titre, plus un pour
+-- une série : la synchronisation retrouve ainsi directement celle d'un titre.
 CREATE VIRTUAL TABLE search_index USING fts5 (
   title,
   group_key UNINDEXED,

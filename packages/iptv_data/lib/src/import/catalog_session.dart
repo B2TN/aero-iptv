@@ -143,8 +143,10 @@ final class CatalogSession {
       rawTitle: entry.rawName,
       parsed: parsed,
       entry: entry,
+      entryKey: 'x:s:${entry.xtreamSeriesId}',
       xtreamSeriesId: entry.xtreamSeriesId,
       tmdbId: entry.tmdbId,
+      lastModified: entry.lastModified,
     );
   }
 
@@ -160,6 +162,7 @@ final class CatalogSession {
       rawTitle: _cleaner.seriesNameOf(entry.rawName),
       parsed: parsed,
       entry: entry,
+      entryKey: 'm:s:$identity',
     );
     final locator = LocatorColumns.from(entry.locator);
     return EpisodesCompanion.insert(
@@ -181,8 +184,10 @@ final class CatalogSession {
     required String rawTitle,
     required ParsedTitle parsed,
     required CatalogEntry entry,
+    required String entryKey,
     int? xtreamSeriesId,
     String? tmdbId,
+    int? lastModified,
   }) {
     final group = _parsedGroup(entry.rawGroup);
     final titleKey = GroupingKey.of(parsed.title);
@@ -204,6 +209,8 @@ final class CatalogSession {
             xtreamSeriesId: Value(xtreamSeriesId),
             tmdbId: Value(tmdbId),
             sortOrder: _sortOrder,
+            entryKey: Value(entryKey),
+            lastModified: Value(lastModified),
           ),
         );
   }

@@ -52,9 +52,13 @@ final class SeriesEntry extends CatalogEntry {
     required this.xtreamSeriesId,
     super.logoUrl,
     this.tmdbId,
+    this.lastModified,
   });
 
   final int xtreamSeriesId;
+
+  /// Dernière modification annoncée par le panneau, en secondes depuis 1970.
+  final int? lastModified;
 
   /// Identifiant TMDb fourni par le panneau, s'il en donne un.
   final String? tmdbId;

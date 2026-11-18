@@ -88,23 +88,29 @@ final class CatalogMaintenanceDao {
 
   /// Construit l'index de recherche des films et des séries.
   Future<void> buildSearchIndex(int catalogId) async {
-    await _db.customStatement(
-      '''
-      INSERT INTO search_index (title, group_key, kind, ref_id, catalog_id, poster_url)
-      SELECT display_title, 'm' || title_key, 1, id, catalog_id, poster_url
-      FROM movies WHERE catalog_id = ?1
-      ''',
-      [catalogId],
-    );
-    await _db.customStatement(
-      '''
-      INSERT INTO search_index (title, group_key, kind, ref_id, catalog_id, poster_url)
-      SELECT display_title, 's' || grouping_key, 2, id, catalog_id, poster_url
-      FROM series_entries WHERE catalog_id = ?1
-      ''',
-      [catalogId],
-    );
+    await _db.customStatement('$indexMoviesSql WHERE catalog_id = ?1', [
+      catalogId,
+    ]);
+    await _db.customStatement('$indexSeriesSql WHERE catalog_id = ?1', [
+      catalogId,
+    ]);
   }
+
+  /// Ajoute des films à l'index de recherche ; le `WHERE` choisit lesquels.
+  static const String indexMoviesSql = '''
+    INSERT INTO search_index
+      (rowid, title, group_key, kind, ref_id, catalog_id, poster_url)
+    SELECT id * 2, display_title, 'm' || title_key, 1, id, catalog_id,
+           poster_url
+    FROM movies''';
+
+  /// Ajoute des séries à l'index de recherche ; le `WHERE` choisit lesquelles.
+  static const String indexSeriesSql = '''
+    INSERT INTO search_index
+      (rowid, title, group_key, kind, ref_id, catalog_id, poster_url)
+    SELECT id * 2 + 1, display_title, 's' || grouping_key, 2, id, catalog_id,
+           poster_url
+    FROM series_entries''';
 
   /// Active [catalogId] en une seule écriture.
   ///

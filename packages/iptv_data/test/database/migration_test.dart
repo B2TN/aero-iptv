@@ -24,6 +24,20 @@ const List<String> _progressColumns = [
 /// Ramène une base neuve au schéma de [version] : sans les favoris avant la
 /// version 5, sans les colonnes de résumés avant la version 4.
 Future<void> _downgrade(AppDatabase database, int version) async {
+  if (version < 7) {
+    for (final index in [
+      'movies_content',
+      'series_entry_key',
+      'episodes_content',
+    ]) {
+      await database.customStatement('DROP INDEX $index');
+    }
+    for (final column in ['entry_key', 'last_modified']) {
+      await database.customStatement(
+        'ALTER TABLE series_entries DROP COLUMN $column',
+      );
+    }
+  }
   if (version < 6) {
     for (final column in _progressColumns) {
       await database.customStatement(
@@ -180,5 +194,46 @@ void main() {
     expect(byKey['x:m:disparu']!.read<String?>('work_key'), isNull);
     expect(episode.read<bool>('finished'), isFalse);
     expect(episode.read<bool>('hidden'), isFalse);
+  });
+
+  test('la version 7 prépare la synchronisation différentielle', () async {
+    final before = AppDatabase(NativeDatabase(file));
+    await before.customSelect('SELECT 1').get();
+    await _downgrade(before, 6);
+    await before.customStatement(
+      "INSERT INTO series_entries (catalog_id, raw_title, display_title, "
+      "title_key, grouping_key, sort_order) "
+      "VALUES (1, 'Abysses', 'Abysses', 'abysses', 'abysses', 0)",
+    );
+    await before.customStatement(
+      "INSERT INTO search_index (title, group_key, kind, ref_id, catalog_id) "
+      "VALUES ('Abysses', 'sabysses', 2, 1, 1)",
+    );
+    await before.close();
+
+    final after = AppDatabase(NativeDatabase(file));
+    final columns = await _columnsOf(after, 'series_entries');
+    final series = await after
+        .customSelect('SELECT entry_key, last_modified FROM series_entries')
+        .getSingle();
+    final indexes = await after
+        .customSelect(
+          "SELECT name FROM sqlite_master WHERE type = 'index' "
+          "AND name IN ('movies_content', 'series_entry_key', "
+          "'episodes_content')",
+        )
+        .get();
+    final searchRows = await after
+        .customSelect('SELECT COUNT(*) AS n FROM search_index')
+        .getSingle();
+    await after.close();
+
+    expect(columns, containsAll(['entry_key', 'last_modified']));
+    // Vide jusqu'au réimport, qui la remplit.
+    expect(series.read<String>('entry_key'), '');
+    expect(series.readNullable<int>('last_modified'), isNull);
+    expect(indexes, hasLength(3));
+    // L'index de recherche se reconstruit au réimport.
+    expect(searchRows.read<int>('n'), 0);
   });
 }
