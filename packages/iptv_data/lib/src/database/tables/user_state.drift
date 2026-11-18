@@ -17,6 +17,15 @@ CREATE TABLE watch_progress (
   container_ext TEXT,
   user_agent TEXT,
   referrer TEXT,
+  -- Identité commune aux versions (`m:titre` ou `e:série:saison:épisode`),
+  -- série, et place de l'épisode : « Continuer à regarder » les regroupe.
+  work_key TEXT,
+  series_key TEXT,
+  season INTEGER,
+  episode INTEGER,
+  -- Vu jusqu'au bout, ou retiré de « Continuer à regarder » par l'utilisateur.
+  finished BOOLEAN NOT NULL DEFAULT FALSE,
+  hidden BOOLEAN NOT NULL DEFAULT FALSE,
   PRIMARY KEY (source_id, content_key)
 ) WITHOUT ROWID AS WatchProgressRow;
 
@@ -42,9 +51,21 @@ CREATE TABLE app_settings (
 
 recentProgress:
   SELECT * FROM watch_progress
-  WHERE source_id = :source_id
+  WHERE source_id = :source_id AND NOT finished AND NOT hidden
   ORDER BY updated_at DESC
   LIMIT :limit;
+
+progressHistory:
+  SELECT * FROM watch_progress
+  WHERE source_id = :source_id AND NOT hidden
+  ORDER BY updated_at DESC
+  LIMIT :limit;
+
+hideProgress:
+  UPDATE watch_progress SET hidden = TRUE
+  WHERE source_id = :source_id
+    AND (series_key = :group_key OR work_key = :group_key
+         OR content_key = :group_key);
 
 deleteProgress:
   DELETE FROM watch_progress

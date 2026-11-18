@@ -93,6 +93,13 @@ final class _LateKeyStore implements ApiKeyStore {
 
 final class _NoProgress implements WatchProgressRepository {
   @override
+  Future<List<WatchProgress>> history(int sourceId, {int limit = 500}) async =>
+      const [];
+
+  @override
+  Future<void> hide(int sourceId, String groupKey) async {}
+
+  @override
   Future<void> save(WatchProgress progress) async {}
 
   @override

@@ -227,9 +227,11 @@ Future<void> showContinueMenu(
     (
       label: l10n.homeRemoveContinue,
       run: () async {
+        // Toute la série, ou toutes les versions du film : l'entrée ne doit
+        // pas revenir sous un autre épisode ou une autre langue.
         await ref
             .read(watchProgressRepositoryProvider)
-            .remove(item.sourceId, item.contentKey);
+            .hide(item.sourceId, item.groupKey);
         onRemoved();
       },
     ),

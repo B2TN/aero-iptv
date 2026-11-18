@@ -30,6 +30,13 @@ final class WatchProgressRepositoryImpl implements WatchProgressRepository {
             containerExt: Value(locator.containerExt),
             userAgent: Value(locator.userAgent),
             referrer: Value(locator.referrer),
+            workKey: Value(progress.workKey),
+            seriesKey: Value(progress.seriesKey),
+            season: Value(progress.season),
+            episode: Value(progress.episode),
+            finished: Value(progress.finished),
+            // Relire un contenu retiré le remet dans « Continuer à regarder ».
+            hidden: const Value(false),
           ),
         );
   }
@@ -38,36 +45,53 @@ final class WatchProgressRepositoryImpl implements WatchProgressRepository {
   Future<List<WatchProgress>> continueWatching(
     int sourceId, {
     int limit = 20,
-  }) async {
-    final rows = await _db
-        .recentProgress(sourceId: sourceId, limit: limit)
-        .get();
-    return [
-      for (final row in rows)
-        WatchProgress(
-          sourceId: row.sourceId,
-          contentKey: row.contentKey,
-          kind: ContentKind.values[row.kind],
-          title: row.title,
-          posterUrl: row.posterUrl,
-          position: Duration(milliseconds: row.positionMs),
-          duration: Duration(milliseconds: row.durationMs),
-          updatedAt: DateTime.fromMillisecondsSinceEpoch(row.updatedAt),
-          locator:
-              LocatorColumns(
-                streamUrl: row.streamUrl,
-                xtreamStreamId: row.xtreamStreamId,
-                containerExt: row.containerExt,
-                userAgent: row.userAgent,
-                referrer: row.referrer,
-              ).toLocator(
-                row.kind == ContentKind.series.index
-                    ? XtreamNamespace.series
-                    : XtreamNamespace.movie,
-              ),
+  }) async => [
+    for (final row
+        in await _db.recentProgress(sourceId: sourceId, limit: limit).get())
+      _toProgress(row),
+  ];
+
+  @override
+  Future<List<WatchProgress>> history(
+    int sourceId, {
+    int limit = 500,
+  }) async => [
+    for (final row
+        in await _db.progressHistory(sourceId: sourceId, limit: limit).get())
+      _toProgress(row),
+  ];
+
+  @override
+  Future<void> hide(int sourceId, String groupKey) =>
+      _db.hideProgress(sourceId: sourceId, groupKey: groupKey);
+
+  WatchProgress _toProgress(WatchProgressRow row) => WatchProgress(
+    sourceId: row.sourceId,
+    contentKey: row.contentKey,
+    kind: ContentKind.values[row.kind],
+    title: row.title,
+    posterUrl: row.posterUrl,
+    position: Duration(milliseconds: row.positionMs),
+    duration: Duration(milliseconds: row.durationMs),
+    updatedAt: DateTime.fromMillisecondsSinceEpoch(row.updatedAt),
+    locator:
+        LocatorColumns(
+          streamUrl: row.streamUrl,
+          xtreamStreamId: row.xtreamStreamId,
+          containerExt: row.containerExt,
+          userAgent: row.userAgent,
+          referrer: row.referrer,
+        ).toLocator(
+          row.kind == ContentKind.series.index
+              ? XtreamNamespace.series
+              : XtreamNamespace.movie,
         ),
-    ];
-  }
+    workKey: row.workKey,
+    seriesKey: row.seriesKey,
+    season: row.season,
+    episode: row.episode,
+    finished: row.finished,
+  );
 
   @override
   Future<void> remove(int sourceId, String contentKey) =>

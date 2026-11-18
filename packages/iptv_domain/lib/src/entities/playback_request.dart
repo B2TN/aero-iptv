@@ -35,6 +35,8 @@ final class PlaybackItem {
     this.year,
     this.season,
     this.episode,
+    this.workKey,
+    this.seriesKey,
   });
 
   final int sourceId;
@@ -46,4 +48,10 @@ final class PlaybackItem {
   final int? year;
   final int? season;
   final int? episode;
+
+  /// Identité commune aux versions, voir `WorkKeys`.
+  final String? workKey;
+
+  /// Clé de regroupement de la série, pour un épisode.
+  final String? seriesKey;
 }

@@ -9,7 +9,7 @@ import '../normalization/grouping_key.dart';
 import '../normalization/version_language.dart';
 import '../ports/catalog_repository.dart';
 import '../ports/trending_repository.dart';
-import '../ports/watch_progress_repository.dart';
+import 'continue_watching.dart';
 
 const int _rowSize = 20;
 const int _heroSize = 5;
@@ -20,11 +20,11 @@ const int _heroSize = 5;
 /// l'abonnement ne contient pas n'aurait aucun sens. Si le service de tendances
 /// est injoignable, l'accueil se rabat sur l'ordre de la playlist.
 final class BuildHomeFeed {
-  const BuildHomeFeed(this._catalog, this._trending, this._progress);
+  const BuildHomeFeed(this._catalog, this._trending, this._continueWatching);
 
   final CatalogRepository _catalog;
   final TrendingRepository _trending;
-  final WatchProgressRepository _progress;
+  final ContinueWatching _continueWatching;
 
   Future<HomeFeed> call(
     int sourceId, {
@@ -32,7 +32,7 @@ final class BuildHomeFeed {
     required bool groupSeries,
     String? region,
   }) async {
-    final continueWatching = await _progress.continueWatching(sourceId);
+    final continueWatching = await _continueWatching(sourceId);
     final popularMovies = await _popular(ContentKind.movie, language, region);
     final popularSeries = await _popular(ContentKind.series, language, region);
 

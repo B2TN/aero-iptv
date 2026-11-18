@@ -237,14 +237,11 @@ final class PlaybackSession {
 
     final position = state.position;
     _lastSaved = position;
+    // Fini, il reste en mémoire comme vu : il propose l'épisode suivant.
     final finished =
         state.status == PlaybackStatus.ended ||
         position.inMilliseconds >=
             state.duration.inMilliseconds * _finishedRatio;
-    if (finished) {
-      await _progress.remove(item.sourceId, item.contentKey);
-      return;
-    }
     await _progress.save(
       WatchProgress(
         sourceId: item.sourceId,
@@ -252,10 +249,15 @@ final class PlaybackSession {
         kind: item.kind,
         title: item.title,
         posterUrl: item.posterUrl,
-        position: position,
+        position: finished ? state.duration : position,
         duration: state.duration,
         updatedAt: _clock(),
         locator: item.locator,
+        workKey: item.workKey,
+        seriesKey: item.seriesKey,
+        season: item.season,
+        episode: item.episode,
+        finished: finished,
       ),
     );
   }

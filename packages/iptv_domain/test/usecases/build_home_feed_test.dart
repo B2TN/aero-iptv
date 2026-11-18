@@ -144,6 +144,13 @@ final class FakeTrending implements TrendingRepository {
 
 final class EmptyProgress implements WatchProgressRepository {
   @override
+  Future<List<WatchProgress>> history(int sourceId, {int limit = 500}) async =>
+      const [];
+
+  @override
+  Future<void> hide(int sourceId, String groupKey) async {}
+
+  @override
   Future<List<WatchProgress>> continueWatching(
     int sourceId, {
     int limit = 20,
@@ -157,12 +164,11 @@ final class EmptyProgress implements WatchProgressRepository {
 }
 
 Future<HomeFeed> build(FakeCatalog catalog, FakeTrending trending) =>
-    BuildHomeFeed(catalog, trending, EmptyProgress())(
-      1,
-      language: 'fr',
-      groupSeries: true,
-      region: 'FR',
-    );
+    BuildHomeFeed(
+      catalog,
+      trending,
+      ContinueWatching(EmptyProgress(), catalog),
+    )(1, language: 'fr', groupSeries: true, region: 'FR');
 
 void main() {
   test('classe la playlist selon les tendances', () async {
@@ -219,7 +225,7 @@ void main() {
         ],
       ),
       FakeTrending(items: [trending(ContentKind.movie, 'Dune')]),
-      EmptyProgress(),
+      ContinueWatching(EmptyProgress(), FakeCatalog()),
     )(1, language: 'fr', groupSeries: true);
 
     expect(feed.movies.map((item) => item.id), [2]);
@@ -235,7 +241,7 @@ void main() {
         ],
       ),
       FakeTrending(items: [trending(ContentKind.movie, 'Dune')]),
-      EmptyProgress(),
+      ContinueWatching(EmptyProgress(), FakeCatalog()),
     )(1, language: 'fr', groupSeries: true);
 
     expect(feed.movies.map((item) => item.id), [2]);
@@ -251,7 +257,7 @@ void main() {
         ],
       ),
       FakeTrending(isAvailable: false),
-      EmptyProgress(),
+      ContinueWatching(EmptyProgress(), FakeCatalog()),
     )(1, language: 'fr', groupSeries: true);
 
     expect(feed.movies.map((item) => item.id), [3, 2]);

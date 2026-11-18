@@ -139,11 +139,19 @@ final importPlaylistProvider = Provider<ImportPlaylist>(
   ),
 );
 
+/// « Continuer à regarder » : une entrée par film ou par série.
+final continueWatchingProvider = Provider<ContinueWatching>(
+  (ref) => ContinueWatching(
+    ref.watch(watchProgressRepositoryProvider),
+    ref.watch(catalogRepositoryProvider),
+  ),
+);
+
 final buildHomeFeedProvider = Provider<BuildHomeFeed>(
   (ref) => BuildHomeFeed(
     ref.watch(catalogRepositoryProvider),
     ref.watch(trendingRepositoryProvider),
-    ref.watch(watchProgressRepositoryProvider),
+    ref.watch(continueWatchingProvider),
   ),
 );
 

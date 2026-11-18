@@ -11,9 +11,26 @@ const Map<String, List<String>> _detailColumns = {
   'episodes': ['overview'],
 };
 
+/// Colonnes apparues en version 6 : identité commune aux versions, vu, retiré.
+const List<String> _progressColumns = [
+  'work_key',
+  'series_key',
+  'season',
+  'episode',
+  'finished',
+  'hidden',
+];
+
 /// Ramène une base neuve au schéma de [version] : sans les favoris avant la
 /// version 5, sans les colonnes de résumés avant la version 4.
 Future<void> _downgrade(AppDatabase database, int version) async {
+  if (version < 6) {
+    for (final column in _progressColumns) {
+      await database.customStatement(
+        'ALTER TABLE watch_progress DROP COLUMN $column',
+      );
+    }
+  }
   if (version < 5) await database.customStatement('DROP TABLE favorites');
   if (version < 4) {
     for (final MapEntry(key: table, value: columns) in _detailColumns.entries) {
@@ -110,5 +127,58 @@ void main() {
     await after.close();
 
     expect(columns, containsAll(['source_id', 'kind', 'favorite_key']));
+  });
+
+  test('la version 6 relie les reprises à leur contenu', () async {
+    final before = AppDatabase(NativeDatabase(file));
+    await before.customSelect('SELECT 1').get();
+    await _downgrade(before, 5);
+    for (final statement in [
+      "INSERT INTO sources (id, name, kind, active_catalog_id) "
+          "VALUES (1, 'Essai', 1, 1)",
+      'INSERT INTO catalogs (id, source_id, created_at) VALUES (1, 1, 0)',
+      "INSERT INTO series_entries (id, catalog_id, raw_title, display_title, "
+          "title_key, grouping_key, sort_order) "
+          "VALUES (7, 1, 'FR - Abysses', 'Abysses', 'abysses', 'abysses', 0)",
+      "INSERT INTO episodes (catalog_id, series_entry_id, season, number, "
+          "title, content_key) VALUES (1, 7, 2, 3, 'Abysses', 'x:e:23')",
+      "INSERT INTO movies (catalog_id, raw_title, display_title, title_key, "
+          "content_key, sort_order) "
+          "VALUES (1, 'FR - Dune', 'Dune', 'dune', 'x:m:1', 0)",
+      for (final (key, kind) in [
+        ('x:e:23', 2),
+        ('x:m:1', 1),
+        ('x:m:disparu', 1),
+      ])
+        "INSERT INTO watch_progress (source_id, content_key, kind, title, "
+            "position_ms, duration_ms, updated_at) "
+            "VALUES (1, '$key', $kind, 'Reprise', 1000, 2000, 0)",
+    ]) {
+      await before.customStatement(statement);
+    }
+    await before.close();
+
+    final after = AppDatabase(NativeDatabase(file));
+    final rows = await after
+        .customSelect(
+          'SELECT content_key, work_key, series_key, season, episode, '
+          'finished, hidden FROM watch_progress ORDER BY content_key',
+        )
+        .get();
+    await after.close();
+
+    final byKey = {
+      for (final row in rows) row.read<String>('content_key'): row,
+    };
+    final episode = byKey['x:e:23']!;
+    expect(episode.read<String?>('work_key'), 'e:abysses:2:3');
+    expect(episode.read<String?>('series_key'), 'abysses');
+    expect(episode.read<int?>('season'), 2);
+    expect(episode.read<int?>('episode'), 3);
+    expect(byKey['x:m:1']!.read<String?>('work_key'), 'm:dune');
+    // Hors du catalogue : la reprise reste, sans identité commune.
+    expect(byKey['x:m:disparu']!.read<String?>('work_key'), isNull);
+    expect(episode.read<bool>('finished'), isFalse);
+    expect(episode.read<bool>('hidden'), isFalse);
   });
 }

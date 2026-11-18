@@ -58,6 +58,7 @@ final class PlayerTarget {
       locator: movie.locator,
       posterUrl: movie.posterUrl,
       year: movie.year,
+      workKey: WorkKeys.movie(movie.title),
     ),
   );
 
@@ -116,6 +117,12 @@ final class PlayerTarget {
           year: series.year,
           season: episode.season,
           episode: episode.number,
+          workKey: WorkKeys.episode(
+            series.groupingKey,
+            episode.season,
+            episode.number,
+          ),
+          seriesKey: series.groupingKey,
         ),
       );
 
@@ -179,6 +186,10 @@ final class PlayerTarget {
       kind: progress.kind,
       locator: progress.locator,
       posterUrl: progress.posterUrl,
+      season: progress.season,
+      episode: progress.episode,
+      workKey: progress.workKey,
+      seriesKey: progress.seriesKey,
     ),
   );
 

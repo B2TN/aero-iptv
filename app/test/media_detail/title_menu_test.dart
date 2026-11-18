@@ -46,6 +46,7 @@ WatchProgress _progress(String key, ContentKind kind) => WatchProgress(
   sourceId: 1,
   contentKey: key,
   kind: kind,
+  seriesKey: kind == ContentKind.series ? 'abysses' : null,
   title: 'Reprise',
   position: const Duration(minutes: 20),
   duration: const Duration(minutes: 42),
@@ -94,8 +95,8 @@ final class _Progress extends Fake implements WatchProgressRepository {
   }) async => items;
 
   @override
-  Future<void> remove(int sourceId, String contentKey) async =>
-      removed.add(contentKey);
+  Future<void> hide(int sourceId, String groupKey) async =>
+      removed.add(groupKey);
 }
 
 /// Favoris en mémoire, publiés à chaque changement.
@@ -279,7 +280,8 @@ void main() {
     expect(find.text('Ajouter aux favoris'), findsOneWidget);
 
     await _choose(tester, 'Supprimer de Continuer à regarder');
-    expect(repository.removed, [_episode.contentKey]);
+    // Toute la série sort de la rangée, pas seulement cet épisode.
+    expect(repository.removed, ['abysses']);
     expect(removed, isTrue);
   });
 }

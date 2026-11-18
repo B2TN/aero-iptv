@@ -89,6 +89,13 @@ final class FakeEngine implements PlaybackEngine {
 }
 
 final class FakeProgress implements WatchProgressRepository {
+  @override
+  Future<List<WatchProgress>> history(int sourceId, {int limit = 500}) async =>
+      const [];
+
+  @override
+  Future<void> hide(int sourceId, String groupKey) async {}
+
   final List<WatchProgress> saved = [];
   final List<String> removed = [];
 
@@ -286,14 +293,16 @@ void main() {
       expect(engine.disposed, isTrue);
     });
 
-    test('retire un contenu terminé de la reprise', () async {
+    test('garde un contenu terminé, marqué comme vu', () async {
       final current = session();
       await current.play(vodRequest, movie, preferredLanguage: 'fr');
       engine.emit(playing(7000));
       await current.close();
 
-      expect(progress.saved, isEmpty);
-      expect(progress.removed, ['x:m:1']);
+      final saved = progress.saved.last;
+      expect(saved.finished, isTrue);
+      expect(saved.position, saved.duration);
+      expect(progress.removed, isEmpty);
     });
 
     test('n enregistre pas les chaînes en direct', () async {

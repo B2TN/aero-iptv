@@ -226,9 +226,11 @@ class _HomeContent extends ConsumerWidget {
                   title: item.title,
                   imageUrl: item.posterUrl,
                   focused: focused,
-                  progress:
-                      item.position.inMilliseconds /
-                      item.duration.inMilliseconds,
+                  // Un épisode suivant pas encore commencé n'a pas de durée.
+                  progress: item.duration > Duration.zero
+                      ? item.position.inMilliseconds /
+                            item.duration.inMilliseconds
+                      : 0,
                   progressColor: Color.lerp(
                     AeroColors.progressStart,
                     AeroColors.progressEnd,
