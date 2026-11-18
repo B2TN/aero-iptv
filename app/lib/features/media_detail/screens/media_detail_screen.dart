@@ -10,6 +10,7 @@ import '../../../design_system/components/aero_canvas.dart';
 import '../../../design_system/components/aero_menu.dart';
 import '../../../design_system/components/aero_states.dart';
 import '../../../design_system/components/poster_image.dart';
+import '../../../design_system/components/progress_track.dart';
 import '../../../design_system/glass/glass_panel.dart';
 import '../../../design_system/tokens/aero_tokens.dart';
 import '../../../focus/dpad_collection.dart';
@@ -418,6 +419,7 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                       ? label
                       : '$label : ${episode.title}',
                   overview: episode.overview,
+                  watched: seen.of(episode.season, episode.number),
                   focused: focused,
                 );
               },
@@ -459,29 +461,40 @@ int _seasonIndex(List<Season> seasons, int? number) {
   return index < 0 ? 0 : index;
 }
 
-/// Un épisode : son titre, et dessous son résumé quand il est connu.
+/// Un épisode : son titre, et dessous son résumé quand il est connu. À
+/// droite, la marque « vu », ou la barre d'avancement s'il est commencé, dans
+/// n'importe quelle version.
 class _EpisodeLine extends StatelessWidget {
   const _EpisodeLine({
     required this.title,
     required this.overview,
+    required this.watched,
     required this.focused,
   });
 
   final String title;
   final String? overview;
+  final WatchProgress? watched;
   final bool focused;
 
   @override
   Widget build(BuildContext context) {
     final summary = overview;
-    if (summary == null) return _Line(text: title, focused: focused);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
+    final progress = watched;
+    final Widget? status = progress == null
+        ? null
+        : progress.finished
+        ? WatchedMark(label: context.l10n.detailWatched)
+        : progress.inProgress
+        ? SizedBox(
+            width: 96,
+            child: ProgressTrack(fraction: progress.fraction, height: 8),
+          )
+        : null;
+    final heading = Row(
+      children: [
+        Expanded(
+          child: Text(
             title,
             style: AeroText.body.copyWith(
               color: focused ? AeroColors.leaf : AeroColors.foam,
@@ -489,6 +502,26 @@ class _EpisodeLine extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
+        ),
+        if (status != null) ...[const SizedBox(width: 12), status],
+      ],
+    );
+    if (summary == null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: heading,
+        ),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          heading,
           const SizedBox(height: 4),
           Text(
             summary,

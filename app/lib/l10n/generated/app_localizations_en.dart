@@ -164,6 +164,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get detailUntitled => 'Title not announced';
 
   @override
+  String get detailWatched => 'Watched';
+
+  @override
   String get detailLate => 'Late on IPTV';
 
   @override

@@ -3,9 +3,9 @@ import 'package:flutter/widgets.dart';
 import '../tokens/aero_look.dart';
 import '../tokens/aero_tokens.dart';
 import 'poster_image.dart';
+import 'progress_track.dart';
 
 const BorderRadius _radius = BorderRadius.all(Radius.circular(10));
-const BorderRadius _trackRadius = BorderRadius.all(Radius.circular(4));
 
 /// Affiche de film ou de série, sous un cadre de verre pré-rendu.
 class PosterCard extends StatelessWidget {
@@ -66,7 +66,7 @@ class PosterCard extends StatelessWidget {
         ),
         if (fraction != null) ...[
           const SizedBox(height: 5),
-          _ProgressTrack(fraction: fraction, color: progressColor),
+          ProgressTrack(fraction: fraction, color: progressColor),
         ],
         const SizedBox(height: 5),
         Padding(
@@ -83,42 +83,6 @@ class PosterCard extends StatelessWidget {
       ],
     );
   }
-}
-
-/// Barre d'avancement, posée dans une gouttière de verre.
-class _ProgressTrack extends StatelessWidget {
-  const _ProgressTrack({required this.fraction, required this.color});
-
-  final double fraction;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) => SizedBox(
-    height: 9,
-    child: DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0x4004142B),
-        borderRadius: _trackRadius,
-        border: Border.all(color: const Color(0x4DBFE6FA)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(1.5),
-        child: Align(
-          alignment: AlignmentDirectional.centerStart,
-          child: FractionallySizedBox(
-            widthFactor: fraction.clamp(0.0, 1.0),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: _trackRadius,
-              ),
-              child: const SizedBox.expand(),
-            ),
-          ),
-        ),
-      ),
-    ),
-  );
 }
 
 class _Placeholder extends StatelessWidget {

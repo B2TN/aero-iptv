@@ -75,6 +75,8 @@
   "detailUpcomingEpisode": "S{season} É{number}, {title}",
   "@detailUpcomingEpisode": {"placeholders": {"season": {"type": "int"}, "number": {"type": "int"}, "title": {"type": "String"}}},
   "detailUntitled": "Titre non annoncé",
+  "detailWatched": "Vu",
+  "@detailWatched": {"description": "Film ou épisode vu jusqu'au bout."},
   "detailLate": "Retard sur l'IPTV",
   "@detailLate": {"description": "Épisode diffusé dans son pays d'origine mais pas encore arrivé dans la playlist."},
   "detailUpcomingNote": "Dates de première diffusion dans le pays d'origine, d'après TVmaze. L'épisode arrive chez votre fournisseur un peu plus tard.",

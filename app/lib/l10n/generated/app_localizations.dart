@@ -374,6 +374,12 @@ abstract class AppLocalizations {
   /// **'Titre non annoncé'**
   String get detailUntitled;
 
+  /// Film ou épisode vu jusqu'au bout.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vu'**
+  String get detailWatched;
+
   /// Épisode diffusé dans son pays d'origine mais pas encore arrivé dans la playlist.
   ///
   /// In fr, this message translates to:

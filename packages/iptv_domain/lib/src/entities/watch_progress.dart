@@ -63,6 +63,17 @@ final class WatchProgress {
   /// sinon le contenu toutes versions confondues, sinon le fichier.
   String get groupKey => seriesKey ?? workKey ?? contentKey;
 
+  /// Avancement, de 0 à 1 ; 1 une fois vu jusqu'au bout. 0 sans durée
+  /// connue, comme un épisode suivant pas encore commencé.
+  double get fraction {
+    if (finished) return 1;
+    if (duration <= Duration.zero) return 0;
+    return (position.inMilliseconds / duration.inMilliseconds).clamp(0, 1);
+  }
+
+  /// Commencé sans avoir été vu jusqu'au bout.
+  bool get inProgress => !finished && position > Duration.zero;
+
   WatchProgress copyWith({
     String? contentKey,
     Duration? position,

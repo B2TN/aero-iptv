@@ -9,6 +9,7 @@ import '../../../design_system/components/aero_button.dart';
 import '../../../design_system/components/aero_canvas.dart';
 import '../../../design_system/components/aero_menu.dart';
 import '../../../design_system/components/poster_image.dart';
+import '../../../design_system/components/progress_track.dart';
 import '../../../design_system/tokens/aero_tokens.dart';
 import '../../../focus/focus_guard.dart';
 import '../../../l10n/version_names.dart';
@@ -134,6 +135,8 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
     final resumeAt = progress.hasValue
         ? movieResumeAt(progress.requireValue)
         : widget.resumeAt;
+    // La dernière version regardée dit où en est le film.
+    final latest = progress.value?.firstOrNull;
     final year = _movie.year;
     final details =
         ref
@@ -185,6 +188,10 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
                         ],
                       ),
                     ),
+                    if (latest != null && latest.inProgress) ...[
+                      const SizedBox(height: 10),
+                      ProgressTrack(fraction: latest.fraction),
+                    ],
                   ],
                 ),
               ),
@@ -205,6 +212,9 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
                           ref.read(settingsProvider).languageCode,
                         ).single,
                       ],
+                      highlight: latest != null && latest.finished
+                          ? l10n.detailWatched
+                          : null,
                       overview: details.overview,
                     ),
                     const SizedBox(height: 28),

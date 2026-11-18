@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:aero_iptv/app/app_state.dart';
 import 'package:aero_iptv/app/di/repository_providers.dart';
+import 'package:aero_iptv/design_system/components/progress_track.dart';
 import 'package:aero_iptv/features/media_detail/open_movie.dart';
 import 'package:aero_iptv/features/media_detail/screens/movie_detail_screen.dart';
 import 'package:aero_iptv/focus/dpad_shortcuts.dart';
@@ -232,6 +233,52 @@ void main() {
     expect(engine.opened, ['http://s/1.mkv']);
     expect(engine.starts, [const Duration(minutes: 21)]);
     await _leave(tester);
+  });
+
+  group('la fiche montre où en est le film', () {
+    WatchProgress seen({required int minutes, bool finished = false}) =>
+        WatchProgress(
+          sourceId: 1,
+          contentKey: 'cle1',
+          kind: ContentKind.movie,
+          title: 'Lagon',
+          position: Duration(minutes: minutes),
+          duration: const Duration(minutes: 100),
+          updatedAt: DateTime.utc(2026, 11, 13),
+          locator: const DirectStream('http://s/1.mkv'),
+          workKey: WorkKeys.movie('Lagon'),
+          finished: finished,
+        );
+
+    testWidgets('commencé : une barre sous l affiche', (tester) async {
+      await _open(
+        tester,
+        [_movie(1, 'FR')],
+        opener: openMovie,
+        progress: [seen(minutes: 25)],
+      );
+
+      final bar = tester.widget<ProgressTrack>(find.byType(ProgressTrack));
+      expect(bar.fraction, 0.25);
+      expect(find.text('Vu'), findsNothing);
+      await _leave(tester);
+    });
+
+    testWidgets('vu jusqu au bout : l étiquette Vu, sans barre', (
+      tester,
+    ) async {
+      await _open(
+        tester,
+        [_movie(1, 'FR')],
+        opener: openMovie,
+        progress: [seen(minutes: 100, finished: true)],
+      );
+
+      expect(find.text('Vu'), findsOneWidget);
+      expect(find.byType(ProgressTrack), findsNothing);
+      expect(find.text('Reprendre'), findsNothing);
+      await _leave(tester);
+    });
   });
 
   testWidgets('une seule version ouvre la fiche sans demander', (tester) async {

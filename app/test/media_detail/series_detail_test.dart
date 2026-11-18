@@ -1,5 +1,6 @@
 import 'package:aero_iptv/app/app_state.dart';
 import 'package:aero_iptv/app/di/repository_providers.dart';
+import 'package:aero_iptv/design_system/components/progress_track.dart';
 import 'package:aero_iptv/features/media_detail/screens/media_detail_screen.dart';
 import 'package:aero_iptv/focus/dpad_shortcuts.dart';
 import 'package:aero_iptv/focus/focus_frame.dart';
@@ -340,6 +341,40 @@ void main() {
 
     expect(find.text('Saison 1, épisode 2'), findsOneWidget);
     expect(find.text('Reprendre'), findsOneWidget);
+  });
+
+  testWidgets('marque les épisodes vus et commencés, toutes versions '
+      'confondues', (tester) async {
+    final first = WatchProgress(
+      sourceId: 1,
+      contentKey: 'x:e:7:11',
+      kind: ContentKind.series,
+      title: 'Abysses',
+      position: const Duration(minutes: 45),
+      duration: const Duration(minutes: 45),
+      updatedAt: DateTime.utc(2026, 11, 12),
+      locator: const DirectStream('http://s/7/e11.mkv'),
+      workKey: WorkKeys.episode('abysses', 1, 1),
+      seriesKey: 'abysses',
+      season: 1,
+      episode: 1,
+      finished: true,
+    );
+    await _open(
+      tester,
+      versions: _twoVersions,
+      progress: [_startedInEnglish, first],
+    );
+
+    final marks = find.byType(WatchedMark);
+    expect(marks, findsOneWidget);
+    // La marque est sur la ligne de l'épisode 1.
+    Widget rowOf(Finder finder) => tester.widget(
+      find.ancestor(of: finder, matching: find.byType(Row)).first,
+    );
+    expect(rowOf(marks), same(rowOf(find.text('Épisode 1'))));
+    final bar = tester.widget<ProgressTrack>(find.byType(ProgressTrack));
+    expect(bar.fraction, closeTo(21 / 45, 0.001));
   });
 
   testWidgets('sans l épisode dans cette version, pas de reprise', (

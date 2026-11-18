@@ -45,6 +45,7 @@
   "detailUpcoming": "الحلقات القادمة",
   "detailUpcomingEpisode": "م{season} ح{number}، {title}",
   "detailUntitled": "عنوان غير معلن",
+  "detailWatched": "تمت مشاهدته",
   "detailLate": "متأخرة على IPTV",
   "detailUpcomingNote": "تواريخ العرض الأول في بلد الإنتاج، وفقًا لـ TVmaze. تصل الحلقة إلى مزوّدك بعد ذلك بقليل.",
   "detailRuntimeMinutes": "{minutes} د",

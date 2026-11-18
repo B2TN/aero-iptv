@@ -166,6 +166,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get detailUntitled => 'عنوان غير معلن';
 
   @override
+  String get detailWatched => 'تمت مشاهدته';
+
+  @override
   String get detailLate => 'متأخرة على IPTV';
 
   @override

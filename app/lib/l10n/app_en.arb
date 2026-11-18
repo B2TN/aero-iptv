@@ -45,6 +45,7 @@
   "detailUpcoming": "Upcoming episodes",
   "detailUpcomingEpisode": "S{season} E{number}, {title}",
   "detailUntitled": "Title not announced",
+  "detailWatched": "Watched",
   "detailLate": "Late on IPTV",
   "detailUpcomingNote": "First air dates in the country of origin, from TVmaze. Episodes reach your provider a little later.",
   "detailRuntimeMinutes": "{minutes} min",
