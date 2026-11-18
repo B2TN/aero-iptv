@@ -4,7 +4,7 @@ import 'grouping_key.dart';
 ///
 /// À incrémenter quand ces règles changent : les catalogues déjà importés sont
 /// alors réimportés automatiquement.
-const int catalogRulesVersion = 4;
+const int catalogRulesVersion = 5;
 
 /// Série telle que l'import la voit, avant le regroupement final.
 final class VersionCandidate {

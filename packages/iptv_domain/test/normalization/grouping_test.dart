@@ -48,6 +48,60 @@ void main() {
     test('retourne null sans indice', () {
       expect(resolver.resolve(), isNull);
     });
+
+    group('groupe de région', () {
+      test('le préfixe de la chaîne la range dans son pays', () {
+        expect(resolver.resolve(groupCountry: 'AFR', nameCountry: 'TN'), 'TN');
+        expect(resolver.resolve(groupCountry: 'ARB', nameCountry: 'MA'), 'MA');
+      });
+
+      test('puis son tvg-id, puis un nom de pays dans son nom', () {
+        expect(
+          resolver.resolve(groupCountry: 'ARB', tvgId: 'Watania1.tn'),
+          'TN',
+        );
+        expect(
+          resolver.resolve(groupCountry: 'AFR', name: 'Canal Algérie HD'),
+          'DZ',
+        );
+      });
+
+      test('sans indice, la chaîne reste dans la région', () {
+        expect(
+          resolver.resolve(groupCountry: 'ARB', name: 'Al Jazeera'),
+          'ARB',
+        );
+        // « AR| » ne dit rien de plus que le groupe arabe.
+        expect(
+          resolver.resolve(groupCountry: 'ARB', nameCountry: 'ARB'),
+          'ARB',
+        );
+      });
+
+      test('tvg-country passe toujours d abord', () {
+        expect(
+          resolver.resolve(
+            tvgCountry: 'EG',
+            groupCountry: 'ARB',
+            nameCountry: 'TN',
+          ),
+          'EG',
+        );
+      });
+
+      test('un groupe de pays garde ses chaînes', () {
+        expect(
+          resolver.resolve(groupCountry: 'FR', name: 'France 24 Arabic'),
+          'FR',
+        );
+        expect(resolver.resolve(groupCountry: 'FR', nameCountry: 'TN'), 'FR');
+      });
+
+      test('un pays dans le nom du groupe l emporte sur la région', () {
+        expect(resolver.resolve(groupTitle: 'AFRIQUE | TUNISIE'), 'TN');
+        expect(resolver.resolve(groupTitle: 'MONDE ARABE'), 'ARB');
+      });
+    });
   });
 
   group('CountryCatalog', () {
@@ -59,6 +113,12 @@ void main() {
     test('préfère le nom le plus long', () {
       expect(CountryCatalog.fromText('AFRIQUE DU SUD'), 'ZA');
       expect(CountryCatalog.fromText('LATIN AMERICA'), 'LAT');
+    });
+
+    test('préfère un pays à une région dans le même texte', () {
+      expect(CountryCatalog.fromText('AFRICA | TUNISIA'), 'TN');
+      expect(CountryCatalog.fromText('ARABIC - MAROC'), 'MA');
+      expect(CountryCatalog.fromText('AFRICA'), 'AFR');
     });
 
     test('distingue l arabe de l Argentine', () {

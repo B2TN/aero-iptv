@@ -91,6 +91,7 @@ final class CatalogSession {
           groupCountry: group.countryCode,
           nameCountry: parsed.countryCode,
           tvgId: entry.tvgId,
+          name: entry.rawName,
         ),
       ),
       quality: parsed.quality.index,

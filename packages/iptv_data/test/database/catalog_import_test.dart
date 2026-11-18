@@ -252,6 +252,30 @@ void main() {
       expect(await count('live_channels'), 4);
     });
 
+    test('répartit un groupe régional par pays', () async {
+      await runImport(
+        FakeCatalogAdapter([
+          CatalogBatch([
+            live('TN| Watania 1', 'AFRIQUE', id: 1),
+            live('Nessma', 'AFRIQUE', tvgId: 'Nessma.tn', id: 2),
+            live('Canal Algérie', 'AFRIQUE', id: 3),
+            live('Africa 24', 'AFRIQUE', id: 4),
+            live('FR: TF1', 'FRANCE', id: 5),
+          ]),
+        ]),
+      );
+
+      final countries = {
+        for (final country in await liveTv.countries(sourceId))
+          country.code: country.channelCount,
+      };
+      expect(countries['TN'], 2);
+      expect(countries['DZ'], 1);
+      // Sans indice, Africa 24 reste dans la région.
+      expect(countries['AFR'], 1);
+      expect(countries['FR'], 1);
+    });
+
     test('pagine les chaînes', () async {
       await runImport(
         FakeCatalogAdapter([

@@ -126,17 +126,30 @@ final RegExp _tvgIdSuffix = RegExp(
   caseSensitive: false,
 );
 
+/// Pseudo-codes des régions : les chaînes de ces groupes se répartissent par
+/// pays d'après leurs propres indices.
+const Set<String> _regions = {'ARB', 'AFR', 'LAT', 'EXYU'};
+
 /// Dictionnaire des pays présents dans les playlists.
 abstract final class CountryCatalog {
+  /// Vrai pour un pseudo-code de région, comme `AFR` pour « Afrique ».
+  static bool isRegion(String code) => _regions.contains(code);
+
   /// Retourne le code du préfixe [token], par exemple `UK` donne `GB`.
   static String? fromPrefix(String token) => _byPrefix[token.toUpperCase()];
 
   /// Cherche un nom de pays dans [text], par exemple dans un `group-title`.
+  /// Un pays l'emporte sur une région : « AFRIQUE - TUNISIE » donne la
+  /// Tunisie.
   static String? fromText(String text) {
-    final match = _namePattern.firstMatch(text);
-    return match == null
-        ? null
-        : _byFoldedName[lowerWithoutDiacritics(match[0]!)];
+    String? region;
+    for (final match in _namePattern.allMatches(text)) {
+      final code = _byFoldedName[lowerWithoutDiacritics(match[0]!)];
+      if (code == null) continue;
+      if (!isRegion(code)) return code;
+      region ??= code;
+    }
+    return region;
   }
 
   /// Déduit le pays d'un identifiant de guide.
