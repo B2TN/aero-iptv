@@ -266,8 +266,13 @@ void main() {
     ]) {
       await press(tester, key);
     }
-    // Retour au premier groupe, comme au début de l'étape.
-    await press(tester, LogicalKeyboardKey.arrowUp, times: 3);
+    // Retour referme le pays, puis on y revient par son drapeau.
+    await press(tester, LogicalKeyboardKey.escape);
+    await wait(tester, 600);
+    expect(find.text('Choisissez un pays'), findsOneWidget);
+    await press(tester, LogicalKeyboardKey.enter);
+    await wait(tester, 900);
+    expectFocus('groupes, de retour');
 
     // Une chaîne à trois qualités ouvre le menu de flux, puis le lecteur.
     await press(tester, LogicalKeyboardKey.arrowRight);

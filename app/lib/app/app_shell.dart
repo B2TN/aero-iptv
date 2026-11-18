@@ -9,6 +9,7 @@ import '../design_system/glass/glass_panel.dart';
 import '../design_system/tokens/aero_look.dart';
 import '../design_system/tokens/aero_tokens.dart';
 import '../features/home/screens/home_screen.dart';
+import '../features/live_tv/providers/live_tv_providers.dart';
 import '../features/live_tv/screens/live_tv_screen.dart';
 import '../features/search/screens/search_screen.dart';
 import '../features/settings/screens/settings_screen.dart';
@@ -58,8 +59,14 @@ class _AppShellState extends ConsumerState<AppShell> {
     super.dispose();
   }
 
-  /// Retour : l'onglet Accueil d'abord, puis la barre, et enfin la sortie.
+  /// Retour : ce qui est ouvert dans l'onglet, puis l'onglet Accueil, puis la
+  /// barre, et enfin la sortie.
   void _onBack(AppTab tab) {
+    // Dans les chaînes, un pays ouvert se referme sur la grille des pays.
+    if (tab == AppTab.live && ref.read(selectedCountryProvider) != null) {
+      ref.read(selectedCountryProvider.notifier).clear();
+      return;
+    }
     if (tab != AppTab.home) {
       ref.read(currentTabProvider.notifier).show(AppTab.home);
       _tabNodes[AppTab.home]!.requestFocus();
