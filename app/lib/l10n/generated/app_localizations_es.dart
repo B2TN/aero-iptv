@@ -165,6 +165,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get detailUntitled => 'Título no anunciado';
 
   @override
+  String get detailLate => 'Retraso en el IPTV';
+
+  @override
   String get detailUpcomingNote =>
       'Fechas de estreno en el país de origen, según TVmaze. El episodio llega a tu proveedor un poco más tarde.';
 

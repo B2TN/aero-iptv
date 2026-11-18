@@ -45,6 +45,7 @@
   "detailUpcoming": "Nächste Folgen",
   "detailUpcomingEpisode": "S{season} F{number}, {title}",
   "detailUntitled": "Titel noch nicht bekannt",
+  "detailLate": "Verspätet im IPTV",
   "detailUpcomingNote": "Erstausstrahlung im Herkunftsland, laut TVmaze. Bei Ihrem Anbieter erscheint die Folge etwas später.",
   "detailRuntimeMinutes": "{minutes} Min.",
   "detailRuntimeHours": "{hours} Std. {minutes} Min.",

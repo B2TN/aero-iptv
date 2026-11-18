@@ -205,6 +205,7 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                         data: (seasons) => _buildSeasons(
                           seasons,
                           schedule?.upcoming ?? const [],
+                          schedule?.lateAfter(seasons) ?? const [],
                         ),
                       ),
                     ),
@@ -218,7 +219,11 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
     );
   }
 
-  Widget _buildSeasons(List<Season> seasons, List<UpcomingEpisode> upcoming) {
+  Widget _buildSeasons(
+    List<Season> seasons,
+    List<UpcomingEpisode> upcoming,
+    List<UpcomingEpisode> late,
+  ) {
     final l10n = context.l10n;
     if (seasons.isEmpty) {
       return AeroMessage(title: l10n.detailNoEpisodes, autofocus: false);
@@ -294,9 +299,12 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
             ),
           ),
         ),
-        if (upcoming.isNotEmpty) ...[
+        if (upcoming.isNotEmpty || late.isNotEmpty) ...[
           const SizedBox(width: 18),
-          SizedBox(width: 232, child: UpcomingPanel(episodes: upcoming)),
+          SizedBox(
+            width: 232,
+            child: UpcomingPanel(episodes: upcoming, late: late),
+          ),
         ],
       ],
     );

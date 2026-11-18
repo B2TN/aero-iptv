@@ -7,7 +7,7 @@ import 'package:iptv_domain/iptv_domain.dart';
 import 'package:test/test.dart';
 
 /// Recherche TVmaze : un homonyme d'une autre année, puis la bonne série.
-String _search({String status = 'Running'}) => jsonEncode([
+String _search({String status = 'Running', String? ended}) => jsonEncode([
   {
     'show': {'id': 1, 'name': 'Abysses', 'premiered': '1998-03-01'},
   },
@@ -17,12 +17,28 @@ String _search({String status = 'Running'}) => jsonEncode([
       'name': 'Abysses',
       'premiered': '2024-09-12',
       'status': status,
+      'ended': ended,
     },
   },
 ]);
 
 /// Épisodes de la série 42, dans le désordre, au format de TVmaze.
 final String _episodes = jsonEncode([
+  // Diffusé il y a plus de 30 jours : le fournisseur ne l'attend plus.
+  {
+    'season': 2,
+    'number': 1,
+    'name': 'Plongée',
+    'airdate': '2026-10-02',
+    'airstamp': '2026-10-02T20:00:00+00:00',
+  },
+  {
+    'season': 2,
+    'number': 3,
+    'name': 'Le phare',
+    'airdate': '2026-11-06',
+    'airstamp': '2026-11-06T20:00:00+00:00',
+  },
   {
     'season': 2,
     'number': 4,
@@ -87,12 +103,46 @@ void main() {
       },
     );
 
-    test('une série terminée n annonce rien, sans lire ses épisodes', () async {
+    test('donne les épisodes diffusés depuis 30 jours, du plus ancien au plus '
+        'récent', () async {
+      final client = TvMazeClient(
+        MockClient(
+          (request) async => _json(
+            request.url.path == '/search/shows' ? _search() : _episodes,
+          ),
+        ),
+      );
+
+      final schedule = await client.schedule('Abysses', year: 2024, now: _now);
+
+      expect([for (final episode in schedule!.aired) episode.number], [3, 4]);
+      expect(schedule.aired.last.title, 'Le retour');
+    });
+
+    test('lit encore une série finie depuis moins de 30 jours', () async {
+      final client = TvMazeClient(
+        MockClient(
+          (request) async => _json(
+            request.url.path == '/search/shows'
+                ? _search(status: 'Ended', ended: '2026-11-13')
+                : _episodes,
+          ),
+        ),
+      );
+
+      final schedule = await client.schedule('Abysses', year: 2024, now: _now);
+
+      expect(schedule?.running, isFalse);
+      expect([for (final episode in schedule!.aired) episode.number], [3, 4]);
+    });
+
+    test('une série finie depuis longtemps n annonce rien, sans lire ses '
+        'épisodes', () async {
       final paths = <String>[];
       final client = TvMazeClient(
         MockClient((request) async {
           paths.add(request.url.path);
-          return _json(_search(status: 'Ended'));
+          return _json(_search(status: 'Ended', ended: '2026-09-30'));
         }),
       );
 
@@ -100,6 +150,7 @@ void main() {
 
       expect(schedule?.running, isFalse);
       expect(schedule?.upcoming, isEmpty);
+      expect(schedule?.aired, isEmpty);
       expect(paths, ['/search/shows']);
     });
 

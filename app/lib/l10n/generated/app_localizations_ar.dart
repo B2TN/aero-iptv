@@ -166,6 +166,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get detailUntitled => 'عنوان غير معلن';
 
   @override
+  String get detailLate => 'متأخرة على IPTV';
+
+  @override
   String get detailUpcomingNote =>
       'تواريخ العرض الأول في بلد الإنتاج، وفقًا لـ TVmaze. تصل الحلقة إلى مزوّدك بعد ذلك بقليل.';
 

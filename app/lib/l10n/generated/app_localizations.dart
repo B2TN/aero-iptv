@@ -374,6 +374,12 @@ abstract class AppLocalizations {
   /// **'Titre non annoncé'**
   String get detailUntitled;
 
+  /// Épisode diffusé dans son pays d'origine mais pas encore arrivé dans la playlist.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retard sur l\'IPTV'**
+  String get detailLate;
+
   /// No description provided for @detailUpcomingNote.
   ///
   /// In fr, this message translates to:

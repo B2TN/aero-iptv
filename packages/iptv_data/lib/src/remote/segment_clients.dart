@@ -152,23 +152,47 @@ final class TvMazeClient {
     final id = show?['id'];
     if (show == null || id is! int) return null;
     final running = show['status'] == 'Running';
-    // Une série terminée n'annonce plus rien : inutile de lire ses épisodes.
-    if (!running) return const ShowSchedule(running: false);
+    final ended = DateTime.tryParse('${show['ended'] ?? ''}');
+    final since = now.subtract(lateWindow);
+    // Une série finie depuis longtemps n'annonce plus rien et ne peut plus
+    // être en retard : inutile de lire ses épisodes.
+    if (!running && (ended == null || ended.isBefore(since))) {
+      return const ShowSchedule(running: false);
+    }
 
     final episodes = await _getJson(
       Uri.https('api.tvmaze.com', '/shows/$id/episodes'),
     );
-    final upcoming = <UpcomingEpisode>[
-      if (episodes is List)
-        for (final episode in episodes) ?_upcoming(episode, now),
-    ]..sort((a, b) => a.airDate.compareTo(b.airDate));
-    return ShowSchedule(running: true, upcoming: upcoming);
+    final upcoming = <UpcomingEpisode>[];
+    final aired = <UpcomingEpisode>[];
+    if (episodes is List) {
+      for (final json in episodes) {
+        final parsed = _episode(json);
+        if (parsed == null) continue;
+        final (episode, stamp) = parsed;
+        if (stamp.isAfter(now)) {
+          upcoming.add(episode);
+        } else if (!stamp.isBefore(since)) {
+          aired.add(episode);
+        }
+      }
+    }
+    int byDate(UpcomingEpisode a, UpcomingEpisode b) =>
+        a.airDate.compareTo(b.airDate);
+    return ShowSchedule(
+      running: running,
+      upcoming: upcoming..sort(byDate),
+      aired: aired..sort(byDate),
+    );
   }
 
-  /// Épisode pas encore diffusé à [now], ou `null`. TVmaze donne l'instant
-  /// exact de diffusion (`airstamp`) et le jour dans le pays d'origine
-  /// (`airdate`), seul montré.
-  static UpcomingEpisode? _upcoming(Object? json, DateTime now) {
+  /// Retard au-delà duquel un épisode diffusé et absent n'est plus attendu.
+  static const Duration lateWindow = Duration(days: 30);
+
+  /// Un épisode et l'instant de sa diffusion, ou `null` s'il manque de quoi
+  /// le situer. TVmaze donne l'instant exact (`airstamp`) et le jour dans le
+  /// pays d'origine (`airdate`), seul montré.
+  static (UpcomingEpisode, DateTime)? _episode(Object? json) {
     if (json is! Map<String, dynamic>) return null;
     final season = json['season'];
     final number = json['number'];
@@ -177,9 +201,8 @@ final class TvMazeClient {
     if (season is! int || number is! int || stamp == null || day == null) {
       return null;
     }
-    if (!stamp.isAfter(now)) return null;
     final name = '${json['name'] ?? ''}'.trim();
-    return UpcomingEpisode(
+    final episode = UpcomingEpisode(
       season: season,
       number: number,
       airDate: DateTime(day.year, day.month, day.day),
@@ -188,6 +211,7 @@ final class TvMazeClient {
           ? null
           : name,
     );
+    return (episode, stamp);
   }
 
   /// Série dont le nom est exactement [title], et, si [year] est connue, dont

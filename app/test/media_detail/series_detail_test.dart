@@ -84,6 +84,29 @@ final ShowSchedule _running = ShowSchedule(
   ],
 );
 
+/// Diffusés depuis peu : S2 É1 est déjà dans la playlist, les trois suivants
+/// non.
+final ShowSchedule _behind = ShowSchedule(
+  running: true,
+  aired: [
+    UpcomingEpisode(
+      season: 2,
+      number: 1,
+      airDate: DateTime(2026, 11, 6),
+      title: 'Plongée',
+    ),
+    UpcomingEpisode(
+      season: 2,
+      number: 2,
+      airDate: DateTime(2026, 11, 13),
+      title: 'Le retour',
+    ),
+    UpcomingEpisode(season: 2, number: 3, airDate: DateTime(2026, 11, 15)),
+    UpcomingEpisode(season: 2, number: 4, airDate: DateTime(2026, 11, 16)),
+  ],
+  upcoming: _running.upcoming,
+);
+
 Future<void> _open(
   WidgetTester tester, {
   TitleDetails details = const TitleDetails(
@@ -188,6 +211,39 @@ void main() {
     expect(find.textContaining('TVmaze'), findsOneWidget);
   });
 
+  testWidgets('garde un épisode diffusé absent de la playlist, en rouge', (
+    tester,
+  ) async {
+    await _open(tester, schedule: _Schedule(_behind));
+
+    expect(find.text('Vendredi 13 novembre'), findsOneWidget);
+    expect(find.text('S2 É2, Le retour'), findsOneWidget);
+    expect(find.text('S2 É3, Titre non annoncé'), findsOneWidget);
+    // Déjà dans la playlist : pas en retard.
+    expect(find.text('S2 É1, Plongée'), findsNothing);
+    final late = find.text("Retard sur l'IPTV");
+    expect(late, findsNWidgets(3));
+    expect(
+      tester.widget<Text>(late.first).style?.color,
+      const Color(0xFFFF6B6B),
+    );
+    // Les retards passent devant les prochains épisodes.
+    expect(find.text('S2 É5, Les épaves'), findsNothing);
+  });
+
+  testWidgets('une série finie depuis peu montre encore ses retards', (
+    tester,
+  ) async {
+    await _open(
+      tester,
+      schedule: _Schedule(ShowSchedule(running: false, aired: _behind.aired)),
+    );
+
+    expect(find.text('En cours de diffusion'), findsNothing);
+    expect(find.text('S2 É2, Le retour'), findsOneWidget);
+    expect(find.text("Retard sur l'IPTV"), findsNWidgets(3));
+  });
+
   testWidgets('une série terminée n a ni panneau ni étiquette', (tester) async {
     await _open(
       tester,
@@ -223,6 +279,8 @@ void main() {
           tester,
           language: locale.languageCode,
           size: size,
+          // Le cas le plus haut : trois épisodes en retard.
+          schedule: _Schedule(_behind),
           details: TitleDetails(
             overview: List.filled(12, _overview).join(' '),
             genre: 'Drame, Science-fiction, Mystère, Aventure',
