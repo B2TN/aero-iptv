@@ -29,7 +29,10 @@ void configureConnection(Database database) {
   database
     // Un écrivain ne bloque pas les lecteurs.
     ..execute('PRAGMA journal_mode = WAL')
-    ..execute('PRAGMA synchronous = NORMAL')
+    // Chaque écriture validée attend d'être sur le disque : une position de
+    // lecture enregistrée survit à une coupure de courant. Le coût reste
+    // faible en WAL, où seul le journal est synchronisé.
+    ..execute('PRAGMA synchronous = FULL')
     ..execute('PRAGMA foreign_keys = ON')
     // Cache de pages plafonné à 4 Mio, fichiers temporaires hors de la RAM.
     ..execute('PRAGMA cache_size = -4096')

@@ -92,6 +92,8 @@ final class _LateKeyStore implements ApiKeyStore {
 }
 
 final class _NoProgress implements WatchProgressRepository {
+  final List<WatchProgress> saved = [];
+
   @override
   Future<List<WatchProgress>> history(int sourceId, {int limit = 500}) async =>
       const [];
@@ -100,7 +102,7 @@ final class _NoProgress implements WatchProgressRepository {
   Future<void> hide(int sourceId, String groupKey) async {}
 
   @override
-  Future<void> save(WatchProgress progress) async {}
+  Future<void> save(WatchProgress progress) async => saved.add(progress);
 
   @override
   Future<List<WatchProgress>> continueWatching(
@@ -218,6 +220,7 @@ Future<_Engine> _pump(
   PlaybackState state = _playing,
   SubtitleTranslator? translator,
   List<MediaChapter> chapters = const [],
+  _NoProgress? progress,
 }) async {
   tester.view
     ..physicalSize = window
@@ -240,7 +243,9 @@ Future<_Engine> _pump(
         videoSurfaceBuilderProvider.overrideWithValue(
           (_) => const SizedBox.expand(),
         ),
-        watchProgressRepositoryProvider.overrideWithValue(_NoProgress()),
+        watchProgressRepositoryProvider.overrideWithValue(
+          progress ?? _NoProgress(),
+        ),
         resolveStreamUrlProvider.overrideWithValue(
           ResolveStreamUrl(_NoCredentials()),
         ),
@@ -619,6 +624,23 @@ void main() {
       expect(engine.seeks, [const Duration(minutes: 1, seconds: 30)]);
       // Les commandes ne se sont pas ouvertes sous les répétitions.
       expect(find.text('Pause'), findsNothing);
+      await _leave(tester);
+    });
+
+    testWidgets('passer au second plan enregistre la position', (tester) async {
+      final progress = _NoProgress();
+      await _pump(tester, _target(ContentKind.movie), progress: progress);
+      expect(progress.saved, isEmpty);
+
+      // Touche Accueil : l'application passe au second plan.
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      await tester.pump();
+
+      expect(progress.saved.single.position, const Duration(minutes: 10));
+      // Retour au premier plan, en repassant par « inactif ».
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await _leave(tester);
     });
 

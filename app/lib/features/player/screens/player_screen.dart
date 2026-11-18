@@ -153,10 +153,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   int _connectionRetries = 0;
   double _volume = _maxVolume;
   String? _notice;
+  late final AppLifecycleListener _lifecycle;
 
   @override
   void initState() {
     super.initState();
+    _lifecycle = AppLifecycleListener(onStateChange: _onLifecycle);
     _states = _session.states.listen(_onState);
     _cues = _session.subtitleCues.listen((text) => _cue.value = text);
     // La clé DeepL sort du coffre de façon asynchrone, parfois après ce point.
@@ -172,6 +174,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
 
   @override
   void dispose() {
+    _lifecycle.dispose();
     _hideTimer?.cancel();
     _noticeTimer?.cancel();
     _seekTimer?.cancel();
@@ -382,6 +385,23 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     _noticeTimer = Timer(_noticeDuration, () {
       if (mounted) setState(() => _notice = null);
     });
+  }
+
+  /// L'application passe au second plan, touche Accueil par exemple : la
+  /// position s'enregistre aussitôt, car Android peut l'arrêter sans prévenir.
+  /// Sur TV, la lecture se met aussi en pause, pour ne pas garder occupée la
+  /// connexion de l'abonnement.
+  void _onLifecycle(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed ||
+        state == AppLifecycleState.inactive) {
+      return;
+    }
+    unawaited(_session.saveNow());
+    if (Platform.isAndroid &&
+        state != AppLifecycleState.detached &&
+        _state.status == PlaybackStatus.playing) {
+      unawaited(_engine.pause());
+    }
   }
 
   void _togglePlay() {

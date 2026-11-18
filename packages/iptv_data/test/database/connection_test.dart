@@ -138,4 +138,14 @@ void main() {
     expect(await db.customSelect('SELECT 1 AS n').getSingle(), isNotNull);
     await db.close();
   });
+
+  test('chaque écriture attend d être sur le disque', () {
+    final database = sqlite3.openInMemory();
+    addTearDown(database.close);
+
+    configureConnection(database);
+
+    // 2 = FULL : une position enregistrée survit à une coupure de courant.
+    expect(database.select('PRAGMA synchronous').single.values.single, 2);
+  });
 }

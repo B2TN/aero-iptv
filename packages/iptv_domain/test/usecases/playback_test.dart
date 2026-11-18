@@ -192,11 +192,11 @@ void main() {
     late FakeEngine engine;
     late FakeProgress progress;
 
-    PlaybackSession session() => PlaybackSession(
-      engine: engine,
-      progress: progress,
-      clock: () => DateTime.utc(2026),
-    );
+    /// Heure de la session : chaque test la fait avancer à sa guise.
+    var now = DateTime.utc(2026);
+
+    PlaybackSession session() =>
+        PlaybackSession(engine: engine, progress: progress, clock: () => now);
 
     Future<void> flush() => Future<void>.delayed(Duration.zero);
 
@@ -209,6 +209,7 @@ void main() {
     setUp(() {
       engine = FakeEngine();
       progress = FakeProgress();
+      now = DateTime.utc(2026);
     });
 
     test('active une piste intégrée dans la bonne langue', () async {
@@ -272,16 +273,63 @@ void main() {
       expect(engine.selected, isEmpty);
     });
 
-    test('enregistre la position toutes les 15 secondes', () async {
+    test('enregistre la position toutes les 5 secondes', () async {
       await session().play(vodRequest, movie, preferredLanguage: 'fr');
 
-      for (var second = 1; second <= 31; second++) {
+      for (var second = 1; second <= 16; second++) {
+        now = now.add(const Duration(seconds: 1));
         engine.emit(playing(second));
         await flush();
       }
 
-      expect(progress.saved.map((p) => p.position.inSeconds), [15, 30]);
+      expect(progress.saved.map((p) => p.position.inSeconds), [5, 10, 15]);
     });
+
+    test('continue d enregistrer après un retour en arrière', () async {
+      await session().play(vodRequest, movie, preferredLanguage: 'fr');
+      now = now.add(const Duration(seconds: 6));
+      engine.emit(playing(2400));
+      await flush();
+
+      // L'utilisateur revient à 20 minutes : la nouvelle position compte.
+      now = now.add(const Duration(seconds: 6));
+      engine.emit(playing(1200));
+      await flush();
+
+      expect(progress.saved.last.position, const Duration(minutes: 20));
+    });
+
+    test('une pause s enregistre aussitôt', () async {
+      await session().play(vodRequest, movie, preferredLanguage: 'fr');
+      engine.emit(playing(61));
+      await flush();
+      expect(progress.saved, isEmpty);
+
+      engine.emit(
+        const PlaybackState(
+          status: PlaybackStatus.paused,
+          position: Duration(seconds: 62),
+          duration: Duration(seconds: 7200),
+        ),
+      );
+      await flush();
+
+      expect(progress.saved.single.position.inSeconds, 62);
+    });
+
+    test(
+      'enregistre sur demande, quand l application se met de côté',
+      () async {
+        final current = session();
+        await current.play(vodRequest, movie, preferredLanguage: 'fr');
+        engine.emit(playing(33));
+        await flush();
+
+        await current.saveNow();
+
+        expect(progress.saved.single.position.inSeconds, 33);
+      },
+    );
 
     test('enregistre la position à la fermeture', () async {
       final current = session();
@@ -327,6 +375,26 @@ void main() {
 
       expect(progress.saved, isEmpty);
     });
+
+    test(
+      'avant d avoir rejoint la reprise, n écrase pas sa position',
+      () async {
+        final request = PlaybackRequest(
+          stream: const ResolvedStream(url: 'http://s/1.mkv'),
+          isLive: false,
+          startAt: const Duration(minutes: 30),
+        );
+        final current = session();
+        await current.play(request, movie, preferredLanguage: 'fr');
+        // Le moteur démarre au début, avant de sauter à la reprise.
+        now = now.add(const Duration(seconds: 6));
+        engine.emit(playing(1));
+        await flush();
+        await current.saveNow();
+
+        expect(progress.saved, isEmpty);
+      },
+    );
 
     test('change de chaîne sans recréer le moteur', () async {
       final current = session();

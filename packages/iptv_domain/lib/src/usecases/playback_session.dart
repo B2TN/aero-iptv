@@ -13,8 +13,16 @@ import '../ports/subtitle_translator.dart';
 import '../ports/watch_progress_repository.dart';
 import 'choose_subtitle.dart';
 
-/// Écart de lecture entre deux enregistrements de la position.
-const Duration _saveInterval = Duration(seconds: 15);
+/// Temps de lecture entre deux enregistrements de la position : une sortie
+/// brutale, une coupure ou un plantage n'en perdent jamais plus.
+const Duration _saveInterval = Duration(seconds: 5);
+
+/// Au début d'une reprise, le temps laissé au moteur pour rejoindre la
+/// position : avant, enregistrer écraserait la reprise par le début du film.
+const Duration _resumeGrace = Duration(seconds: 15);
+
+/// Marge sous la position de reprise, le moteur s'arrêtant sur une image clé.
+const Duration _resumeTolerance = Duration(seconds: 3);
 
 /// Langue des sous-titres que l'on sait presque toujours trouver.
 const String _sourceLanguage = 'en';
@@ -73,7 +81,12 @@ final class PlaybackSession {
   /// Langue choisie pour traduire les répliques.
   String _cueLanguage = 'fr';
   bool _subtitlesHandled = false;
-  Duration _lastSaved = Duration.zero;
+  DateTime _lastSavedAt = DateTime(0);
+  DateTime _startedAt = DateTime(0);
+
+  /// Position de reprise que le moteur n'a pas encore rejointe.
+  Duration? _resumeAt;
+  PlaybackStatus? _lastStatus;
 
   /// État de la lecture, pour l'interface.
   Stream<PlaybackState> get states => _engine.states;
@@ -92,7 +105,11 @@ final class PlaybackSession {
     _language = preferredLanguage;
     // Le direct ne reçoit pas de sous-titres choisis d'office.
     _subtitlesHandled = item.kind == ContentKind.live;
-    _lastSaved = request.startAt ?? Duration.zero;
+    _startedAt = _clock();
+    _lastSavedAt = _startedAt;
+    final startAt = request.startAt;
+    _resumeAt = startAt != null && startAt > Duration.zero ? startAt : null;
+    _lastStatus = null;
     _translatingCues = false;
     _translatedCues.clear();
     _subscription ??= _engine.states.listen(_onState);
@@ -209,10 +226,33 @@ final class PlaybackSession {
       _subtitlesHandled = true;
       unawaited(_applySubtitles(item, state));
     }
-    if (state.position - _lastSaved >= _saveInterval) {
-      unawaited(_saveProgress());
-    }
+    _followResume(state);
+    // Une pause s'enregistre aussitôt : l'utilisateur va peut-être éteindre.
+    final pausedNow =
+        state.status == PlaybackStatus.paused &&
+        _lastStatus == PlaybackStatus.playing;
+    _lastStatus = state.status;
+    final due =
+        state.status == PlaybackStatus.playing &&
+        _clock().difference(_lastSavedAt) >= _saveInterval;
+    if (due || pausedNow) unawaited(_saveProgress());
   }
+
+  /// Oublie la position de reprise une fois rejointe, ou quand la lecture se
+  /// poursuit ailleurs, l'utilisateur étant reparti en arrière.
+  void _followResume(PlaybackState state) {
+    final resumeAt = _resumeAt;
+    if (resumeAt == null) return;
+    final reached = state.position >= resumeAt - _resumeTolerance;
+    final movedOn =
+        state.status == PlaybackStatus.playing &&
+        _clock().difference(_startedAt) >= _resumeGrace;
+    if (reached || movedOn) _resumeAt = null;
+  }
+
+  /// Enregistre la position tout de suite, par exemple quand l'application
+  /// passe en arrière-plan : elle peut être arrêtée sans prévenir.
+  Future<void> saveNow() => _saveProgress();
 
   Future<void> _applySubtitles(PlaybackItem item, PlaybackState state) async {
     final choice = _chooseSubtitle(
@@ -232,11 +272,13 @@ final class PlaybackSession {
   Future<void> _saveProgress() async {
     final item = _item;
     if (item == null || item.kind == ContentKind.live) return;
+    // Avant d'avoir rejoint la reprise, la position ne vaut rien.
+    if (_resumeAt != null) return;
     final state = _engine.state;
     if (state.duration == Duration.zero) return;
 
     final position = state.position;
-    _lastSaved = position;
+    _lastSavedAt = _clock();
     // Fini, il reste en mémoire comme vu : il propose l'épisode suivant.
     final finished =
         state.status == PlaybackStatus.ended ||
