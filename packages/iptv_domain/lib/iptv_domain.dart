@@ -38,6 +38,7 @@ export 'src/normalization/country_resolver.dart';
 export 'src/normalization/grouping_key.dart';
 export 'src/normalization/language_code.dart';
 export 'src/normalization/language_parser.dart';
+export 'src/normalization/national_channel_order.dart';
 export 'src/normalization/quality_parser.dart';
 export 'src/normalization/text_folding.dart';
 export 'src/normalization/title_cleaner.dart';

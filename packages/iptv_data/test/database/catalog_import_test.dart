@@ -377,6 +377,50 @@ void main() {
       },
     );
 
+    test('Toutes les chaînes suit la numérotation nationale', () async {
+      await runImport(
+        FakeCatalogAdapter([
+          CatalogBatch([
+            live('FR: Arte HD', 'FR| CINEMA', id: 1),
+            live('FR: Ciné Club', 'FR| CINEMA', id: 2),
+            live('FR: BFM TV', 'FR| INFO', id: 3),
+            live('FR: France 2 FHD', 'FR| TNT', id: 4),
+            live('FR: TF1 HD', 'FR| TNT', id: 5),
+            live('FR: TF1 SD', 'FR| TNT', id: 6),
+            live('FR: France 3 Alpes', 'FR| REGIONS', id: 7),
+          ]),
+        ]),
+      );
+      final all = (await liveTv.groups(sourceId, 'FR', grouped: true)).first;
+
+      final merged = await liveTv.channels(
+        sourceId,
+        'FR',
+        all,
+        const PageRequest(),
+        grouped: true,
+      );
+      expect(merged.items.map((channel) => channel.name), [
+        'TF1',
+        'France 2',
+        'France 3 Alpes',
+        'Arte',
+        'BFM TV',
+        // Hors numérotation : dans l'ordre du fournisseur, après.
+        'Ciné Club',
+      ]);
+
+      final raw = await liveTv.channels(
+        sourceId,
+        'FR',
+        all,
+        const PageRequest(),
+        grouped: false,
+      );
+      expect(raw.items.first.name, 'FR: TF1 HD');
+      expect(raw.items.last.name, 'FR: Ciné Club');
+    });
+
     test('pagine les chaînes', () async {
       await runImport(
         FakeCatalogAdapter([

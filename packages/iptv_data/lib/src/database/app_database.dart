@@ -17,7 +17,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   /// Retrouve, dans le catalogue actif, l'identité commune aux versions des
   /// reprises enregistrées avant qu'elle n'existe. Une reprise dont le
@@ -108,6 +108,11 @@ class AppDatabase extends _$AppDatabase {
         // titre, que les anciennes pourraient déjà occuper. Le réimport le
         // reconstruit.
         await customStatement('DELETE FROM search_index');
+      }
+      if (from < 8) {
+        // Rang dans la numérotation nationale : la prochaine
+        // synchronisation, qui remplace les chaînes, le remplit.
+        await migrator.addColumn(liveChannels, liveChannels.nationalRank);
       }
     },
   );

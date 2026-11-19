@@ -83,21 +83,21 @@ final class CatalogSession {
     final group = _parsedGroup(entry.rawGroup);
     final key = GroupingKey.of(parsed.title);
     final locator = LocatorColumns.from(entry.locator);
+    final country = _countryResolver.resolve(
+      tvgCountry: entry.tvgCountry,
+      groupCountry: group.countryCode,
+      nameCountry: parsed.countryCode,
+      tvgId: entry.tvgId,
+      name: entry.rawName,
+    );
     return LiveChannelsCompanion.insert(
       catalogId: catalogId,
       groupId: await _groupId(entry.rawGroup, group),
       rawName: entry.rawName,
       displayName: parsed.title,
       groupingKey: key,
-      countryCode: Value(
-        _countryResolver.resolve(
-          tvgCountry: entry.tvgCountry,
-          groupCountry: group.countryCode,
-          nameCountry: parsed.countryCode,
-          tvgId: entry.tvgId,
-          name: entry.rawName,
-        ),
-      ),
+      countryCode: Value(country),
+      nationalRank: Value(nationalChannelRank(country, parsed.title)),
       quality: parsed.quality.index,
       variantLabel: parsed.variantLabel,
       logoUrl: Value(entry.logoUrl),

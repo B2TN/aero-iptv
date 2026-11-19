@@ -50,7 +50,10 @@ CREATE TABLE live_channels (
   container_ext TEXT,
   user_agent TEXT,
   referrer TEXT,
-  sort_order INTEGER NOT NULL
+  sort_order INTEGER NOT NULL,
+  -- Place dans la numérotation nationale (TNT en France), qui ordonne
+  -- « Toutes les chaînes » ; vide pour les autres chaînes.
+  national_rank INTEGER
 ) AS LiveChannelRow;
 
 CREATE INDEX live_channels_browse
@@ -208,19 +211,20 @@ channelsOfCountryMerged(:country AS TEXT OR NULL):
          c.grouping_key AS channel_key,
          MAX(c.logo_url) AS logo_url,
          MAX(c.epg_key) AS epg_key,
-         MIN(c.sort_order) AS position
+         MIN(c.sort_order) AS position,
+         MIN(c.national_rank) AS national_position
   FROM live_channels c
   WHERE c.catalog_id = (SELECT active_catalog_id FROM sources WHERE id = :source_id)
     AND c.country_code IS :country
   GROUP BY c.grouping_key
-  ORDER BY position
+  ORDER BY national_position IS NULL, national_position, position
   LIMIT :limit OFFSET :offset;
 
 channelsOfCountryRaw(:country AS TEXT OR NULL):
   SELECT * FROM live_channels
   WHERE catalog_id = (SELECT active_catalog_id FROM sources WHERE id = :source_id)
     AND country_code IS :country
-  ORDER BY sort_order
+  ORDER BY national_rank IS NULL, national_rank, sort_order
   LIMIT :limit OFFSET :offset;
 
 channelsRaw(:country AS TEXT OR NULL):
