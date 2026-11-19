@@ -46,6 +46,10 @@ final class CatalogSession {
         final episodes = <EpisodesCompanion>[];
 
         for (final entry in batch.entries) {
+          // Une ligne de séparation déguisée en titre (`##### MAROC #####`)
+          // n'est pas un contenu. Son nom citerait même un pays, qui
+          // apparaîtrait alors vide dans Live TV.
+          if (_cleaner.isHeaderEntry(entry.rawName)) continue;
           _sortOrder++;
           switch (entry) {
             case LiveEntry():

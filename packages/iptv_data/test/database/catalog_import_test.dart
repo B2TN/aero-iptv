@@ -276,6 +276,107 @@ void main() {
       expect(countries['FR'], 1);
     });
 
+    test('une ligne de séparation d un panneau Xtream n est pas une '
+        'chaîne', () async {
+      await runImport(
+        const FakeCatalogAdapter([
+          CatalogBatch([
+            LiveEntry(
+              rawName: '##### MAROC #####',
+              rawGroup: 'ARABIC',
+              locator: XtreamStream(
+                namespace: XtreamNamespace.live,
+                streamId: 1,
+                extension: 'ts',
+              ),
+            ),
+            LiveEntry(
+              rawName: 'MA: 2M',
+              rawGroup: 'ARABIC',
+              locator: XtreamStream(
+                namespace: XtreamNamespace.live,
+                streamId: 2,
+                extension: 'ts',
+              ),
+            ),
+            MovieEntry(
+              rawName: '===== NOUVEAUTÉS =====',
+              rawGroup: 'FILMS',
+              locator: XtreamStream(
+                namespace: XtreamNamespace.movie,
+                streamId: 3,
+                extension: 'mkv',
+              ),
+            ),
+          ]),
+        ]),
+      );
+
+      expect(await count('live_channels'), 1);
+      expect(await count('movies'), 0);
+      final countries = await liveTv.countries(sourceId);
+      expect(countries.single.code, 'MA');
+      expect(countries.single.channelCount, 1);
+    });
+
+    test(
+      'chaque pays listé a des groupes, et chaque groupe des chaînes',
+      () async {
+        final playlist = FakeCatalogAdapter([
+          CatalogBatch([
+            live('TN| Watania 1', 'AFRIQUE', id: 1),
+            live('Nessma', 'AFRIQUE', tvgId: 'Nessma.tn', id: 2),
+            live('Canal Algérie', 'AFRIQUE', id: 3),
+            live('Africa 24', 'AFRIQUE', id: 4),
+            live('MA: 2M', 'ARB| MBC', id: 5),
+            live('MBC 1', 'ARB| MBC', id: 6),
+            live('FR: TF1', 'FRANCE', id: 7),
+            live('FR: TF1 HD', 'FR| TNT', id: 8),
+            live('BE: La Une', 'FRANCE', id: 9),
+            live('Euronews', '', id: 10),
+            live('HR: HRT 1', 'EXYU', id: 11),
+            live('##### MAROC #####', 'ARB| MBC', id: 12),
+          ]),
+        ]);
+
+        Future<void> check(String when) async {
+          for (final grouped in [true, false]) {
+            for (final country in await liveTv.countries(sourceId)) {
+              final where = '$when, ${country.code}, regroupé : $grouped';
+              final groups = await liveTv.groups(
+                sourceId,
+                country.code,
+                grouped: grouped,
+              );
+              expect(groups, isNotEmpty, reason: where);
+              for (final group in groups) {
+                final page = await liveTv.channels(
+                  sourceId,
+                  country.code,
+                  group,
+                  const PageRequest(),
+                  grouped: grouped,
+                );
+                expect(page.items, isNotEmpty, reason: '$where, ${group.key}');
+                // Un groupe régional garde les chaînes des autres pays pour
+                // eux : la liste d'un pays ne montre que les siennes.
+                if (!grouped) {
+                  for (final channel in page.items) {
+                    expect(channel.countryCode, country.code, reason: where);
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        await runImport(playlist);
+        await check('premier import');
+        await runImport(playlist);
+        await check('synchronisation');
+      },
+    );
+
     test('pagine les chaînes', () async {
       await runImport(
         FakeCatalogAdapter([

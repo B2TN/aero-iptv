@@ -139,6 +139,8 @@ final class LiveTvRepositoryImpl implements LiveTvRepository {
       final rows = await _db
           .channelsRaw(
             groupId: rawGroupId,
+            // Un groupe régional mêle plusieurs pays : chacun ses chaînes.
+            country: countryCode,
             limit: page.limit,
             offset: page.offset,
           )

@@ -223,9 +223,9 @@ channelsOfCountryRaw(:country AS TEXT OR NULL):
   ORDER BY sort_order
   LIMIT :limit OFFSET :offset;
 
-channelsRaw:
+channelsRaw(:country AS TEXT OR NULL):
   SELECT * FROM live_channels
-  WHERE group_id = :group_id
+  WHERE group_id = :group_id AND country_code IS :country
   ORDER BY sort_order
   LIMIT :limit OFFSET :offset;
 
