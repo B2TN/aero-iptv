@@ -70,5 +70,6 @@ export 'src/usecases/find_media_segments.dart';
 export 'src/usecases/import_playlist.dart';
 export 'src/usecases/next_episode.dart';
 export 'src/usecases/playback_session.dart';
+export 'src/usecases/refresh_trending.dart';
 export 'src/usecases/resolve_stream_url.dart';
 export 'src/usecases/series_progress.dart';

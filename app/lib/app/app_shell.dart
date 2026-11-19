@@ -22,6 +22,7 @@ import 'app_state.dart';
 import '../features/updates/update_banner.dart';
 import '../features/updates/update_controller.dart';
 import 'daily_sync.dart';
+import 'trends.dart';
 
 /// Structure commune : barre supérieure et onglet actif.
 ///
@@ -45,8 +46,8 @@ class _AppShellState extends ConsumerState<AppShell> {
   /// voisin que la géométrie aurait choisi.
   bool _climbing = false;
 
-  /// Synchronisation quotidienne : retour au premier plan, et vérification
-  /// de chaque heure, application ouverte.
+  /// Synchronisation et tendances quotidiennes : retour au premier plan, et
+  /// vérification de chaque heure, application ouverte.
   late final AppLifecycleListener _lifecycle;
   late final Timer _hourly;
 
@@ -73,15 +74,22 @@ class _AppShellState extends ConsumerState<AppShell> {
     final updates = ref.read(updateControllerProvider.notifier);
     // Nouvelle version : au lancement, puis toutes les 24 h.
     unawaited(updates.check());
+    final trends = ref.read(trendsProvider.notifier);
+    // Tendances : une fois les réglages lus, qui disent le pays.
+    ref.listenManual(settingsReadyProvider, (_, ready) {
+      if (ready) unawaited(trends.check());
+    }, fireImmediately: true);
     _lifecycle = AppLifecycleListener(
       onResume: () {
         unawaited(daily.check());
         unawaited(updates.checkIfDue());
+        unawaited(trends.check());
       },
     );
     _hourly = Timer.periodic(const Duration(hours: 1), (_) {
       unawaited(daily.check());
       unawaited(updates.checkIfDue());
+      unawaited(trends.check());
     });
   }
 

@@ -10,6 +10,7 @@ part 'app_database.g.dart';
   include: {
     'tables/catalog.drift',
     'tables/epg.drift',
+    'tables/trending.drift',
     'tables/user_state.drift',
   },
 )
@@ -17,7 +18,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   /// Retrouve, dans le catalogue actif, l'identité commune aux versions des
   /// reprises enregistrées avant qu'elle n'existe. Une reprise dont le
@@ -221,6 +222,10 @@ class AppDatabase extends _$AppDatabase {
           await migrator.addColumn(favorites, favorites.contentKey);
         }
         await refreshUserKeys();
+      }
+      if (from < 11) {
+        // Tendances gardées d'une actualisation à l'autre.
+        await migrator.createTable(trendingTitles);
       }
     },
   );

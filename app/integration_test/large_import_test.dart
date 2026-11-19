@@ -25,9 +25,14 @@ final class _NoTrending implements TrendingRepository {
   @override
   Future<List<TrendingItem>> popular(
     ContentKind kind, {
-    required String language,
     String? region,
   }) async => const [];
+
+  @override
+  Future<DateTime?> refreshedAt(String region) async => null;
+
+  @override
+  Future<void> refresh(String region, {required String language}) async {}
 }
 
 /// Import réel, dans son isolate, d'un catalogue Xtream servi par l'appareil.

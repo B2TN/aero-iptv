@@ -140,15 +140,17 @@ final class FakeTrending implements TrendingRepository {
   final bool isAvailable;
 
   @override
-  Future<List<TrendingItem>> popular(
-    ContentKind kind, {
-    required String language,
-    String? region,
-  }) async {
+  Future<List<TrendingItem>> popular(ContentKind kind, {String? region}) async {
     final error = failure;
     if (error != null) throw error;
     return items.where((item) => item.kind == kind).toList();
   }
+
+  @override
+  Future<DateTime?> refreshedAt(String region) async => null;
+
+  @override
+  Future<void> refresh(String region, {required String language}) async {}
 }
 
 final class EmptyProgress implements WatchProgressRepository {

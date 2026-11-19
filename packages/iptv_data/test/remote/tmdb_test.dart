@@ -67,15 +67,6 @@ void main() {
     expect(items.single.kind, ContentKind.series);
   });
 
-  test('reste vide sans jeton', () async {
-    const repository = TrendingRepositoryImpl(null);
-    expect(repository.isAvailable, isFalse);
-    expect(
-      await repository.popular(ContentKind.movie, language: 'fr'),
-      isEmpty,
-    );
-  });
-
   test('rejette une réponse illisible', () {
     final client = MockClient((_) async => http.Response('<html>', 200));
     expect(

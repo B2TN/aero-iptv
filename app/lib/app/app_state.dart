@@ -321,19 +321,6 @@ String _unrefinedMessage(
   return '${l10n.importUnrefined(names.join(', '))} $cause';
 }
 
-/// Oriente les tendances vers le pays de la playlist, ou celui de la langue.
-String regionFor(PlaylistSource source, String language) {
-  final country = source.defaultCountryCode;
-  if (country != null && country.length == 2) return country;
-  return switch (language) {
-    'fr' => 'FR',
-    'de' => 'DE',
-    'es' => 'ES',
-    'ar' => 'SA',
-    _ => 'US',
-  };
-}
-
 extension Localized on BuildContext {
   AppLocalizations get l10n => AppLocalizations.of(this);
 }

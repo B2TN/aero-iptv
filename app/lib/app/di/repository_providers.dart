@@ -126,11 +126,17 @@ final findMediaSegmentsProvider = Provider<FindMediaSegments>(
 
 final trendingRepositoryProvider = Provider<TrendingRepository>(
   (ref) => TrendingRepositoryImpl(
-    _tmdbToken.isEmpty
+    ref.watch(databaseProvider),
+    tmdb: _tmdbToken.isEmpty
         ? null
         : TmdbClient(ref.watch(httpClientProvider), readToken: _tmdbToken),
     charts: AppleChartsClient(ref.watch(httpClientProvider)),
+    tvMaze: TvMazeClient(ref.watch(httpClientProvider)),
   ),
+);
+
+final refreshTrendingProvider = Provider<RefreshTrending>(
+  (ref) => RefreshTrending(ref.watch(trendingRepositoryProvider)),
 );
 
 final catalogImporterProvider = Provider<CatalogImporter>(

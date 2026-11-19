@@ -58,20 +58,4 @@ void main() {
 
     expect(calls, 1);
   });
-
-  test('sert de repli quand aucun jeton TMDb n est configuré', () async {
-    final client = MockClient((_) async => _chart(['Obsession']));
-    final repository = TrendingRepositoryImpl(
-      null,
-      charts: AppleChartsClient(client),
-    );
-
-    expect(repository.isAvailable, isTrue);
-    final items = await repository.popular(
-      ContentKind.movie,
-      language: 'fr',
-      region: 'US',
-    );
-    expect(items.single.title, 'Obsession');
-  });
 }

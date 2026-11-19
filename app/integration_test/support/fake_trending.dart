@@ -10,11 +10,13 @@ final class FakeTrending implements TrendingRepository {
   bool get isAvailable => true;
 
   @override
-  Future<List<TrendingItem>> popular(
-    ContentKind kind, {
-    required String language,
-    String? region,
-  }) async {
+  Future<DateTime?> refreshedAt(String region) async => DateTime.now();
+
+  @override
+  Future<void> refresh(String region, {required String language}) async {}
+
+  @override
+  Future<List<TrendingItem>> popular(ContentKind kind, {String? region}) async {
     TrendingItem item(String title, String overview, {bool backdrop = true}) =>
         TrendingItem(
           kind: kind,

@@ -7,6 +7,7 @@ import 'package:iptv_domain/iptv_domain.dart';
 
 import '../../../app/app_state.dart';
 import '../../../app/di/repository_providers.dart';
+import '../../../app/trends.dart';
 import '../../../design_system/components/aero_states.dart';
 import '../../../design_system/components/poster_card.dart';
 import '../../../design_system/tokens/aero_tokens.dart';
@@ -31,13 +32,15 @@ final homeFeedProvider = FutureProvider.autoDispose<HomeFeed?>((ref) async {
   final groupSeries = ref.watch(
     settingsProvider.select((settings) => settings.groupSeries),
   );
-  // « Continuer à regarder » suit la dernière lecture.
+  // « Continuer à regarder » suit la dernière lecture, et les rangées les
+  // tendances du jour.
   ref.watch(watchedRevisionProvider);
+  ref.watch(trendsProvider);
   return ref.watch(buildHomeFeedProvider)(
     source.id,
     language: language,
     groupSeries: groupSeries,
-    region: regionFor(source, language),
+    region: ref.watch(trendRegionProvider),
   );
 });
 

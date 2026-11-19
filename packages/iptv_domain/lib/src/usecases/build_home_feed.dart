@@ -17,8 +17,8 @@ const int _heroSize = 5;
 /// Compose l'accueil.
 ///
 /// Les tendances sont croisées avec la playlist : proposer un titre que
-/// l'abonnement ne contient pas n'aurait aucun sens. Si le service de tendances
-/// est injoignable, l'accueil se rabat sur l'ordre de la playlist.
+/// l'abonnement ne contient pas n'aurait aucun sens. Tant qu'aucune n'est
+/// enregistrée pour le pays, l'accueil suit l'ordre de la playlist.
 final class BuildHomeFeed {
   const BuildHomeFeed(this._catalog, this._trending, this._continueWatching);
 
@@ -33,8 +33,8 @@ final class BuildHomeFeed {
     String? region,
   }) async {
     final continueWatching = await _continueWatching(sourceId);
-    final popularMovies = await _popular(ContentKind.movie, language, region);
-    final popularSeries = await _popular(ContentKind.series, language, region);
+    final popularMovies = await _popular(ContentKind.movie, region);
+    final popularSeries = await _popular(ContentKind.series, region);
 
     final hero = <HeroItem>[];
     final movies = await _matchMovies(sourceId, popularMovies, hero, language);
@@ -86,15 +86,11 @@ final class BuildHomeFeed {
     );
   }
 
-  /// Le service de tendances est facultatif : son échec laisse un accueil utile.
-  Future<List<TrendingItem>> _popular(
-    ContentKind kind,
-    String language,
-    String? region,
-  ) async {
+  /// Les tendances sont facultatives : leur absence laisse un accueil utile.
+  Future<List<TrendingItem>> _popular(ContentKind kind, String? region) async {
     if (!_trending.isAvailable) return const [];
     try {
-      return await _trending.popular(kind, language: language, region: region);
+      return await _trending.popular(kind, region: region);
     } on Failure {
       return const [];
     }

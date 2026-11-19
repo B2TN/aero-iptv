@@ -108,9 +108,14 @@ final class _NoTrending implements TrendingRepository {
   @override
   Future<List<TrendingItem>> popular(
     ContentKind kind, {
-    required String language,
     String? region,
   }) async => const [];
+
+  @override
+  Future<DateTime?> refreshedAt(String region) async => null;
+
+  @override
+  Future<void> refresh(String region, {required String language}) async {}
 }
 
 final class _NoFavorites implements FavoritesRepository {

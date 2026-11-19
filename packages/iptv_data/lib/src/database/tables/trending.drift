@@ -1,0 +1,23 @@
+-- Classements des services de tendances, gardés d'une actualisation à
+-- l'autre : l'accueil les lit sans attendre le réseau. Seul le pays des
+-- tendances en cours est gardé.
+CREATE TABLE trending_titles (
+  region TEXT NOT NULL,
+  kind INTEGER NOT NULL,
+  sort_order INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  original_title TEXT NOT NULL,
+  overview TEXT,
+  poster_url TEXT,
+  backdrop_url TEXT,
+  fetched_at INTEGER NOT NULL,
+  PRIMARY KEY (region, kind, sort_order)
+) WITHOUT ROWID AS TrendingTitleRow;
+
+trendingOf:
+  SELECT * FROM trending_titles
+  WHERE region = :region AND kind = :kind
+  ORDER BY sort_order;
+
+trendingRefreshedAt:
+  SELECT MAX(fetched_at) FROM trending_titles WHERE region = :region;
