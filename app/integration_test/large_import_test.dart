@@ -5,6 +5,7 @@ import 'package:aero_iptv/app/app_state.dart';
 import 'package:aero_iptv/app/di/repository_providers.dart';
 import 'package:aero_iptv/bootstrap.dart';
 import 'package:aero_iptv/l10n/generated/app_localizations.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,6 +15,14 @@ import 'package:iptv_domain/iptv_domain.dart';
 import 'support/fake_panel.dart';
 
 const int _mebibyte = 1024 * 1024;
+
+/// Pas de pays à demander : la visite ne sort pas sur le réseau.
+final class _NoCountry implements CountryLocator {
+  const _NoCountry();
+
+  @override
+  Future<String> country() async => 'FR';
+}
 
 /// Sans service de tendances, l'accueil montre l'ordre de la playlist.
 final class _NoTrending implements TrendingRepository {
@@ -88,11 +97,15 @@ void main() {
         dataDirectory: directory,
         overrides: [
           trendingRepositoryProvider.overrideWithValue(const _NoTrending()),
+          countryLocatorProvider.overrideWithValue(const _NoCountry()),
         ],
       );
     });
     await tester.pumpWidget(app);
     await wait(tester, 900);
+    // Première installation : le tutoriel s'ouvre ; Retour le ferme.
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await wait(tester, 500);
     final container = ProviderScope.containerOf(
       tester.element(find.byType(AeroIptvApp)),
     );

@@ -807,4 +807,107 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get playerSubtitlesImagesOnly =>
       'Die Untertitel dieser Quelle sind Bilder und können nicht übersetzt werden';
+
+  @override
+  String tutorialStep(int step, int count) {
+    return 'Schritt $step von $count';
+  }
+
+  @override
+  String get tutorialSkip => 'Überspringen';
+
+  @override
+  String get tutorialPrevious => 'Zurück';
+
+  @override
+  String get tutorialNext => 'Weiter';
+
+  @override
+  String get tutorialFinish => 'Fertig';
+
+  @override
+  String get tutorialWelcomeTitle => 'Willkommen bei Aero IPTV';
+
+  @override
+  String get tutorialWelcomeBody =>
+      'Ein paar Schritte, um alles einzurichten und die App kennenzulernen. Sie können diese Anleitung jederzeit überspringen und in den Einstellungen erneut ansehen.';
+
+  @override
+  String get tutorialChangeLanguage => 'Sprache ändern';
+
+  @override
+  String get tutorialPlaylistTitle => 'Fügen Sie Ihre Playlist hinzu';
+
+  @override
+  String get tutorialPlaylistBody =>
+      'Aero IPTV spielt Ihr Abonnement ab: eine M3U-Adresse oder die Xtream-Codes-Zugangsdaten Ihres Anbieters. Sie bleiben verschlüsselt auf diesem Gerät und werden nur an Ihren Anbieter gesendet.';
+
+  @override
+  String get tutorialPerformanceTitle => 'Leistungsmodus';
+
+  @override
+  String get tutorialPerformanceBody =>
+      'Er entfernt die Glas- und Spiegeleffekte, damit die Bedienung auf einem kleinen Gerät wie einem Fire TV Stick flüssig bleibt.';
+
+  @override
+  String get tutorialPerformanceSmall =>
+      'Dieses Gerät hat wenig Speicher: Der Leistungsmodus wird empfohlen.';
+
+  @override
+  String get tutorialPerformanceLarge =>
+      'Dieses Gerät hat genug Speicher für die Effekte.';
+
+  @override
+  String get tutorialPerformanceOn => 'Leistungsmodus einschalten';
+
+  @override
+  String get tutorialPerformanceOff => 'Leistungsmodus ausschalten';
+
+  @override
+  String get tutorialControlsTitle => 'Fernbedienung, Maus oder Tastatur';
+
+  @override
+  String get tutorialControlsBody =>
+      'Pfeile zum Bewegen, OK zum Öffnen oder Abspielen, Zurück zum Zurückgehen.\nLanges Drücken auf OK oder die Menütaste öffnet das Menü eines Films, einer Serie oder einer Folge.\nMit der Maus: Klick zum Öffnen, Rechtsklick für das Menü. Mit der Tastatur: Pfeile, Eingabe und Esc.';
+
+  @override
+  String get tutorialHomeTitle => 'Der Startbildschirm';
+
+  @override
+  String get tutorialHomeBody =>
+      '„Weiterschauen“ setzt dort fort, wo Sie aufgehört haben, in jeder Version.\nIhre Favoriten haben eine eigene Reihe: Fügen Sie sie über das Menü eines Titels hinzu.\nBeliebte Serien und Filme folgen den Trends in Ihrem Land.';
+
+  @override
+  String get tutorialDetailsTitle => 'Seiten und Versionen';
+
+  @override
+  String get tutorialDetailsBody =>
+      'Filme und Serien gibt es oft in mehreren Sprachen und Qualitäten: Ihre Seite fasst sie zusammen, und die Schaltfläche Version wechselt zwischen ihnen. Ihr Fortschritt gilt für alle.\nDie Seite einer Serie zeigt ihre Staffeln, die gesehenen und die kommenden Folgen.';
+
+  @override
+  String get tutorialLiveTitle => 'Live-Sender';
+
+  @override
+  String get tutorialLiveBody =>
+      'Die Sender sind nach Land sortiert, mit dem laufenden Programm. Ein Sender in mehreren Qualitäten erscheint nur einmal.\nWenn ein Sender ruckelt, fügen Sie in den Einstellungen eine Verzögerung hinzu.';
+
+  @override
+  String get tutorialPlayerTitle => 'Player und Untertitel';
+
+  @override
+  String get tutorialPlayerBody =>
+      'OK zeigt die Steuerung: Audio, Untertitel, Version und Folgen.\nUntertitel stammen aus dem Video. Mit einem optionalen, kostenlosen DeepL-Schlüssel werden sie beim Ansehen in Ihre Sprache übersetzt.';
+
+  @override
+  String get tutorialAddKey => 'DeepL-Schlüssel hinzufügen';
+
+  @override
+  String get tutorialSyncTitle => 'Synchronisierung und Updates';
+
+  @override
+  String get tutorialSyncBody =>
+      'Ihre Playlist wird täglich aktualisiert, nie während der Wiedergabe.\nWenn eine neue Version von Aero IPTV erscheint, weist ein Banner darauf hin.\nAlle diese Einstellungen und diese Anleitung finden Sie in den Einstellungen.';
+
+  @override
+  String get settingsTutorial => 'Anleitung erneut ansehen';
 }

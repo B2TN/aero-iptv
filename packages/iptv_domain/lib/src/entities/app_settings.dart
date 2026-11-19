@@ -17,6 +17,7 @@ final class AppSettings {
     this.dismissedUpdate,
     this.trendCountry,
     this.detectedCountry,
+    this.tutorialDone = false,
   });
 
   /// Fusion des versions d'une série. Désactivée : vue brute de la playlist.
@@ -67,6 +68,9 @@ final class AppSettings {
   /// n'est pas connu.
   final String? detectedCountry;
 
+  /// Le tutoriel a été vu, ou passé : il ne s'ouvre plus de lui-même.
+  final bool tutorialDone;
+
   /// [trendCountry] et [detectedCountry] peuvent redevenir `null` : ils se
   /// passent par une fonction, `() => null` pour les effacer.
   AppSettings copyWith({
@@ -84,6 +88,7 @@ final class AppSettings {
     String? dismissedUpdate,
     String? Function()? trendCountry,
     String? Function()? detectedCountry,
+    bool? tutorialDone,
   }) => AppSettings(
     groupSeries: groupSeries ?? this.groupSeries,
     groupChannels: groupChannels ?? this.groupChannels,
@@ -101,5 +106,6 @@ final class AppSettings {
     detectedCountry: detectedCountry == null
         ? this.detectedCountry
         : detectedCountry(),
+    tutorialDone: tutorialDone ?? this.tutorialDone,
   );
 }

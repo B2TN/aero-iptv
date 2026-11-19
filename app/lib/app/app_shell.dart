@@ -14,6 +14,7 @@ import '../features/live_tv/providers/live_tv_providers.dart';
 import '../features/live_tv/screens/live_tv_screen.dart';
 import '../features/search/screens/search_screen.dart';
 import '../features/settings/screens/settings_screen.dart';
+import '../features/tutorial/tutorial_screen.dart';
 import '../focus/focus_frame.dart';
 import '../focus/focus_guard.dart';
 import '../focus/focusable.dart';
@@ -51,6 +52,9 @@ class _AppShellState extends ConsumerState<AppShell> {
   late final AppLifecycleListener _lifecycle;
   late final Timer _hourly;
 
+  /// Le tutoriel ne se propose qu'une fois par lancement.
+  bool _tutorialChecked = false;
+
   @override
   void initState() {
     super.initState();
@@ -79,6 +83,11 @@ class _AppShellState extends ConsumerState<AppShell> {
     ref.listenManual(settingsReadyProvider, (_, ready) {
       if (ready) unawaited(trends.check());
     }, fireImmediately: true);
+    ref.listenManual(
+      tutorialDueProvider,
+      (_, due) => _checkTutorial(due),
+      fireImmediately: true,
+    );
     _lifecycle = AppLifecycleListener(
       onResume: () {
         unawaited(daily.check());
@@ -90,6 +99,22 @@ class _AppShellState extends ConsumerState<AppShell> {
       unawaited(daily.check());
       unawaited(updates.checkIfDue());
       unawaited(trends.check());
+    });
+  }
+
+  /// Le tutoriel s'ouvre à la première installation. Une installation déjà
+  /// configurée ne le voit pas : il reste à relancer depuis les Paramètres.
+  void _checkTutorial(bool? due) {
+    if (due == null || _tutorialChecked) return;
+    _tutorialChecked = true;
+    if (!due) {
+      if (!ref.read(settingsProvider).tutorialDone) {
+        updateSettings(ref, (current) => current.copyWith(tutorialDone: true));
+      }
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(openTutorial(context));
     });
   }
 

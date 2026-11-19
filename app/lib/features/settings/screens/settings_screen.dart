@@ -3,30 +3,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/app_state.dart';
 import '../../../app/trends.dart';
-import '../../../app/di/infrastructure_providers.dart';
 import '../../../app/di/repository_providers.dart';
 import '../../../design_system/components/aero_menu.dart';
-import '../../../design_system/components/qr_sheet.dart';
-import '../../../design_system/components/text_entry.dart';
 import '../../../design_system/glass/glass_panel.dart';
 import '../../../design_system/tokens/aero_tokens.dart';
 import '../../../focus/dpad_collection.dart';
 import '../../../l10n/country_names.dart';
+import '../../tutorial/tutorial_screen.dart';
 import '../playlist/playlist_manager_screen.dart';
+import '../settings_actions.dart';
 import '../widgets/setting_row.dart';
 import 'subtitle_appearance_screen.dart';
 import '../../updates/update_controller.dart';
-
-/// Page du compte où se trouve la clé d'API de DeepL.
-const String _deepLKeysPage = 'https://www.deepl.com/your-account/keys';
-
-/// Service dont l'utilisateur fournit lui-même la clé d'API.
-typedef _KeyService = ({
-  String name,
-  String title,
-  String page,
-  NotifierProvider<ApiKeyController, String?> key,
-});
 
 /// Retards proposés, en secondes.
 const List<int> _delays = [0, 2, 4, 6, 8, 10, 15, 20, 30];
@@ -46,20 +34,6 @@ class SettingsScreen extends ConsumerWidget {
     updateSettings(
       ref,
       (settings) => settings.copyWith(liveDelaySeconds: _delays[choice]),
-    );
-  }
-
-  Future<void> _chooseLanguage(BuildContext context, WidgetRef ref) async {
-    final codes = languageNames.keys.toList(growable: false);
-    final choice = await showAeroMenu(
-      context,
-      title: context.l10n.settingsLanguage,
-      options: languageNames.values.toList(growable: false),
-    );
-    if (choice == null) return;
-    updateSettings(
-      ref,
-      (settings) => settings.copyWith(languageCode: codes[choice]),
     );
   }
 
@@ -85,71 +59,14 @@ class SettingsScreen extends ConsumerWidget {
         .choose(choice == 0 ? null : codes[choice - 1]);
   }
 
-  /// Sur PC, la page s'ouvre dans le navigateur. Une TV n'en a pas : la page est
-  /// proposée en QR code, à ouvrir sur un téléphone.
-  Future<void> _showKeyPage(
-    BuildContext context,
-    WidgetRef ref,
-    _KeyService service,
-  ) async {
-    final l10n = context.l10n;
-    if (await ref.read(webPageOpenerProvider)(service.page)) return;
-    if (!context.mounted) return;
-    await showQrSheet(
-      context,
-      title: l10n.settingsKeyGet,
-      hint: l10n.settingsKeyScan(service.name),
-      url: service.page,
-      closeLabel: l10n.actionBack,
-    );
-  }
-
-  Future<void> _editKey(
-    BuildContext context,
-    WidgetRef ref,
-    _KeyService service,
-  ) async {
-    final l10n = context.l10n;
-    final keys = ref.read(service.key.notifier);
-    if (ref.read(service.key) != null) {
-      final choice = await showAeroMenu(
-        context,
-        title: service.title,
-        options: [l10n.settingsKeyReplace, l10n.settingsKeyRemove],
-      );
-      if (choice == null || !context.mounted) return;
-      if (choice == 1) {
-        await keys.save(null);
-        return;
-      }
-    }
-    final value = await showTextEntry(
-      context,
-      physicalKeyboard: ref.read(physicalKeyboardProvider),
-      title: service.title,
-      obscure: true,
-      action: (
-        label: l10n.settingsKeyGet,
-        onSelect: () => _showKeyPage(context, ref, service),
-      ),
-    );
-    final key = value?.trim() ?? '';
-    if (key.isNotEmpty) await keys.save(key);
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final settings = ref.watch(settingsProvider);
-    final _KeyService deepL = (
-      name: 'DeepL',
-      title: l10n.settingsDeepL,
-      page: _deepLKeysPage,
-      key: deepLKeyProvider,
-    );
+    final deepL = deepLKeyService(l10n);
     final playlists = ref.watch(sourcesProvider).value?.length ?? 0;
     String onOff(bool value) => value ? l10n.settingsOn : l10n.settingsOff;
-    String keyState(_KeyService service) => ref.watch(service.key) != null
+    String keyState(ApiKeyService service) => ref.watch(service.key) != null
         ? l10n.settingsKeySet
         : l10n.settingsKeyUnset;
 
@@ -225,7 +142,7 @@ class SettingsScreen extends ConsumerWidget {
             label: l10n.settingsLanguage,
             value:
                 languageNames[settings.languageCode] ?? settings.languageCode,
-            action: () => _chooseLanguage(context, ref),
+            action: () => chooseLanguage(context, ref),
             toggled: null,
           ),
           (
@@ -263,7 +180,13 @@ class SettingsScreen extends ConsumerWidget {
           (
             label: deepL.title,
             value: keyState(deepL),
-            action: () => _editKey(context, ref, deepL),
+            action: () => editApiKey(context, ref, deepL),
+            toggled: null,
+          ),
+          (
+            label: l10n.settingsTutorial,
+            value: '',
+            action: () => openTutorial(context),
             toggled: null,
           ),
         ];

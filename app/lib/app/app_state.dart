@@ -49,15 +49,20 @@ final settingsProvider = Provider<AppSettings>(
   (ref) => ref.watch(_settingsStreamProvider).value ?? const AppSettings(),
 );
 
+/// Appareil à petite mémoire, comme un Fire TV Stick : le mode Performance y
+/// est conseillé.
+final smallDeviceProvider = Provider<bool>(
+  (ref) => ref.watch(deviceProfileProvider).memoryTier == MemoryTier.low,
+);
+
 /// Apparence de l'interface. Tant que l'utilisateur n'a rien choisi, un
-/// appareil à petite mémoire, comme un Fire TV Stick, prend le mode
-/// Performance.
+/// appareil à petite mémoire prend le mode Performance.
 final lookProvider = Provider<AeroLook>((ref) {
   final chosen = ref.watch(
     settingsProvider.select((settings) => settings.performanceMode),
   );
-  final light =
-      chosen ?? ref.watch(deviceProfileProvider).memoryTier == MemoryTier.low;
+  // Annoté : sans cela, `chosen` ferait déduire un `bool?` à `ref.watch`.
+  final bool light = chosen ?? ref.watch(smallDeviceProvider);
   return light ? AeroLook.performance : AeroLook.aero;
 });
 
@@ -69,6 +74,18 @@ final settingsReadyProvider = Provider<bool>(
 final sourcesProvider = StreamProvider<List<PlaylistSource>>(
   (ref) => ref.watch(playlistRepositoryProvider).watchSources(),
 );
+
+/// Le tutoriel s'ouvre-t-il de lui-même ? Oui à la première installation,
+/// sans playlist ni tutoriel vu. `null` tant que les réglages et les
+/// playlists ne sont pas lus.
+final tutorialDueProvider = Provider<bool?>((ref) {
+  final sources = ref.watch(sourcesProvider);
+  if (!ref.watch(settingsReadyProvider) || !sources.hasValue) return null;
+  if (ref.watch(settingsProvider.select((settings) => settings.tutorialDone))) {
+    return false;
+  }
+  return sources.requireValue.isEmpty;
+});
 
 /// Playlist affichée.
 final activeSourceProvider = Provider<PlaylistSource?>((ref) {

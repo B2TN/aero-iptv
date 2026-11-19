@@ -808,4 +808,107 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get playerSubtitlesImagesOnly =>
       'Los subtítulos de esta fuente son imágenes y no se pueden traducir';
+
+  @override
+  String tutorialStep(int step, int count) {
+    return 'Paso $step de $count';
+  }
+
+  @override
+  String get tutorialSkip => 'Omitir';
+
+  @override
+  String get tutorialPrevious => 'Anterior';
+
+  @override
+  String get tutorialNext => 'Siguiente';
+
+  @override
+  String get tutorialFinish => 'Terminar';
+
+  @override
+  String get tutorialWelcomeTitle => 'Te damos la bienvenida a Aero IPTV';
+
+  @override
+  String get tutorialWelcomeBody =>
+      'Unos pasos para dejarlo todo listo y conocer la aplicación. Puedes omitir este tutorial en cualquier momento y volver a verlo desde Ajustes.';
+
+  @override
+  String get tutorialChangeLanguage => 'Cambiar el idioma';
+
+  @override
+  String get tutorialPlaylistTitle => 'Añade tu lista';
+
+  @override
+  String get tutorialPlaylistBody =>
+      'Aero IPTV reproduce tu suscripción: una dirección M3U o los datos de acceso Xtream Codes de tu proveedor. Se guardan cifrados en este dispositivo y solo se envían a tu proveedor.';
+
+  @override
+  String get tutorialPerformanceTitle => 'Modo rendimiento';
+
+  @override
+  String get tutorialPerformanceBody =>
+      'Quita los efectos de cristal y reflejos para que la navegación siga fluida en un dispositivo pequeño, como un Fire TV Stick.';
+
+  @override
+  String get tutorialPerformanceSmall =>
+      'Este dispositivo tiene poca memoria: se recomienda el modo rendimiento.';
+
+  @override
+  String get tutorialPerformanceLarge =>
+      'Este dispositivo tiene memoria suficiente para mantener los efectos.';
+
+  @override
+  String get tutorialPerformanceOn => 'Activar el modo rendimiento';
+
+  @override
+  String get tutorialPerformanceOff => 'Desactivar el modo rendimiento';
+
+  @override
+  String get tutorialControlsTitle => 'Mando, ratón o teclado';
+
+  @override
+  String get tutorialControlsBody =>
+      'Flechas para moverte, OK para abrir o reproducir, Atrás para volver.\nUna pulsación larga en OK, o la tecla Menú, abre el menú de una película, una serie o un episodio.\nCon el ratón: clic para abrir, clic derecho para el menú. Con el teclado: flechas, Intro y Esc.';
+
+  @override
+  String get tutorialHomeTitle => 'La pantalla de inicio';
+
+  @override
+  String get tutorialHomeBody =>
+      '«Seguir viendo» retoma donde lo dejaste, en cualquier versión.\nTus favoritos tienen su propia fila: añádelos desde el menú de un título.\nLas series y películas populares siguen las tendencias de tu país.';
+
+  @override
+  String get tutorialDetailsTitle => 'Fichas y versiones';
+
+  @override
+  String get tutorialDetailsBody =>
+      'Una película o una serie suele existir en varios idiomas y calidades: su ficha las reúne, y el botón Versión pasa de una a otra. Tu progreso vale para todas.\nLa ficha de una serie muestra sus temporadas, los episodios vistos y los próximos.';
+
+  @override
+  String get tutorialLiveTitle => 'Canales en directo';
+
+  @override
+  String get tutorialLiveBody =>
+      'Los canales se ordenan por país, con el programa actual. Un canal ofrecido en varias calidades aparece una sola vez.\nSi un canal se entrecorta, añade un retraso en Ajustes.';
+
+  @override
+  String get tutorialPlayerTitle => 'Reproductor y subtítulos';
+
+  @override
+  String get tutorialPlayerBody =>
+      'OK muestra los controles: audio, subtítulos, versión y episodios.\nLos subtítulos vienen del vídeo. Con una clave gratuita de DeepL, opcional, se traducen a tu idioma mientras ves.';
+
+  @override
+  String get tutorialAddKey => 'Añadir una clave de DeepL';
+
+  @override
+  String get tutorialSyncTitle => 'Sincronización y actualizaciones';
+
+  @override
+  String get tutorialSyncBody =>
+      'Tu lista se actualiza cada día, nunca durante la reproducción.\nCuando sale una nueva versión de Aero IPTV, un aviso te lo indica.\nTodos estos ajustes, y este tutorial, están en Ajustes.';
+
+  @override
+  String get settingsTutorial => 'Volver a ver el tutorial';
 }

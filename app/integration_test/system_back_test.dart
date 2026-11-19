@@ -71,11 +71,15 @@ void main() {
           trendingRepositoryProvider.overrideWithValue(
             FakeTrending(server.baseUrl),
           ),
+          countryLocatorProvider.overrideWithValue(const FakeCountry()),
         ],
       );
     });
     await tester.pumpWidget(app);
     await wait(tester, 900);
+    // Première installation : le tutoriel s'ouvre ; Retour le ferme.
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await wait(tester, 500);
     final container = ProviderScope.containerOf(
       tester.element(find.byType(AeroIptvApp)),
     );

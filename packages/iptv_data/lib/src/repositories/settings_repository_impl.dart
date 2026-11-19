@@ -15,6 +15,7 @@ const String _betaUpdatesKey = 'beta_updates';
 const String _dismissedUpdateKey = 'dismissed_update';
 const String _trendCountryKey = 'trend_country';
 const String _detectedCountryKey = 'detected_country';
+const String _tutorialDoneKey = 'tutorial_done';
 const String _subtitleSizeKey = 'subtitle_size';
 const String _subtitleFontKey = 'subtitle_font';
 const String _subtitleColorKey = 'subtitle_color';
@@ -54,6 +55,7 @@ final class SettingsRepositoryImpl implements SettingsRepository {
       // Toujours écrits : vides, ils effacent une valeur précédente.
       _row(_trendCountryKey, settings.trendCountry ?? ''),
       _row(_detectedCountryKey, settings.detectedCountry ?? ''),
+      _row(_tutorialDoneKey, '${settings.tutorialDone}'),
     ]);
   });
 
@@ -99,6 +101,7 @@ final class SettingsRepositoryImpl implements SettingsRepository {
       dismissedUpdate: values[_dismissedUpdateKey],
       trendCountry: _readCountry(values[_trendCountryKey]),
       detectedCountry: _readCountry(values[_detectedCountryKey]),
+      tutorialDone: _readBool(values[_tutorialDoneKey], defaults.tutorialDone),
     );
   }
 

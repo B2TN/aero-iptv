@@ -1483,6 +1483,186 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Les sous-titres de cette source sont des images : ils ne peuvent pas être traduits'**
   String get playerSubtitlesImagesOnly;
+
+  /// No description provided for @tutorialStep.
+  ///
+  /// In fr, this message translates to:
+  /// **'Étape {step} sur {count}'**
+  String tutorialStep(int step, int count);
+
+  /// No description provided for @tutorialSkip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Passer'**
+  String get tutorialSkip;
+
+  /// No description provided for @tutorialPrevious.
+  ///
+  /// In fr, this message translates to:
+  /// **'Précédent'**
+  String get tutorialPrevious;
+
+  /// No description provided for @tutorialNext.
+  ///
+  /// In fr, this message translates to:
+  /// **'Suivant'**
+  String get tutorialNext;
+
+  /// No description provided for @tutorialFinish.
+  ///
+  /// In fr, this message translates to:
+  /// **'Terminer'**
+  String get tutorialFinish;
+
+  /// No description provided for @tutorialWelcomeTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bienvenue dans Aero IPTV'**
+  String get tutorialWelcomeTitle;
+
+  /// No description provided for @tutorialWelcomeBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quelques étapes pour tout préparer et faire le tour de l\'application. Vous pouvez passer ce tutoriel à tout moment, et le revoir depuis les Paramètres.'**
+  String get tutorialWelcomeBody;
+
+  /// No description provided for @tutorialChangeLanguage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Changer la langue'**
+  String get tutorialChangeLanguage;
+
+  /// No description provided for @tutorialPlaylistTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajoutez votre playlist'**
+  String get tutorialPlaylistTitle;
+
+  /// No description provided for @tutorialPlaylistBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aero IPTV lit votre abonnement : une adresse M3U, ou les identifiants Xtream Codes donnés par votre fournisseur. Ils restent chiffrés sur cet appareil et ne sont envoyés qu\'à votre fournisseur.'**
+  String get tutorialPlaylistBody;
+
+  /// No description provided for @tutorialPerformanceTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mode Performance'**
+  String get tutorialPerformanceTitle;
+
+  /// No description provided for @tutorialPerformanceBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Il retire les effets de verre et de reflets pour garder une navigation fluide sur un petit appareil, comme un Fire TV Stick.'**
+  String get tutorialPerformanceBody;
+
+  /// Appareil à petite mémoire, comme un Fire TV Stick.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cet appareil a peu de mémoire : le mode Performance est conseillé.'**
+  String get tutorialPerformanceSmall;
+
+  /// No description provided for @tutorialPerformanceLarge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cet appareil a assez de mémoire pour garder les effets.'**
+  String get tutorialPerformanceLarge;
+
+  /// No description provided for @tutorialPerformanceOn.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activer le mode Performance'**
+  String get tutorialPerformanceOn;
+
+  /// No description provided for @tutorialPerformanceOff.
+  ///
+  /// In fr, this message translates to:
+  /// **'Désactiver le mode Performance'**
+  String get tutorialPerformanceOff;
+
+  /// No description provided for @tutorialControlsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Télécommande, souris ou clavier'**
+  String get tutorialControlsTitle;
+
+  /// No description provided for @tutorialControlsBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Flèches pour se déplacer, OK pour ouvrir ou lire, Retour pour revenir.\nUn appui long sur OK, ou la touche Menu, ouvre le menu d\'un film, d\'une série ou d\'un épisode.\nÀ la souris : un clic ouvre, un clic droit ouvre le menu. Au clavier : flèches, Entrée et Échap.'**
+  String get tutorialControlsBody;
+
+  /// No description provided for @tutorialHomeTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'accueil'**
+  String get tutorialHomeTitle;
+
+  /// No description provided for @tutorialHomeBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'« Continuer à regarder » reprend là où vous vous êtes arrêté, dans n\'importe quelle version.\nVos favoris ont leur rangée : ajoutez-les depuis le menu d\'un titre.\nLes séries et films populaires suivent les tendances de votre pays.'**
+  String get tutorialHomeBody;
+
+  /// No description provided for @tutorialDetailsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fiches et versions'**
+  String get tutorialDetailsTitle;
+
+  /// No description provided for @tutorialDetailsBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un film ou une série existe souvent en plusieurs langues et qualités : sa fiche les réunit, et le bouton Version passe de l\'une à l\'autre. Votre progression vaut pour toutes.\nLa fiche d\'une série montre ses saisons, les épisodes vus et les prochains à venir.'**
+  String get tutorialDetailsBody;
+
+  /// No description provided for @tutorialLiveTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chaînes en direct'**
+  String get tutorialLiveTitle;
+
+  /// No description provided for @tutorialLiveBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les chaînes sont rangées par pays, avec le programme en cours. Une chaîne proposée en plusieurs qualités n\'apparaît qu\'une fois.\nSi une chaîne saccade, ajoutez un retard dans les Paramètres.'**
+  String get tutorialLiveBody;
+
+  /// No description provided for @tutorialPlayerTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lecteur et sous-titres'**
+  String get tutorialPlayerTitle;
+
+  /// No description provided for @tutorialPlayerBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'OK affiche les commandes : audio, sous-titres, version et épisodes.\nLes sous-titres viennent de la vidéo. Avec une clé DeepL gratuite, facultative, ils sont traduits dans votre langue pendant la lecture.'**
+  String get tutorialPlayerBody;
+
+  /// No description provided for @tutorialAddKey.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter une clé DeepL'**
+  String get tutorialAddKey;
+
+  /// No description provided for @tutorialSyncTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Synchronisation et mises à jour'**
+  String get tutorialSyncTitle;
+
+  /// No description provided for @tutorialSyncBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre playlist se met à jour chaque jour, jamais pendant une lecture.\nQuand une nouvelle version d\'Aero IPTV sort, un bandeau le signale.\nTous ces réglages, et ce tutoriel, se retrouvent dans les Paramètres.'**
+  String get tutorialSyncBody;
+
+  /// No description provided for @settingsTutorial.
+  ///
+  /// In fr, this message translates to:
+  /// **'Revoir le tutoriel'**
+  String get settingsTutorial;
 }
 
 class _AppLocalizationsDelegate

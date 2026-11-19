@@ -802,4 +802,107 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get playerSubtitlesImagesOnly =>
       'العناوين الفرعية لهذا المصدر صور ولا يمكن ترجمتها';
+
+  @override
+  String tutorialStep(int step, int count) {
+    return 'الخطوة $step من $count';
+  }
+
+  @override
+  String get tutorialSkip => 'تخطي';
+
+  @override
+  String get tutorialPrevious => 'السابق';
+
+  @override
+  String get tutorialNext => 'التالي';
+
+  @override
+  String get tutorialFinish => 'إنهاء';
+
+  @override
+  String get tutorialWelcomeTitle => 'مرحبًا بك في Aero IPTV';
+
+  @override
+  String get tutorialWelcomeBody =>
+      'بضع خطوات لتجهيز كل شيء والتعرّف على التطبيق. يمكنك تخطي هذا الدليل في أي وقت، ومشاهدته مجددًا من الإعدادات.';
+
+  @override
+  String get tutorialChangeLanguage => 'تغيير اللغة';
+
+  @override
+  String get tutorialPlaylistTitle => 'أضف قائمة التشغيل';
+
+  @override
+  String get tutorialPlaylistBody =>
+      'يشغّل Aero IPTV اشتراكك: عنوان M3U، أو بيانات دخول Xtream Codes من مزوّدك. تبقى مشفّرة على هذا الجهاز ولا تُرسَل إلا إلى مزوّدك.';
+
+  @override
+  String get tutorialPerformanceTitle => 'وضع الأداء';
+
+  @override
+  String get tutorialPerformanceBody =>
+      'يزيل تأثيرات الزجاج والانعكاس ليبقى التنقل سلسًا على جهاز صغير مثل Fire TV Stick.';
+
+  @override
+  String get tutorialPerformanceSmall =>
+      'ذاكرة هذا الجهاز محدودة: يُنصح بوضع الأداء.';
+
+  @override
+  String get tutorialPerformanceLarge =>
+      'ذاكرة هذا الجهاز كافية للاحتفاظ بالتأثيرات.';
+
+  @override
+  String get tutorialPerformanceOn => 'تفعيل وضع الأداء';
+
+  @override
+  String get tutorialPerformanceOff => 'إيقاف وضع الأداء';
+
+  @override
+  String get tutorialControlsTitle => 'جهاز التحكم أو الفأرة أو لوحة المفاتيح';
+
+  @override
+  String get tutorialControlsBody =>
+      'الأسهم للتنقل، وOK للفتح أو التشغيل، والرجوع للعودة.\nالضغط المطوّل على OK، أو زر القائمة، يفتح قائمة الفيلم أو المسلسل أو الحلقة.\nبالفأرة: نقرة للفتح، ونقرة يمنى للقائمة. بلوحة المفاتيح: الأسهم وEnter وEsc.';
+
+  @override
+  String get tutorialHomeTitle => 'الشاشة الرئيسية';
+
+  @override
+  String get tutorialHomeBody =>
+      '«متابعة المشاهدة» تستأنف من حيث توقفت، بأي نسخة.\nللمفضلة صفّها الخاص: أضفها من قائمة أي عنوان.\nالمسلسلات والأفلام الرائجة تتبع اتجاهات بلدك.';
+
+  @override
+  String get tutorialDetailsTitle => 'الصفحات والنسخ';
+
+  @override
+  String get tutorialDetailsBody =>
+      'كثيرًا ما يتوفر الفيلم أو المسلسل بعدة لغات وجودات: تجمعها صفحته، وزر «النسخة» ينتقل بينها. تقدّمك يسري عليها كلها.\nتعرض صفحة المسلسل مواسمه والحلقات التي شاهدتها والحلقات القادمة.';
+
+  @override
+  String get tutorialLiveTitle => 'القنوات المباشرة';
+
+  @override
+  String get tutorialLiveBody =>
+      'القنوات مرتبة حسب البلد، مع البرنامج الحالي. القناة المتوفرة بعدة جودات تظهر مرة واحدة.\nإذا تقطّعت قناة، أضف تأخيرًا من الإعدادات.';
+
+  @override
+  String get tutorialPlayerTitle => 'المشغّل والترجمة';
+
+  @override
+  String get tutorialPlayerBody =>
+      'يُظهر OK عناصر التحكم: الصوت والترجمة والنسخة والحلقات.\nالترجمة مأخوذة من الفيديو. ومع مفتاح DeepL مجاني واختياري، تُترجَم إلى لغتك أثناء المشاهدة.';
+
+  @override
+  String get tutorialAddKey => 'إضافة مفتاح DeepL';
+
+  @override
+  String get tutorialSyncTitle => 'المزامنة والتحديثات';
+
+  @override
+  String get tutorialSyncBody =>
+      'تُحدَّث قائمة التشغيل كل يوم، ولا يحدث ذلك أبدًا أثناء التشغيل.\nعند صدور نسخة جديدة من Aero IPTV، يُعلمك شريط بذلك.\nكل هذه الإعدادات، وهذا الدليل، موجودة في الإعدادات.';
+
+  @override
+  String get settingsTutorial => 'إعادة عرض الدليل';
 }

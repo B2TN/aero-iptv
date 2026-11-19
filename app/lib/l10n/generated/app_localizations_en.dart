@@ -804,4 +804,107 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get playerSubtitlesImagesOnly =>
       'This source\'s subtitles are images and cannot be translated';
+
+  @override
+  String tutorialStep(int step, int count) {
+    return 'Step $step of $count';
+  }
+
+  @override
+  String get tutorialSkip => 'Skip';
+
+  @override
+  String get tutorialPrevious => 'Previous';
+
+  @override
+  String get tutorialNext => 'Next';
+
+  @override
+  String get tutorialFinish => 'Done';
+
+  @override
+  String get tutorialWelcomeTitle => 'Welcome to Aero IPTV';
+
+  @override
+  String get tutorialWelcomeBody =>
+      'A few steps to get everything ready and take a tour of the app. You can skip this tutorial at any time, and see it again from Settings.';
+
+  @override
+  String get tutorialChangeLanguage => 'Change the language';
+
+  @override
+  String get tutorialPlaylistTitle => 'Add your playlist';
+
+  @override
+  String get tutorialPlaylistBody =>
+      'Aero IPTV plays your subscription: an M3U address, or the Xtream Codes login from your provider. It stays encrypted on this device and is only sent to your provider.';
+
+  @override
+  String get tutorialPerformanceTitle => 'Performance mode';
+
+  @override
+  String get tutorialPerformanceBody =>
+      'It removes the glass and reflection effects to keep browsing smooth on a small device, such as a Fire TV Stick.';
+
+  @override
+  String get tutorialPerformanceSmall =>
+      'This device has little memory: Performance mode is recommended.';
+
+  @override
+  String get tutorialPerformanceLarge =>
+      'This device has enough memory to keep the effects.';
+
+  @override
+  String get tutorialPerformanceOn => 'Turn on Performance mode';
+
+  @override
+  String get tutorialPerformanceOff => 'Turn off Performance mode';
+
+  @override
+  String get tutorialControlsTitle => 'Remote, mouse or keyboard';
+
+  @override
+  String get tutorialControlsBody =>
+      'Arrows to move, OK to open or play, Back to go back.\nA long press on OK, or the Menu key, opens the menu of a movie, a series or an episode.\nWith a mouse: click to open, right-click for the menu. With a keyboard: arrows, Enter and Esc.';
+
+  @override
+  String get tutorialHomeTitle => 'The home screen';
+
+  @override
+  String get tutorialHomeBody =>
+      '“Continue watching” picks up where you left off, in any version.\nYour favorites have their own row: add them from a title\'s menu.\nPopular series and movies follow the trends in your country.';
+
+  @override
+  String get tutorialDetailsTitle => 'Pages and versions';
+
+  @override
+  String get tutorialDetailsBody =>
+      'A movie or a series often comes in several languages and qualities: its page brings them together, and the Version button switches between them. Your progress counts for all of them.\nA series page shows its seasons, the episodes you\'ve watched and the upcoming ones.';
+
+  @override
+  String get tutorialLiveTitle => 'Live channels';
+
+  @override
+  String get tutorialLiveBody =>
+      'Channels are sorted by country, with what\'s on now. A channel offered in several qualities only appears once.\nIf a channel stutters, add a delay in Settings.';
+
+  @override
+  String get tutorialPlayerTitle => 'Player and subtitles';
+
+  @override
+  String get tutorialPlayerBody =>
+      'OK shows the controls: audio, subtitles, version and episodes.\nSubtitles come from the video. With an optional free DeepL key, they\'re translated into your language as you watch.';
+
+  @override
+  String get tutorialAddKey => 'Add a DeepL key';
+
+  @override
+  String get tutorialSyncTitle => 'Sync and updates';
+
+  @override
+  String get tutorialSyncBody =>
+      'Your playlist updates every day, never during playback.\nWhen a new version of Aero IPTV comes out, a banner tells you.\nAll these settings, and this tutorial, are in Settings.';
+
+  @override
+  String get settingsTutorial => 'Show the tutorial again';
 }

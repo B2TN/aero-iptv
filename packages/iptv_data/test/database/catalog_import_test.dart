@@ -1526,6 +1526,15 @@ void main() {
       },
     );
 
+    test('retient que le tutoriel a été vu', () async {
+      final settings = SettingsRepositoryImpl(db);
+      expect((await settings.watch().first).tutorialDone, isFalse);
+
+      await settings.save(const AppSettings(tutorialDone: true));
+
+      expect((await settings.watch().first).tutorialDone, isTrue);
+    });
+
     test('une apparence illisible revient aux valeurs par défaut', () async {
       await db.customStatement(
         "INSERT INTO app_settings VALUES ('subtitle_color', 'violet'), "

@@ -65,6 +65,8 @@ The same file works on 32-bit and 64-bit TVs: there is no separate 64-bit versio
 
 Add your M3U playlist or your Xtream Codes login, and you're ready. Aero IPTV is a player: it provides **no channels and no content**. You need a playlist or a subscription from a provider.
 
+A short tutorial opens on the very first launch: it helps you add your playlist, pick the language and Performance mode, and shows the main features. You can skip it at any time and see it again from **Settings**.
+
 ## What's inside
 
 - **A welcoming home screen**: featured picks, trending titles, and resume where you left off.

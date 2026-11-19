@@ -136,11 +136,26 @@ void main() {
           trendingRepositoryProvider.overrideWithValue(
             FakeTrending(server.baseUrl),
           ),
+          countryLocatorProvider.overrideWithValue(const FakeCountry()),
         ],
       );
     });
     await tester.pumpWidget(RepaintBoundary(key: root, child: app));
     await wait(tester, 900);
+
+    // Première installation : le tutoriel s'ouvre, « Suivant » a le focus.
+    expectFocus('tutoriel');
+    expect(find.text('Bienvenue dans Aero IPTV'), findsOneWidget);
+    await shot(tester, '00_tutoriel');
+    // Sans playlist, son étape met en avant l'ajout.
+    await press(tester, LogicalKeyboardKey.enter);
+    await wait(tester, 300);
+    expectFocus('tutoriel, étape de la playlist');
+    await shot(tester, '00_tutoriel_playlist');
+    // Retour revient à la première étape, puis ferme le tutoriel.
+    await press(tester, LogicalKeyboardKey.escape, times: 2);
+    await wait(tester, 500);
+    expect(find.text('Bienvenue dans Aero IPTV'), findsNothing);
 
     final element = tester.element(find.byType(AeroIptvApp));
     final container = ProviderScope.containerOf(element);
@@ -366,10 +381,11 @@ void main() {
     expectFocus('paramètres');
     await shot(tester, '13_parametres');
     where = 'parametres';
-    await press(tester, LogicalKeyboardKey.arrowDown, times: 12);
+    // Une pression de plus que de lignes : la liste est parcourue en entier.
+    await press(tester, LogicalKeyboardKey.arrowDown, times: 14);
     await press(tester, LogicalKeyboardKey.arrowLeft);
     await press(tester, LogicalKeyboardKey.arrowRight);
-    await press(tester, LogicalKeyboardKey.arrowUp, times: 12);
+    await press(tester, LogicalKeyboardKey.arrowUp, times: 14);
     // Haut depuis la liste mène à l'onglet affiché, pas à son voisin.
     expect(FocusManager.instance.primaryFocus?.debugLabel, 'settings');
     await press(tester, LogicalKeyboardKey.arrowDown);

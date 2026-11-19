@@ -1,5 +1,13 @@
 import 'package:iptv_domain/iptv_domain.dart';
 
+/// Pays simulé : les visites ne demandent rien à country.is.
+final class FakeCountry implements CountryLocator {
+  const FakeCountry();
+
+  @override
+  Future<String> country() async => 'FR';
+}
+
 /// Tendances simulées : elles imposent une image large, comme le ferait TMDb.
 final class FakeTrending implements TrendingRepository {
   const FakeTrending(this._baseUrl);
