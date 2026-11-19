@@ -2,7 +2,6 @@ import 'package:drift/drift.dart';
 import 'package:iptv_domain/iptv_domain.dart';
 
 import '../app_database.dart';
-import '../connection.dart';
 
 /// Lignes supprimées à chaque passe : les requêtes de l'interface peuvent
 /// s'intercaler entre deux passes.
@@ -15,6 +14,83 @@ const Map<ContentKind, List<String>> _sectionTables = {
   ContentKind.movie: ['movies'],
   ContentKind.live: ['live_channels', 'channel_groups'],
 };
+
+/// Tables dont les versions se regroupent en fiches. Plusieurs films sortent
+/// parfois la même année sous un même nom : une franchise ne relie que des
+/// séries.
+const List<({String table, bool franchises})> _groupedTables = [
+  (table: 'movies', franchises: false),
+  (table: 'series_entries', franchises: true),
+];
+
+/// Ce que le regroupement lit d'une version.
+const String groupingColumns =
+    'id, title_key, grouping_key, display_title, language_tag, year, '
+    'poster_url, tmdb_id';
+
+/// Fiche de chaque version de [rows] (lues par [groupingColumns]) : le
+/// titre, l'année s'il a des homonymes, puis la fiche d'une version
+/// traduite. [rows] contient toutes les versions de chacun de ses titres.
+///
+/// Retourne les versions dont la fiche change, avec la nouvelle.
+Map<int, String> regroupedKeys(
+  Iterable<QueryRow> rows, {
+  required bool franchises,
+}) {
+  final years = <String, Set<int>>{};
+  for (final row in rows) {
+    final year = row.readNullable<int>('year');
+    if (year != null) (years[row.read<String>('title_key')] ??= {}).add(year);
+  }
+  String baseKey(QueryRow row) {
+    final title = row.read<String>('title_key');
+    final year = row.readNullable<int>('year');
+    return year != null && years[title]!.length > 1 ? '$title#$year' : title;
+  }
+
+  final merged = VersionGrouper.merge([
+    for (final row in rows)
+      VersionCandidate(
+        groupingKey: baseKey(row),
+        title: row.read<String>('display_title'),
+        label: row.readNullable<String>('language_tag'),
+        year: row.readNullable<int>('year'),
+        posterUrl: row.readNullable<String>('poster_url'),
+        tmdbId: row.readNullable<String>('tmdb_id'),
+      ),
+  ], franchises: franchises);
+  return {
+    for (final row in rows)
+      if ((merged[baseKey(row)] ?? baseKey(row)) case final key
+          when key != row.read<String>('grouping_key'))
+        row.read<int>('id'): key,
+  };
+}
+
+/// Titres réécrits par requête quand leurs fiches changent.
+const int _keysPerWrite = 500;
+
+/// Donne à chaque titre de [table] nommé dans [keys] sa nouvelle fiche, par
+/// lots : une requête par titre coûterait un aller-retour à la base chacun,
+/// et un import en réunit des dizaines de milliers.
+Future<void> writeGroupingKeys(
+  AppDatabase db,
+  String table,
+  Map<int, String> keys,
+) async {
+  final entries = keys.entries.toList();
+  for (var start = 0; start < entries.length; start += _keysPerWrite) {
+    final chunk = entries.skip(start).take(_keysPerWrite).toList();
+    await db.customStatement(
+      'UPDATE $table SET grouping_key = CASE id '
+      '${List.filled(chunk.length, 'WHEN ? THEN ?').join(' ')} END '
+      'WHERE id IN (${chunk.map((entry) => entry.key).join(', ')})',
+      [
+        for (final MapEntry(key: id, value: key) in chunk) ...[id, key],
+      ],
+    );
+  }
+}
 
 /// Opérations sur un catalogue entier.
 final class CatalogMaintenanceDao {
@@ -32,58 +108,56 @@ final class CatalogMaintenanceDao {
         ),
       );
 
-  /// Sépare les séries homonymes : si un titre existe avec plusieurs années,
-  /// l'année entre dans la clé. Une version sans année reste sur la clé du titre.
-  Future<void> separateHomonyms(int catalogId) => _db.customStatement(
-    '''
-    UPDATE series_entries
-    SET grouping_key = title_key || '#' || year
-    WHERE catalog_id = ?1 AND year IS NOT NULL AND title_key IN (
-      SELECT title_key FROM series_entries
-      WHERE catalog_id = ?1 AND year IS NOT NULL
-      GROUP BY title_key
-      HAVING COUNT(DISTINCT year) > 1
-    )
-    ''',
-    [catalogId],
-  );
+  /// Sépare les films et les séries homonymes : si un titre existe avec
+  /// plusieurs années, l'année entre dans la clé. Une version sans année
+  /// reste sur la clé du titre, à part, sauf si son identifiant TMDb ou son
+  /// affiche la rattache ensuite à l'une des années.
+  Future<void> separateHomonyms(int catalogId) async {
+    for (final (:table, franchises: _) in _groupedTables) {
+      await _db.customStatement(
+        '''
+        UPDATE $table
+        SET grouping_key = title_key || '#' || year
+        WHERE catalog_id = ?1 AND year IS NOT NULL AND title_key IN (
+          SELECT title_key FROM $table
+          WHERE catalog_id = ?1 AND year IS NOT NULL
+          GROUP BY title_key
+          HAVING COUNT(DISTINCT year) > 1
+        )
+        ''',
+        [catalogId],
+      );
+    }
+  }
 
   /// Relie les versions de titres traduits, reconnues à leur identifiant TMDb
   /// ou à leur affiche.
   Future<void> mergeTranslatedVersions(int catalogId) async {
-    final rows = await _db
-        .customSelect(
-          '''
-          SELECT grouping_key, display_title, language_tag, year, poster_url,
-                 tmdb_id
-          FROM series_entries WHERE catalog_id = ?1
-          ''',
-          variables: [Variable.withInt(catalogId)],
-        )
-        .get();
-    final merged = VersionGrouper.merge(
-      rows.map(
-        (row) => VersionCandidate(
-          groupingKey: row.read<String>('grouping_key'),
-          title: row.read<String>('display_title'),
-          label: row.readNullable<String>('language_tag'),
-          year: row.readNullable<int>('year'),
-          posterUrl: row.readNullable<String>('poster_url'),
-          tmdbId: row.readNullable<String>('tmdb_id'),
+    for (final (:table, :franchises) in _groupedTables) {
+      final rows = await _db
+          .customSelect(
+            'SELECT $groupingColumns FROM $table WHERE catalog_id = ?1',
+            variables: [Variable.withInt(catalogId)],
+          )
+          .get();
+      final merged = VersionGrouper.merge(
+        rows.map(
+          (row) => VersionCandidate(
+            groupingKey: row.read<String>('grouping_key'),
+            title: row.read<String>('display_title'),
+            label: row.readNullable<String>('language_tag'),
+            year: row.readNullable<int>('year'),
+            posterUrl: row.readNullable<String>('poster_url'),
+            tmdbId: row.readNullable<String>('tmdb_id'),
+          ),
         ),
-      ),
-    );
-    await transactionKeepingCause(_db, () async {
-      for (final entry in merged.entries) {
-        await _db.customStatement(
-          '''
-          UPDATE series_entries SET grouping_key = ?1
-          WHERE catalog_id = ?2 AND grouping_key = ?3
-          ''',
-          [entry.value, catalogId, entry.key],
-        );
-      }
-    });
+        franchises: franchises,
+      );
+      await writeGroupingKeys(_db, table, {
+        for (final row in rows)
+          row.read<int>('id'): ?merged[row.read<String>('grouping_key')],
+      });
+    }
   }
 
   /// Construit l'index de recherche des films et des séries.
@@ -100,7 +174,7 @@ final class CatalogMaintenanceDao {
   static const String indexMoviesSql = '''
     INSERT INTO search_index
       (rowid, title, group_key, kind, ref_id, catalog_id, poster_url)
-    SELECT id * 2, display_title, 'm' || title_key, 1, id, catalog_id,
+    SELECT id * 2, display_title, 'm' || grouping_key, 1, id, catalog_id,
            poster_url
     FROM movies''';
 

@@ -31,9 +31,8 @@ CREATE TABLE watch_progress (
 
 CREATE INDEX watch_progress_recent ON watch_progress (source_id, updated_at DESC);
 
--- Favoris. `favorite_key` regroupe toutes les versions d'un contenu et survit
--- aux synchronisations : clé de titre d'un film, clé de regroupement d'une
--- série ou d'une chaîne.
+-- Favoris. `favorite_key` regroupe toutes les versions d'un contenu : fiche
+-- d'un film ou d'une série, clé de regroupement d'une chaîne.
 CREATE TABLE favorites (
   source_id INTEGER NOT NULL REFERENCES sources (id) ON DELETE CASCADE,
   kind INTEGER NOT NULL,
@@ -41,6 +40,10 @@ CREATE TABLE favorites (
   title TEXT NOT NULL,
   poster_url TEXT,
   added_at INTEGER NOT NULL,
+  -- Une version du film ou de la série (`content_key` d'un film, `entry_key`
+  -- d'une série) : si la synchronisation les regroupe autrement, le favori
+  -- retrouve sa fiche par elle.
+  content_key TEXT,
   PRIMARY KEY (source_id, kind, favorite_key)
 ) WITHOUT ROWID AS FavoriteRow;
 

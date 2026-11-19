@@ -102,6 +102,18 @@ final class CatalogRepositoryImpl implements CatalogRepository {
   }
 
   @override
+  Future<List<Movie>> moviesByGroupingKeys(
+    int sourceId,
+    Set<String> groupingKeys,
+  ) async {
+    if (groupingKeys.isEmpty) return const [];
+    final rows = await _db
+        .moviesWithGroupingKeys(sourceId: sourceId, keys: groupingKeys.toList())
+        .get();
+    return rows.map(_toMovie).toList(growable: false);
+  }
+
+  @override
   Future<Series?> seriesById(int seriesEntryId) async {
     final row = await _db.seriesEntryById(id: seriesEntryId).getSingleOrNull();
     if (row == null) return null;
@@ -447,6 +459,10 @@ final class CatalogRepositoryImpl implements CatalogRepository {
     posterUrl: row.posterUrl,
     category: row.category,
     languageTag: row.languageTag,
+    groupingKey: row.groupingKey.isEmpty ? row.titleKey : row.groupingKey,
+    quality: row.quality < StreamQuality.values.length
+        ? StreamQuality.values[row.quality]
+        : StreamQuality.unknown,
     locator: LocatorColumns(
       streamUrl: row.streamUrl,
       xtreamStreamId: row.xtreamStreamId,

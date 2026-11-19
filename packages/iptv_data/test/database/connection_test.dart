@@ -98,27 +98,18 @@ void main() {
   });
 
   // Ce que la box Android subissait : sans dossier temporaire utilisable, le
-  // regroupement échoue, et l'erreur doit dire pourquoi.
-  test('sans dossier temporaire, l erreur garde sa vraie cause', () async {
+  // regroupement échouait. Il réécrit désormais chaque version par son
+  // identifiant, sans passer par un fichier temporaire.
+  test('sans dossier temporaire, le regroupement passe quand même', () async {
     final db = AppDatabase(openAppDatabase(File('${directory.path}/c.db')));
     await _fillWithSplitSeries(db);
     await db.customSelect('SELECT 1').get();
     sqlite3.tempDirectory = '${directory.path}/absent';
+    addTearDown(() => sqlite3.tempDirectory = null);
 
-    await expectLater(
-      CatalogMaintenanceDao(db).mergeTranslatedVersions(1),
-      // L'erreur arrive de l'isolate de la base, enveloppée par Drift.
-      throwsA(
-        predicate<Object>(
-          (error) =>
-              '$error'.contains('SqliteException') &&
-              !'$error'.contains('cannot rollback'),
-          'une erreur SQLite autre que l annulation impossible',
-        ),
-      ),
-    );
-    expect(await _keysOf(db, '42'), 2);
-    sqlite3.tempDirectory = null;
+    await CatalogMaintenanceDao(db).mergeTranslatedVersions(1);
+
+    expect(await _keysOf(db, '42'), 1);
     await db.close();
   });
 

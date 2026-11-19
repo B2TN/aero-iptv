@@ -190,11 +190,11 @@ final class SearchRepositoryImpl implements SearchRepository {
   ) async {
     if (keys.isEmpty) return const {};
     final rows = await _db
-        .moviesWithTitleKeys(sourceId: sourceId, keys: keys)
+        .moviesWithGroupingKeys(sourceId: sourceId, keys: keys)
         .get();
     final versions = <String, List<_Version>>{};
     for (final row in rows) {
-      (versions[row.titleKey] ??= []).add(
+      (versions[row.groupingKey] ??= []).add(
         _Version(row.id, row.displayTitle, row.posterUrl, row.languageTag),
       );
     }

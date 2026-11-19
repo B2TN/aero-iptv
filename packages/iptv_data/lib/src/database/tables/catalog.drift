@@ -86,12 +86,21 @@ CREATE TABLE movies (
   details_loaded BOOLEAN NOT NULL DEFAULT FALSE,
   -- Empreinte de l'objet du fournisseur : la synchronisation saute un film
   -- qui n'a pas changé.
-  source_hash INTEGER
+  source_hash INTEGER,
+  -- Fiche du film, commune à ses versions : `title_key`, avec l'année
+  -- lorsque deux films portent le même nom, ou la fiche d'une version
+  -- traduite reconnue à son identifiant TMDb ou à son affiche.
+  grouping_key TEXT NOT NULL DEFAULT '',
+  tmdb_id TEXT,
+  -- Qualité annoncée par le titre (`StreamQuality`) : elle distingue deux
+  -- versions d'une même langue.
+  quality INTEGER NOT NULL DEFAULT 0
 ) AS MovieRow;
 
 CREATE INDEX movies_browse ON movies (catalog_id, sort_order);
 CREATE INDEX movies_title ON movies (catalog_id, title_key);
 CREATE INDEX movies_content ON movies (catalog_id, content_key);
+CREATE INDEX movies_group ON movies (catalog_id, grouping_key);
 
 -- Une ligne par version d'une série. `title_key` identifie le titre ;
 -- `grouping_key` y ajoute l'année lorsque deux séries portent le même nom.
@@ -285,6 +294,12 @@ moviesWithTitleKeys:
   SELECT * FROM movies
   WHERE catalog_id = (SELECT active_catalog_id FROM sources WHERE id = :source_id)
     AND title_key IN :keys
+  ORDER BY sort_order;
+
+moviesWithGroupingKeys:
+  SELECT * FROM movies
+  WHERE catalog_id = (SELECT active_catalog_id FROM sources WHERE id = :source_id)
+    AND grouping_key IN :keys
   ORDER BY sort_order;
 
 -- Le titre et l'affiche d'une série fusionnée dépendent de la langue de

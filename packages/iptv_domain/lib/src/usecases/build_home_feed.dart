@@ -66,7 +66,7 @@ final class BuildHomeFeed {
     // Chaque version d'un film est une ligne du catalogue : une seule par titre.
     final shownTitles = <String>{};
     final movieRow = [...movies, ...moviesInLanguage, ...catalogMovies.items]
-        .where((movie) => shownTitles.add(GroupingKey.of(movie.title)))
+        .where((movie) => shownTitles.add(movie.groupingKey))
         .take(_rowSize)
         .toList(growable: false);
     final seriesRow = [
@@ -108,22 +108,26 @@ final class BuildHomeFeed {
   ) async {
     if (items.isEmpty) return const [];
 
-    // Un film existe souvent en plusieurs langues : celle de l'utilisateur prime.
+    // Un film existe souvent en plusieurs langues, sous plusieurs titres :
+    // sa fiche les réunit, et la langue de l'utilisateur prime.
+    final found = await _catalog.moviesByTitleKeys(sourceId, _keysOf(items));
     final versions = <String, List<Movie>>{};
-    for (final movie in await _catalog.moviesByTitleKeys(
-      sourceId,
-      _keysOf(items),
-    )) {
-      (versions[GroupingKey.of(movie.title)] ??= []).add(movie);
+    for (final movie in await _catalog.moviesByGroupingKeys(sourceId, {
+      for (final movie in found) movie.groupingKey,
+    })) {
+      (versions[movie.groupingKey] ??= []).add(movie);
     }
-    final byKey = {
+    final best = {
       for (final entry in versions.entries)
-        entry.key: versionsByLanguage(
-          entry.value,
-          (movie) => movie.languageTag,
-          language,
-        ).first,
+        entry.key: movieVersionsByLanguage(entry.value, language).first,
     };
+    // Une tendance se reconnaît à son titre ; elle mène à la fiche entière.
+    final byKey = <String, Movie>{};
+    for (final movie in found) {
+      if (best[movie.groupingKey] case final shown?) {
+        byKey.putIfAbsent(GroupingKey.of(movie.title), () => shown);
+      }
+    }
     final matched = <Movie>[];
     for (final item in items) {
       final movie = _find(byKey, item);

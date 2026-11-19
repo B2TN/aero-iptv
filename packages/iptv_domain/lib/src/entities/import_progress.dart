@@ -7,10 +7,11 @@ enum ImportStage { connecting, catalog, indexing, epg, done }
 /// Finition appliquée au catalogue reçu, avant son affichage. Aucune n'est
 /// indispensable : le catalogue reste lisible si l'une d'elles échoue.
 enum CatalogRefinement {
-  /// Sépare les séries homonymes par leur année.
+  /// Sépare les films et les séries homonymes par leur année.
   homonyms,
 
-  /// Relie les versions d'une même série en plusieurs langues.
+  /// Relie les versions d'un même film ou d'une même série en plusieurs
+  /// langues.
   versions,
 
   /// Prépare l'index de la recherche.

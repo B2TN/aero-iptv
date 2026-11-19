@@ -4,7 +4,7 @@ import 'grouping_key.dart';
 ///
 /// À incrémenter quand ces règles changent : les catalogues déjà importés sont
 /// alors réimportés automatiquement.
-const int catalogRulesVersion = 6;
+const int catalogRulesVersion = 7;
 
 /// Série telle que l'import la voit, avant le regroupement final.
 final class VersionCandidate {
@@ -56,7 +56,14 @@ const int _maxTranslatedVersions = 3;
 ///    d'une même série sous deux titres.
 abstract final class VersionGrouper {
   /// Retourne, pour chaque clé à fusionner, la clé commune à lui donner.
-  static Map<String, String> merge(Iterable<VersionCandidate> entries) {
+  ///
+  /// [franchises] rapproche aussi les titres d'une même franchise (point 3) :
+  /// sûr pour les séries, pas pour des films, dont plusieurs sortent parfois
+  /// la même année sous un même nom.
+  static Map<String, String> merge(
+    Iterable<VersionCandidate> entries, {
+    bool franchises = true,
+  }) {
     final sets = _KeySets();
     final byKey = <String, List<VersionCandidate>>{};
     final byTmdb = <String, Set<String>>{};
@@ -80,7 +87,7 @@ abstract final class VersionGrouper {
         sets.unionAll(keys);
       }
     }
-    _mergeFranchises(byKey, sets);
+    if (franchises) _mergeFranchises(byKey, sets);
 
     final components = <String, List<String>>{};
     for (final key in byKey.keys) {

@@ -37,6 +37,12 @@ final class _Catalog extends Fake implements CatalogRepository {
       versions;
 
   @override
+  Future<List<Movie>> moviesByGroupingKeys(
+    int sourceId,
+    Set<String> keys,
+  ) async => versions;
+
+  @override
   Future<TitleDetails> movieDetails(int sourceId, int movieId) async =>
       TitleDetails.none;
 }
@@ -216,7 +222,7 @@ void main() {
           duration: const Duration(minutes: 95),
           updatedAt: DateTime.utc(2026, 11, 13),
           locator: const DirectStream('http://s/2.mkv'),
-          workKey: WorkKeys.movie('Lagon'),
+          workKey: WorkKeys.movie(GroupingKey.of('Lagon')),
         ),
       ],
     );
@@ -246,7 +252,7 @@ void main() {
           duration: const Duration(minutes: 100),
           updatedAt: DateTime.utc(2026, 11, 13),
           locator: const DirectStream('http://s/1.mkv'),
-          workKey: WorkKeys.movie('Lagon'),
+          workKey: WorkKeys.movie(GroupingKey.of('Lagon')),
           finished: finished,
         );
 

@@ -14,6 +14,7 @@ import '../../../design_system/tokens/aero_tokens.dart';
 import '../../../focus/focus_guard.dart';
 import '../../../l10n/version_names.dart';
 import '../../player/player_target.dart';
+import '../movie_versions.dart';
 import '../widgets/detail_parts.dart';
 
 /// Résumé, genre et durée d'une version du film. Sans réponse du fournisseur,
@@ -91,19 +92,9 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
   Future<void> _loadVersions() async {
     // Sans regroupement, chaque version est un film à part.
     if (!ref.read(settingsProvider).groupMovies) return;
-    final movies = await ref.read(catalogRepositoryProvider).moviesByTitleKeys(
-      widget.sourceId,
-      {GroupingKey.of(_movie.title)},
-    );
+    final versions = await movieVersionsOf(ref, widget.sourceId, _movie);
     if (!mounted) return;
-    final language = ref.read(settingsProvider).languageCode;
-    setState(
-      () => _versions = versionsByLanguage(
-        movies,
-        (version) => version.languageTag ?? version.rawTitle,
-        language,
-      ),
-    );
+    setState(() => _versions = versions);
   }
 
   void _play({Duration? at}) {
@@ -129,7 +120,7 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
     final progress = ref.watch(
       _progressProvider((
         sourceId: widget.sourceId,
-        workKey: WorkKeys.movie(_movie.title),
+        workKey: WorkKeys.movie(_movie.groupingKey),
       )),
     );
     final resumeAt = progress.hasValue

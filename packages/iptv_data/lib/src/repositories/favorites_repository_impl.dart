@@ -30,18 +30,22 @@ final class FavoritesRepositoryImpl implements FavoritesRepository {
           );
 
   @override
-  Future<void> add(Favorite favorite) => _db
-      .into(_db.favorites)
-      .insertOnConflictUpdate(
-        FavoritesCompanion.insert(
-          sourceId: favorite.sourceId,
-          kind: favorite.kind.index,
-          favoriteKey: favorite.key,
-          title: favorite.title,
-          posterUrl: Value(favorite.posterUrl),
-          addedAt: favorite.addedAt.millisecondsSinceEpoch,
-        ),
-      );
+  Future<void> add(Favorite favorite) async {
+    await _db
+        .into(_db.favorites)
+        .insertOnConflictUpdate(
+          FavoritesCompanion.insert(
+            sourceId: favorite.sourceId,
+            kind: favorite.kind.index,
+            favoriteKey: favorite.key,
+            title: favorite.title,
+            posterUrl: Value(favorite.posterUrl),
+            addedAt: favorite.addedAt.millisecondsSinceEpoch,
+          ),
+        );
+    // Le témoin qui fera suivre au favori sa fiche, si elle change.
+    await _db.refreshUserKeys();
+  }
 
   @override
   Future<void> remove(int sourceId, ContentKind kind, String key) =>

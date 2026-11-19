@@ -24,6 +24,17 @@ const List<String> _progressColumns = [
 /// Ramène une base neuve au schéma de [version] : sans les favoris avant la
 /// version 5, sans les colonnes de résumés avant la version 4.
 Future<void> _downgrade(AppDatabase database, int version) async {
+  if (version < 10) {
+    await database.customStatement('DROP INDEX movies_group');
+    for (final (table, column) in [
+      ('movies', 'grouping_key'),
+      ('movies', 'tmdb_id'),
+      ('movies', 'quality'),
+      ('favorites', 'content_key'),
+    ]) {
+      await database.customStatement('ALTER TABLE $table DROP COLUMN $column');
+    }
+  }
   if (version < 9) {
     for (final (table, column) in [
       ('movies', 'source_hash'),
@@ -250,4 +261,69 @@ void main() {
     // L'index de recherche se reconstruit au réimport.
     expect(searchRows.read<int>('n'), 0);
   });
+
+  test(
+    'la version 10 donne une fiche aux films, et un témoin aux favoris',
+    () async {
+      final before = AppDatabase(NativeDatabase(file));
+      await before.customSelect('SELECT 1').get();
+      await _downgrade(before, 9);
+      for (final statement in [
+        "INSERT INTO sources (id, name, kind, active_catalog_id) "
+            "VALUES (1, 'Essai', 1, 1)",
+        'INSERT INTO catalogs (id, source_id, created_at) VALUES (1, 1, 0)',
+        "INSERT INTO movies (catalog_id, raw_title, display_title, title_key, "
+            "content_key, sort_order) VALUES "
+            "(1, 'VO - Dune', 'Dune', 'dune', 'x:m:2', 1), "
+            "(1, 'FR - Dune', 'Dune', 'dune', 'x:m:1', 0)",
+        "INSERT INTO series_entries (catalog_id, raw_title, display_title, "
+            "title_key, grouping_key, sort_order, entry_key) "
+            "VALUES (1, 'Abysses', 'Abysses', 'abysses', 'abysses', 0, "
+            "'x:s:7')",
+        "INSERT INTO favorites (source_id, kind, favorite_key, title, added_at) "
+            "VALUES (1, 1, 'dune', 'Dune', 0), (1, 2, 'abysses', 'Abysses', 0), "
+            "(1, 1, 'disparu', 'Disparu', 0)",
+        "INSERT INTO watch_progress (source_id, content_key, kind, title, "
+            "position_ms, duration_ms, updated_at, work_key) "
+            "VALUES (1, 'x:m:2', 1, 'Dune', 1000, 2000, 0, 'm:dune')",
+      ]) {
+        await before.customStatement(statement);
+      }
+      await before.close();
+
+      final after = AppDatabase(NativeDatabase(file));
+      final movies = await after
+          .customSelect('SELECT grouping_key, quality FROM movies')
+          .get();
+      final favorites = {
+        for (final row
+            in await after
+                .customSelect('SELECT favorite_key, content_key FROM favorites')
+                .get())
+          row.read<String>('favorite_key'): row.readNullable<String>(
+            'content_key',
+          ),
+      };
+      final progress = await after
+          .customSelect('SELECT work_key FROM watch_progress')
+          .getSingle();
+      final index = await after
+          .customSelect(
+            "SELECT name FROM sqlite_master WHERE name = 'movies_group'",
+          )
+          .get();
+      await after.close();
+
+      // Chaque fiche est celle du titre, jusqu'au réimport qui les regroupe.
+      expect(
+        [for (final row in movies) row.read<String>('grouping_key')],
+        ['dune', 'dune'],
+      );
+      expect(movies.first.read<int>('quality'), 0);
+      expect(index, hasLength(1));
+      // La première version de chaque fiche sert de témoin.
+      expect(favorites, {'dune': 'x:m:1', 'abysses': 'x:s:7', 'disparu': null});
+      expect(progress.read<String?>('work_key'), 'm:dune');
+    },
+  );
 }

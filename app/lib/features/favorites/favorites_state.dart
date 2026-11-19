@@ -23,8 +23,8 @@ String channelFavoriteKey(Channel channel) =>
   return (countryCode: country, groupingKey: key.substring(separator + 1));
 }
 
-/// Clé de favori d'un film : toutes ses versions partagent son titre.
-String movieFavoriteKey(Movie movie) => GroupingKey.of(movie.title);
+/// Clé de favori d'un film : sa fiche, que partagent toutes ses versions.
+String movieFavoriteKey(Movie movie) => movie.groupingKey;
 
 /// Vrai si le contenu [key] de nature [kind] est en favori.
 ///

@@ -53,9 +53,13 @@ final class MovieEntry extends CatalogEntry {
     super.logoUrl,
     super.sourceHash,
     super.position,
+    this.tmdbId,
   });
 
   final StreamLocator locator;
+
+  /// Identifiant TMDb fourni par le panneau, s'il en donne un.
+  final String? tmdbId;
 }
 
 /// Série Xtream. Ses épisodes sont chargés à la première ouverture.

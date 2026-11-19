@@ -62,7 +62,7 @@ final _favoriteTitlesProvider =
       };
       final movies = <String, List<Movie>>{};
       if (movieKeys.isNotEmpty) {
-        for (final movie in await catalog.moviesByTitleKeys(
+        for (final movie in await catalog.moviesByGroupingKeys(
           source.id,
           movieKeys,
         )) {
@@ -81,11 +81,7 @@ final _favoriteTitlesProvider =
           if (favorite.kind == ContentKind.movie)
             if (movies[favorite.key] case final versions?)
               (
-                movie: versionsByLanguage(
-                  versions,
-                  (version) => version.languageTag ?? version.rawTitle,
-                  language,
-                ).first,
+                movie: movieVersionsByLanguage(versions, language).first,
                 series: null,
               )
             else

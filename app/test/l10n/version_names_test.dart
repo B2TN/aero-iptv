@@ -47,17 +47,22 @@ void main() {
     );
   });
 
-  test('le bouquet ne sert qu à distinguer deux libellés identiques', () {
-    Movie movie(String tag, String category) => Movie(
-      id: 1,
-      title: 'Lagon',
-      rawTitle: '$tag - Lagon',
-      contentKey: 'cle',
-      locator: const DirectStream('http://s/1.mkv'),
-      languageTag: tag,
-      category: category,
-    );
+  Movie movie(
+    String tag,
+    String category, [
+    StreamQuality quality = StreamQuality.unknown,
+  ]) => Movie(
+    id: 1,
+    title: 'Lagon',
+    rawTitle: '$tag - Lagon',
+    contentKey: 'cle',
+    locator: const DirectStream('http://s/1.mkv'),
+    languageTag: tag,
+    category: category,
+    quality: quality,
+  );
 
+  test('le bouquet ne sert qu à distinguer deux libellés identiques', () {
     expect(
       movieVersionNames(
         [movie('FR', 'Action'), movie('FR', 'Netflix'), movie('EN', 'Cinéma')],
@@ -65,6 +70,32 @@ void main() {
         'fr',
       ),
       ['Français (Action)', 'Français (Netflix)', 'Anglais'],
+    );
+  });
+
+  test('la qualité distingue deux versions d une même langue', () {
+    expect(
+      movieVersionNames(
+        [
+          movie('FR', 'Action', StreamQuality.uhd),
+          movie('FR', 'Netflix', StreamQuality.hd),
+          movie('EN', 'Cinéma', StreamQuality.hd),
+          movie('EN', 'Séries', StreamQuality.hd),
+        ],
+        l10n,
+        'fr',
+      ),
+      [
+        'Français 4K',
+        'Français HD',
+        'Anglais HD (Cinéma)',
+        'Anglais HD (Séries)',
+      ],
+    );
+    // Un libellé qui la cite déjà ne la répète pas.
+    expect(
+      versionName('4K-DE', l10n, 'fr', quality: StreamQuality.uhd),
+      'Allemand 4K',
     );
   });
 }

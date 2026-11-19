@@ -122,11 +122,16 @@ final class CatalogSession {
     final parsed = _cleaner.parse(entry.rawName, ContentKind.movie);
     final group = _parsedGroup(entry.rawGroup);
     final locator = LocatorColumns.from(entry.locator);
+    final titleKey = GroupingKey.of(parsed.title);
     return MoviesCompanion.insert(
       catalogId: catalogId,
       rawTitle: entry.rawName,
       displayTitle: parsed.title,
-      titleKey: GroupingKey.of(parsed.title),
+      titleKey: titleKey,
+      // Les finitions de l'import réunissent ensuite les fiches.
+      groupingKey: Value(titleKey),
+      tmdbId: Value(entry.tmdbId),
+      quality: Value(parsed.quality.index),
       contentKey: _contentKey('m', entry.rawName, locator),
       year: Value(parsed.year),
       languageTag: Value(parsed.language ?? group.language),

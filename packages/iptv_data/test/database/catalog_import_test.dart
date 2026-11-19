@@ -90,8 +90,9 @@ void main() {
     await db.customStatement(
       '''
       INSERT INTO movies (catalog_id, raw_title, display_title, title_key,
-        content_key, language_tag, poster_url, stream_url, sort_order)
-      SELECT active_catalog_id, ?1 || ?2, ?1, ?3, ?1 || ?2, ?2, ?4,
+        grouping_key, content_key, language_tag, poster_url, stream_url,
+        sort_order)
+      SELECT active_catalog_id, ?1 || ?2, ?1, ?3, ?3, ?1 || ?2, ?2, ?4,
         'http://s/film.mkv', 900
       FROM sources WHERE id = ?5
       ''',
@@ -101,7 +102,7 @@ void main() {
       '''
       INSERT INTO search_index (title, group_key, kind, ref_id, catalog_id,
         poster_url)
-      SELECT display_title, 'm' || title_key, 1, id, catalog_id, poster_url
+      SELECT display_title, 'm' || grouping_key, 1, id, catalog_id, poster_url
       FROM movies WHERE raw_title = ?1 || ?2
       ''',
       [displayTitle ?? title, tag],

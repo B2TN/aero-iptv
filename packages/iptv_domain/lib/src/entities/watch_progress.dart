@@ -1,11 +1,11 @@
-import '../normalization/grouping_key.dart';
 import 'content_kind.dart';
 import 'stream_locator.dart';
 
 /// Identité d'un contenu commune à toutes ses versions (VF, VO, VOSTFR…).
 abstract final class WorkKeys {
-  /// Un film : son titre normalisé, partagé par ses versions.
-  static String movie(String title) => 'm:${GroupingKey.of(title)}';
+  /// Un film : sa fiche, partagée par ses versions (voir
+  /// `Movie.groupingKey`).
+  static String movie(String groupingKey) => 'm:$groupingKey';
 
   /// Un épisode : sa série, sa saison et son numéro.
   static String episode(String seriesKey, int season, int number) =>

@@ -8,6 +8,7 @@ import '../../design_system/components/aero_menu.dart';
 import '../../l10n/version_names.dart';
 import '../favorites/favorites_state.dart';
 import '../player/player_target.dart';
+import 'movie_versions.dart';
 import 'open_continued.dart';
 import 'open_movie.dart';
 import 'open_series.dart';
@@ -27,18 +28,8 @@ Future<void> showMovieMenu(
   final source = ref.read(activeSourceProvider);
   if (source == null) return;
   final l10n = context.l10n;
-  final settings = ref.read(settingsProvider);
   final key = movieFavoriteKey(movie);
-  final versions = settings.groupMovies
-      ? versionsByLanguage(
-          await ref.read(catalogRepositoryProvider).moviesByTitleKeys(
-            source.id,
-            {key},
-          ),
-          (version) => version.languageTag ?? version.rawTitle,
-          settings.languageCode,
-        )
-      : [movie];
+  final versions = await movieVersionsOf(ref, source.id, movie);
   final played = {movie.contentKey, for (final v in versions) v.contentKey};
   final progress = await _latestProgress(
     ref,
@@ -306,7 +297,7 @@ Future<void> _playMovieVersion(
   final resumeAt = movieResumeAt(
     await ref
         .read(watchProgressRepositoryProvider)
-        .progressOf(sourceId, WorkKeys.movie(chosen.title)),
+        .progressOf(sourceId, WorkKeys.movie(chosen.groupingKey)),
   );
   if (!context.mounted) return;
   final target = PlayerTarget.movie(sourceId, chosen);

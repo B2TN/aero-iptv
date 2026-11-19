@@ -34,6 +34,12 @@ abstract interface class CatalogRepository {
   /// Films dont le titre normalisé figure dans [titleKeys].
   Future<List<Movie>> moviesByTitleKeys(int sourceId, Set<String> titleKeys);
 
+  /// Toutes les versions des fiches [groupingKeys] (voir `Movie.groupingKey`).
+  Future<List<Movie>> moviesByGroupingKeys(
+    int sourceId,
+    Set<String> groupingKeys,
+  );
+
   /// [grouped] applique le réglage de fusion des versions. Une série fusionnée
   /// prend le titre et l'affiche de sa version la plus proche de [language].
   Future<Page<Series>> series(

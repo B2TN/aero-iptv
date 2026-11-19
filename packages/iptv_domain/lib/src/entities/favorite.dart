@@ -2,8 +2,9 @@ import 'content_kind.dart';
 
 /// Film, série ou chaîne mis en favori.
 ///
-/// [key] survit aux synchronisations et regroupe toutes les versions : la clé
-/// de titre d'un film, la clé de regroupement d'une série ou d'une chaîne.
+/// [key] regroupe toutes les versions : la fiche d'un film ou d'une série,
+/// la clé de regroupement d'une chaîne. Si la synchronisation regroupe
+/// autrement un film ou une série, le favori suit sa fiche.
 final class Favorite {
   const Favorite({
     required this.sourceId,

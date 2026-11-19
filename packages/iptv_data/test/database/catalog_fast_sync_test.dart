@@ -27,6 +27,10 @@ final class _Panel {
   final Map<int, String> channels = {1: 'FR: TF1', 2: 'FR: France 2'};
   final Map<int, String> movies = {10: 'FR - Dune', 11: 'FR - Alien'};
 
+  /// Identifiants TMDb et affiches des films qui en ont.
+  final Map<int, String> movieTmdb = {};
+  final Map<int, String> moviePosters = {};
+
   /// Séries : nom, date de modification, identifiant TMDb.
   final Map<int, (String, int, String)> series = {
     20: ('FR - Lost', 100, '4607'),
@@ -56,6 +60,8 @@ final class _Panel {
             'stream_id': id,
             'category_id': '2',
             'container_extension': 'mkv',
+            'tmdb': ?movieTmdb[id],
+            'stream_icon': ?moviePosters[id],
           },
       ]),
       'get_series' => _json([
@@ -137,6 +143,50 @@ void main() {
         db,
       ).search(sourceId, query, const PageRequest(), language: 'fr');
       return [for (final hit in page.items) hit.title];
+    }
+
+    /// Fiche du film [contentKey] dans le catalogue affiché.
+    Future<String> sheetOf(String contentKey) async {
+      final row = await db
+          .customSelect(
+            'SELECT grouping_key FROM movies WHERE content_key = ?1 AND '
+            'catalog_id = (SELECT active_catalog_id FROM sources WHERE id = ?2)',
+            variables: [
+              Variable.withString(contentKey),
+              Variable.withInt(sourceId),
+            ],
+          )
+          .getSingle();
+      return row.read<String>('grouping_key');
+    }
+
+    /// Deux films homonymes, puis une version traduite de chacun : l'une
+    /// reconnue à son identifiant TMDb, l'autre à son affiche, que le
+    /// panneau donne dans une autre taille.
+    void addOdysseys({bool translations = true}) {
+      panel
+        ..movies[13] = "FR - L'Odyssée (2016)"
+        ..movies[14] = "FR - L'Odyssée (2026)"
+        ..movieTmdb.addAll({13: '331962', 14: '1368337'})
+        ..moviePosters[14] = 'https://image.tmdb.org/t/p/w500/odyssee.jpg';
+      if (!translations) return;
+      panel
+        ..movies[15] = 'EN - The Odyssey (2026)'
+        ..movies[16] = "VOSTFR - L'Odyssée"
+        ..movieTmdb[16] = '331962'
+        ..moviePosters[15] = 'https://image.tmdb.org/t/p/original/odyssee.jpg';
+    }
+
+    Future<void> expectOdysseysGrouped() async {
+      final classic = await sheetOf('x:m:13');
+      final remake = await sheetOf('x:m:14');
+      expect(classic, isNot(remake));
+      // Sans année, la version rejoint le film de son identifiant TMDb.
+      expect(await sheetOf('x:m:16'), classic);
+      // Sous un autre titre, celui de son affiche.
+      expect(await sheetOf('x:m:15'), remake);
+      expect(await found('odyssée'), hasLength(2));
+      expect(await found('odyssey'), hasLength(1));
     }
 
     setUp(() async {
@@ -250,6 +300,75 @@ void main() {
       final row = await db.seriesEntryById(id: lost).getSingle();
       expect(row.lastModified, 200);
       expect(await found('dune'), ['Dune']);
+    });
+
+    test('un homonyme sépare les fiches, et les favoris et les reprises '
+        'suivent', () async {
+      panel
+        ..movies[13] = "FR - L'Odyssée (2016)"
+        ..movieTmdb[13] = '331962';
+      await sync();
+      final before = await sheetOf('x:m:13');
+      await FavoritesRepositoryImpl(db).add(
+        Favorite(
+          sourceId: sourceId,
+          kind: ContentKind.movie,
+          key: before,
+          title: "L'Odyssée",
+          addedAt: now,
+        ),
+      );
+      await db.customStatement(
+        'INSERT INTO watch_progress (source_id, content_key, kind, title, '
+        'position_ms, duration_ms, updated_at, work_key) '
+        "VALUES (?1, 'x:m:13', 1, 'Odyssée', 1000, 2000, 0, ?2)",
+        [sourceId, 'm:$before'],
+      );
+      addOdysseys(translations: false);
+      // L'écran observe ses favoris : il doit voir le déplacement.
+      final seen = <List<String>>[];
+      final watching = FavoritesRepositoryImpl(db)
+          .watch(sourceId)
+          .listen((list) => seen.add([for (final f in list) f.key]));
+      addTearDown(watching.cancel);
+
+      await sync();
+      await pumpEventQueue();
+
+      final after = await sheetOf('x:m:13');
+      expect(seen.last, [after]);
+      expect(after, isNot(before));
+      expect(after, isNot(await sheetOf('x:m:14')));
+      final favorites = await db
+          .customSelect('SELECT favorite_key, content_key FROM favorites')
+          .get();
+      expect(favorites.single.read<String>('favorite_key'), after);
+      expect(favorites.single.read<String?>('content_key'), 'x:m:13');
+      final progress = await db
+          .customSelect('SELECT work_key FROM watch_progress')
+          .getSingle();
+      expect(progress.read<String?>('work_key'), 'm:$after');
+    });
+
+    test(
+      'une version traduite ou sans année rejoint la fiche de son film',
+      () async {
+        addOdysseys(translations: false);
+        await sync();
+        addOdysseys();
+
+        await sync();
+
+        await expectOdysseysGrouped();
+      },
+    );
+
+    test('un import complet regroupe les films de la même façon', () async {
+      addOdysseys();
+
+      await sync(full: true);
+
+      await expectOdysseysGrouped();
     });
 
     test('une série modifiée sera redemandée', () async {

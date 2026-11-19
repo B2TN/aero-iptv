@@ -65,9 +65,15 @@ final class PlayerTarget {
     versions: (ref, context) async {
       final l10n = context.l10n;
       final language = ref.read(settingsProvider).languageCode;
-      final movies = await ref
-          .read(catalogRepositoryProvider)
-          .moviesByTitleKeys(sourceId, {GroupingKey.of(movie.title)});
+      // Toutes les versions de la fiche, même sans regroupement des films :
+      // le lecteur passe de l'une à l'autre.
+      final movies = movieVersionsByLanguage(
+        await ref.read(catalogRepositoryProvider).moviesByGroupingKeys(
+          sourceId,
+          {movie.groupingKey},
+        ),
+        language,
+      );
       final names = movieVersionNames(movies, l10n, language);
       return [
         for (final (index, version) in movies.indexed)
@@ -85,7 +91,7 @@ final class PlayerTarget {
       locator: movie.locator,
       posterUrl: movie.posterUrl,
       year: movie.year,
-      workKey: WorkKeys.movie(movie.title),
+      workKey: WorkKeys.movie(movie.groupingKey),
     ),
   );
 

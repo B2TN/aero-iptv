@@ -1,3 +1,5 @@
+import '../entities/movie.dart';
+
 /// Libellés des fournisseurs, ramenés à la langue de l'audio.
 const Map<String, String> _audioLanguages = {
   'AF': 'af',
@@ -99,22 +101,38 @@ int versionRank(String? label, String language) {
 
 /// Trie [versions] pour [language], sans changer l'ordre des versions de même
 /// rang. Le premier élément donne le titre et l'affiche à montrer.
+///
+/// Avec [quality], la meilleure qualité passe devant à rang égal.
 List<T> versionsByLanguage<T>(
   Iterable<T> versions,
   String? Function(T version) label,
-  String language,
-) {
+  String language, {
+  int Function(T version)? quality,
+}) {
   final ranked = [
     for (final (index, version) in versions.indexed)
       (
         rank: versionRank(label(version), language),
+        quality: quality?.call(version) ?? 0,
         index: index,
         value: version,
       ),
   ];
   ranked.sort((a, b) {
     final order = a.rank.compareTo(b.rank);
-    return order != 0 ? order : a.index.compareTo(b.index);
+    if (order != 0) return order;
+    final better = b.quality.compareTo(a.quality);
+    return better != 0 ? better : a.index.compareTo(b.index);
   });
   return [for (final item in ranked) item.value];
 }
+
+/// Versions d'un film pour [language] : sa langue d'abord, puis, d'une même
+/// langue, la meilleure qualité (4K, FHD, HD, SD).
+List<Movie> movieVersionsByLanguage(Iterable<Movie> movies, String language) =>
+    versionsByLanguage(
+      movies,
+      (movie) => movie.languageTag ?? movie.rawTitle,
+      language,
+      quality: (movie) => movie.quality.index,
+    );

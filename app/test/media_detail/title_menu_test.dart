@@ -64,6 +64,12 @@ final class _Catalog extends Fake implements CatalogRepository {
       versions;
 
   @override
+  Future<List<Movie>> moviesByGroupingKeys(
+    int sourceId,
+    Set<String> keys,
+  ) async => versions;
+
+  @override
   Future<List<MediaVersion>> versionsOf(
     int sourceId,
     String groupingKey,

@@ -52,7 +52,7 @@ WatchProgress _progress(ContentKind kind, String key) => WatchProgress(
   updatedAt: DateTime.utc(2026, 11, 13),
   locator: const DirectStream('http://s/reprise.mkv'),
   workKey: kind == ContentKind.movie
-      ? WorkKeys.movie('Lagon')
+      ? WorkKeys.movie(GroupingKey.of('Lagon'))
       : WorkKeys.episode('abysses', 2, 3),
   seriesKey: kind == ContentKind.series ? 'abysses' : null,
   season: kind == ContentKind.series ? 2 : null,
@@ -75,6 +75,12 @@ final class _Catalog extends Fake implements CatalogRepository {
   @override
   Future<List<Movie>> moviesByTitleKeys(int sourceId, Set<String> keys) async =>
       const [_movie];
+
+  @override
+  Future<List<Movie>> moviesByGroupingKeys(
+    int sourceId,
+    Set<String> keys,
+  ) async => const [_movie];
 
   @override
   Future<(Series, Episode)?> episodeByContentKey(

@@ -17,7 +17,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   /// Retrouve, dans le catalogue actif, l'identité commune aux versions des
   /// reprises enregistrées avant qu'elle n'existe. Une reprise dont le
@@ -48,6 +48,91 @@ class AppDatabase extends _$AppDatabase {
                               WHERE id = watch_progress.source_id)
         LIMIT 1)
       WHERE kind = 1''');
+  }
+
+  /// Rattache les favoris et les positions de lecture aux fiches du
+  /// catalogue affiché, après un regroupement qui a pu les changer : chacun
+  /// suit sa version, retrouvée par sa clé de contenu. Ce qui a quitté le
+  /// catalogue garde sa clé.
+  ///
+  /// Les listes observées à l'écran ne sont prévenues que si une ligne a
+  /// bougé : la synchronisation quotidienne n'en change presque jamais.
+  Future<void> refreshUserKeys() async {
+    const shownOf = '(SELECT active_catalog_id FROM sources WHERE id = ';
+    var favoritesMoved = 0;
+    var progressMoved = 0;
+    Future<int> write(String sql) => customUpdate(sql);
+    // Un favori sans témoin en reçoit un : la première version de sa fiche.
+    await write('''
+      UPDATE favorites SET content_key = CASE kind
+        WHEN 1 THEN (
+          SELECT m.content_key FROM movies m
+          WHERE m.catalog_id = ${shownOf}favorites.source_id)
+            AND m.grouping_key = favorites.favorite_key
+          ORDER BY m.sort_order LIMIT 1)
+        ELSE (
+          SELECT NULLIF(s.entry_key, '') FROM series_entries s
+          WHERE s.catalog_id = ${shownOf}favorites.source_id)
+            AND s.grouping_key = favorites.favorite_key
+          ORDER BY s.sort_order LIMIT 1)
+      END
+      WHERE content_key IS NULL AND kind IN (1, 2)''');
+    for (final (kind, table, key) in [
+      (1, 'movies', 'content_key'),
+      (2, 'series_entries', 'entry_key'),
+    ]) {
+      // La version témoin du favori [f], dans une autre fiche que la sienne.
+      String moved(String f) =>
+          '''
+        t.catalog_id = $shownOf$f.source_id)
+        AND t.$key = $f.content_key AND t.grouping_key <> $f.favorite_key''';
+      // Le favori passe à sa nouvelle fiche ; s'il y retrouve un autre favori,
+      // les deux n'en font plus qu'un.
+      favoritesMoved += await write('''
+        INSERT OR IGNORE INTO favorites (source_id, kind, favorite_key, title,
+          poster_url, added_at, content_key)
+        SELECT f.source_id, f.kind, t.grouping_key, f.title, f.poster_url,
+               f.added_at, f.content_key
+        FROM favorites f JOIN $table t ON ${moved('f')}
+        WHERE f.kind = $kind''');
+      favoritesMoved += await write('''
+        DELETE FROM favorites WHERE kind = $kind AND EXISTS (
+          SELECT 1 FROM $table t WHERE ${moved('favorites')})''');
+    }
+    progressMoved += await write('''
+      UPDATE watch_progress SET work_key = 'm:' || (
+        SELECT m.grouping_key FROM movies m
+        WHERE m.catalog_id = ${shownOf}watch_progress.source_id)
+          AND m.content_key = watch_progress.content_key
+        LIMIT 1)
+      WHERE kind = 1 AND EXISTS (
+        SELECT 1 FROM movies m
+        WHERE m.catalog_id = ${shownOf}watch_progress.source_id)
+          AND m.content_key = watch_progress.content_key
+          AND 'm:' || m.grouping_key IS NOT watch_progress.work_key)''');
+    const seriesOf =
+        '''
+      FROM episodes e JOIN series_entries s ON s.id = e.series_entry_id
+      WHERE e.catalog_id = ${shownOf}watch_progress.source_id)
+        AND e.content_key = watch_progress.content_key''';
+    progressMoved += await write(
+      '''
+      UPDATE watch_progress SET series_key = (
+        SELECT s.grouping_key $seriesOf LIMIT 1)
+      WHERE kind = 2 AND EXISTS (
+        SELECT 1 $seriesOf AND s.grouping_key IS NOT watch_progress.series_key)''',
+    );
+    progressMoved += await write('''
+      UPDATE watch_progress
+      SET work_key = 'e:' || series_key || ':' || season || ':' || episode
+      WHERE kind = 2 AND series_key IS NOT NULL AND season IS NOT NULL
+        AND episode IS NOT NULL
+        AND work_key IS NOT
+            'e:' || series_key || ':' || season || ':' || episode''');
+    notifyUpdates({
+      if (favoritesMoved > 0) TableUpdate.onTable(favorites),
+      if (progressMoved > 0) TableUpdate.onTable(watchProgress),
+    });
   }
 
   @override
@@ -120,6 +205,22 @@ class AppDatabase extends _$AppDatabase {
         await migrator.addColumn(movies, movies.sourceHash);
         await migrator.addColumn(seriesEntries, seriesEntries.sourceHash);
         await migrator.addColumn(sources, sources.liveHash);
+      }
+      if (from < 10) {
+        // Fiches des films, regroupées comme celles des séries. En attendant
+        // le réimport qu'entraîne `catalogRulesVersion`, chaque fiche est
+        // celle du titre : les clés des favoris et des reprises restent
+        // valables, et ce réimport les déplacera vers les nouvelles fiches.
+        await migrator.addColumn(movies, movies.groupingKey);
+        await migrator.addColumn(movies, movies.tmdbId);
+        await migrator.addColumn(movies, movies.quality);
+        await customStatement('UPDATE movies SET grouping_key = title_key');
+        await migrator.createIndex(moviesGroup);
+        // Avant la version 5, la table vient d'être créée, colonne comprise.
+        if (from >= 5) {
+          await migrator.addColumn(favorites, favorites.contentKey);
+        }
+        await refreshUserKeys();
       }
     },
   );

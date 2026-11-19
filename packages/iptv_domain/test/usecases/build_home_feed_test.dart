@@ -3,7 +3,7 @@ import 'package:test/test.dart';
 
 const StreamLocator locator = DirectStream('http://s/1.mkv');
 
-Movie movie(int id, String title, {String? tag}) => Movie(
+Movie movie(int id, String title, {String? tag, String? sheet}) => Movie(
   id: id,
   title: title,
   rawTitle: title,
@@ -11,6 +11,7 @@ Movie movie(int id, String title, {String? tag}) => Movie(
   locator: locator,
   posterUrl: 'http://p/$id.png',
   languageTag: tag,
+  groupingKey: sheet,
 );
 
 Series series(int id, String title) => Series(
@@ -76,6 +77,14 @@ final class FakeCatalog implements CatalogRepository {
     Set<String> titleKeys,
   ) async => movieList
       .where((item) => titleKeys.contains(GroupingKey.of(item.title)))
+      .toList();
+
+  @override
+  Future<List<Movie>> moviesByGroupingKeys(
+    int sourceId,
+    Set<String> groupingKeys,
+  ) async => movieList
+      .where((item) => groupingKeys.contains(item.groupingKey))
       .toList();
 
   @override
@@ -235,6 +244,31 @@ void main() {
     expect(feed.movies.map((item) => item.id), [2]);
     expect(feed.hero.single.imageUrl, 'http://b/Dune.jpg');
   });
+
+  test(
+    'une tendance mène à la fiche entière, même sous un autre titre',
+    () async {
+      final feed = await BuildHomeFeed(
+        FakeCatalog(
+          movieList: [
+            movie(1, 'The Odyssey', tag: 'EN', sheet: 'odyssee#2026'),
+            movie(2, "L'Odyssée", tag: 'FR', sheet: 'odyssee#2026'),
+            movie(3, "L'Odyssée", tag: 'FR', sheet: 'odyssee#2016'),
+          ],
+        ),
+        FakeTrending(items: [trending(ContentKind.movie, 'The Odyssey')]),
+        ContinueWatching(EmptyProgress(), FakeCatalog()),
+      )(1, language: 'fr', groupSeries: true);
+
+      // La version française de la même fiche, pas l'homonyme de 2016.
+      expect(feed.movies.map((item) => item.id).first, 2);
+      // Une seule carte par fiche, quelle que soit la rangée qui l'amène.
+      expect(
+        feed.movies.where((item) => item.groupingKey == 'odyssee#2026'),
+        hasLength(1),
+      );
+    },
+  );
 
   test('sans la langue voulue, préfère l anglais', () async {
     final feed = await BuildHomeFeed(

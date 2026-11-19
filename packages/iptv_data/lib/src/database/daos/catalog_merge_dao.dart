@@ -9,6 +9,23 @@ import 'catalog_maintenance_dao.dart';
 /// deux passes, la base n'ayant qu'une connexion.
 const int _pass = 5000;
 
+/// Valeurs par liste `IN` d'une requête.
+const int _inChunk = 500;
+
+/// Tours d'exploration autour des films changés : chacun ajoute les versions
+/// qui partagent un titre, une fiche, un identifiant TMDb ou une affiche
+/// avec celles déjà trouvées.
+const int _neighbourRounds = 4;
+
+/// Au-delà de tant de films changés, ou de voisins trouvés, tout le
+/// catalogue est regroupé d'un coup : l'exploration coûterait plus cher.
+const int _maxChanged = 5000;
+const int _maxNeighbourhood = 20000;
+
+/// Nom du fichier d'une affiche : ce qui suit sa dernière barre oblique.
+const String _posterFileSql =
+    "replace(poster_url, rtrim(poster_url, replace(poster_url, '/', '')), '')";
+
 // Chaque passe part des lignes du nouveau catalogue (`CROSS JOIN` impose cet
 // ordre à SQLite) et trouve leur pendant affiché par son index. Laissé libre,
 // SQLite parcourait tout le catalogue affiché à chaque passe.
@@ -19,6 +36,9 @@ const List<String> _movieColumns = [
   'raw_title',
   'display_title',
   'title_key',
+  'grouping_key',
+  'tmdb_id',
+  'quality',
   'content_key',
   'year',
   'language_tag',
@@ -63,6 +83,22 @@ const List<String> _episodeColumns = [
 /// Titres d'une table : ceux qui ont disparu, et ceux ajoutés ou changés.
 typedef _Changes = ({List<int> removed, List<int> touched});
 
+/// Valeurs d'une colonne à chercher autour des films changés.
+final class _Leads {
+  final Set<String> wanted = {};
+  final Set<String> _asked = {};
+
+  /// Valeurs pas encore cherchées, par lots, aussitôt notées comme cherchées.
+  Iterable<List<String>> next() {
+    final values = wanted.difference(_asked).toList();
+    _asked.addAll(values);
+    return [
+      for (var start = 0; start < values.length; start += _inChunk)
+        values.skip(start).take(_inChunk).toList(),
+    ];
+  }
+}
+
 /// Applique au catalogue affiché les différences d'un catalogue tout juste
 /// importé, sans le remplacer : les identifiants des titres restent, avec ce
 /// qui y a été chargé depuis (résumés, épisodes Xtream).
@@ -105,11 +141,18 @@ final class CatalogMergeDao {
   /// Applique les films de [fresh] à [shown]. Sans [removed], [fresh] les
   /// contient tous ; avec, il ne contient que ceux qui ont changé, et
   /// [removed] nomme ceux qui ont disparu.
+  ///
+  /// Avec [removed], les fiches des films changés sont recomposées dans
+  /// [shown], avec leurs voisins : [fresh] n'en contient qu'une partie.
   Future<void> mergeMovies(
     int fresh,
     int shown, {
     List<String>? removed,
   }) async {
+    // Fiches que les changements peuvent défaire : celles des films retirés
+    // ou modifiés, avant qu'ils ne le soient.
+    final stale = <String>{};
+    final partial = removed != null;
     final movies = await _mergeTitles(
       table: 'movies',
       key: 'content_key',
@@ -117,9 +160,24 @@ final class CatalogMergeDao {
       fresh: fresh,
       shown: shown,
       removedKeys: removed,
+      beforeUpdate: partial
+          ? (low, high) async => stale.addAll(
+              await _groupsOfCounterparts(fresh, shown, low, high),
+            )
+          : null,
+      beforeDelete: partial
+          ? (ids) async => stale.addAll(await _groupsOfMovies(ids))
+          : null,
     );
+    var touched = movies.touched;
+    if (partial && (movies.touched.isNotEmpty || movies.removed.isNotEmpty)) {
+      touched = {
+        ...touched,
+        ...await _regroupMovies(shown, movies.touched, stale),
+      }.toList();
+    }
     await _reindex(
-      movies,
+      (removed: movies.removed, touched: touched),
       offset: 0,
       insert: CatalogMaintenanceDao.indexMoviesSql,
     );
@@ -266,60 +324,201 @@ final class CatalogMergeDao {
   /// Regroupe les versions des séries de [catalogId] comme à l'import :
   /// titre, année des homonymes, puis titres traduits. Seules les séries
   /// dont la clé change sont réécrites ; retourne leurs identifiants.
-  Future<List<int>> _regroupSeries(int catalogId) async {
-    final rows = await _db
-        .customSelect(
-          '''
-          SELECT id, title_key, grouping_key, display_title, language_tag,
-                 year, poster_url, tmdb_id
-          FROM series_entries WHERE catalog_id = ?1
-          ''',
-          variables: [Variable.withInt(catalogId)],
-        )
-        .get();
-    final years = <String, Set<int>>{};
-    for (final row in rows) {
-      final year = row.readNullable<int>('year');
-      if (year != null) {
-        (years[row.read<String>('title_key')] ??= {}).add(year);
+  Future<List<int>> _regroupSeries(int catalogId) async => _writeKeys(
+    'series_entries',
+    regroupedKeys(await _allOf('series_entries', catalogId), franchises: true),
+  );
+
+  /// Recompose les fiches autour des films [changed] de [catalogId], et de
+  /// celles nommées [stale] : les autres n'ont pas pu bouger. Retourne les
+  /// films dont la fiche change.
+  Future<List<int>> _regroupMovies(
+    int catalogId,
+    List<int> changed,
+    Set<String> stale,
+  ) async {
+    final rows = changed.length > _maxChanged
+        ? null
+        : await _neighbourhood(catalogId, changed, stale);
+    return _writeKeys(
+      'movies',
+      regroupedKeys(
+        rows ?? await _allOf('movies', catalogId),
+        franchises: false,
+      ),
+    );
+  }
+
+  /// Films de [catalogId] liés de proche en proche à [changed] et aux
+  /// fiches [stale] : même titre, même fiche, même identifiant TMDb ou même
+  /// affiche. `null` s'ils sont trop nombreux.
+  Future<List<QueryRow>?> _neighbourhood(
+    int catalogId,
+    List<int> changed,
+    Set<String> stale,
+  ) async {
+    final found = <int, QueryRow>{};
+    final titles = _Leads();
+    final groups = _Leads()..wanted.addAll(stale);
+    final tmdbIds = _Leads();
+    final posters = _Leads();
+
+    void add(List<QueryRow> rows) {
+      for (final row in rows) {
+        if (found.containsKey(row.read<int>('id'))) continue;
+        found[row.read<int>('id')] = row;
+        titles.wanted.add(row.read<String>('title_key'));
+        groups.wanted.add(row.read<String>('grouping_key'));
+        final tmdb = row.readNullable<String>('tmdb_id')?.trim();
+        if (tmdb != null && tmdb.isNotEmpty && tmdb != '0') {
+          tmdbIds.wanted.add(tmdb);
+        }
+        final poster = _posterFile(row.readNullable<String>('poster_url'));
+        if (poster != null) posters.wanted.add(poster);
       }
-    }
-    String baseKey(QueryRow row) {
-      final title = row.read<String>('title_key');
-      final year = row.readNullable<int>('year');
-      return year != null && years[title]!.length > 1 ? '$title#$year' : title;
     }
 
-    final merged = VersionGrouper.merge([
-      for (final row in rows)
-        VersionCandidate(
-          groupingKey: baseKey(row),
-          title: row.read<String>('display_title'),
-          label: row.readNullable<String>('language_tag'),
-          year: row.readNullable<int>('year'),
-          posterUrl: row.readNullable<String>('poster_url'),
-          tmdbId: row.readNullable<String>('tmdb_id'),
-        ),
-    ]);
-    final changed = <({int id, String key})>[];
-    for (final row in rows) {
-      final base = baseKey(row);
-      final key = merged[base] ?? base;
-      if (key != row.read<String>('grouping_key')) {
-        changed.add((id: row.read<int>('id'), key: key));
-      }
+    for (var start = 0; start < changed.length; start += _inChunk) {
+      final ids = changed.skip(start).take(_inChunk).join(', ');
+      add(await _moviesWhere(catalogId, 'id IN ($ids)'));
     }
-    if (changed.isNotEmpty) {
-      await transactionKeepingCause(_db, () async {
-        for (final row in changed) {
-          await _db.customStatement(
-            'UPDATE series_entries SET grouping_key = ?1 WHERE id = ?2',
-            [row.key, row.id],
+    for (var round = 0; round < _neighbourRounds; round++) {
+      // Titres et fiches d'abord : leurs index répondent tout de suite.
+      for (final (column, leads) in [
+        ('title_key', titles),
+        ('grouping_key', groups),
+      ]) {
+        for (final chunk in leads.next()) {
+          add(
+            await _moviesWhere(
+              catalogId,
+              '$column IN ${_slots(chunk.length)}',
+              chunk,
+            ),
           );
         }
-      });
+      }
+      // Identifiants TMDb et affiches ensuite, en un seul parcours du
+      // catalogue par lot : aucun index ne les couvre. Une affiche se
+      // reconnaît au nom de son fichier, comme le fait `VersionGrouper`.
+      final tmdbChunks = tmdbIds.next().toList();
+      final posterChunks = posters.next().toList();
+      if (tmdbChunks.isEmpty && posterChunks.isEmpty) break;
+      for (var i = 0; i < tmdbChunks.length || i < posterChunks.length; i++) {
+        final tmdb = i < tmdbChunks.length ? tmdbChunks[i] : const <String>[];
+        final poster = i < posterChunks.length
+            ? posterChunks[i]
+            : const <String>[];
+        add(
+          await _moviesWhere(
+            catalogId,
+            'tmdb_id IN ${_slots(tmdb.length)} '
+            'OR $_posterFileSql IN ${_slots(poster.length)}',
+            [...tmdb, ...poster],
+          ),
+        );
+        if (found.length > _maxNeighbourhood) return null;
+      }
     }
-    return [for (final row in changed) row.id];
+    // Les titres trouvés en dernier ont peut-être d'autres années, qui
+    // décident pourtant de leur fiche.
+    for (final chunk in titles.next()) {
+      add(
+        await _moviesWhere(
+          catalogId,
+          'title_key IN ${_slots(chunk.length)}',
+          chunk,
+        ),
+      );
+    }
+    return found.length > _maxNeighbourhood ? null : found.values.toList();
+  }
+
+  /// Versions de [catalogId] qui répondent à [where], dont les paramètres
+  /// valent [values].
+  Future<List<QueryRow>> _moviesWhere(
+    int catalogId,
+    String where, [
+    List<String> values = const [],
+  ]) => _db
+      .customSelect(
+        'SELECT $groupingColumns FROM movies '
+        'WHERE catalog_id = ?1 AND ($where)',
+        variables: [
+          Variable.withInt(catalogId),
+          for (final value in values) Variable.withString(value),
+        ],
+      )
+      .get();
+
+  /// Liste SQL de [count] paramètres ; `(NULL)` si elle est vide, qui ne
+  /// correspond à rien.
+  static String _slots(int count) =>
+      count == 0 ? '(NULL)' : '(${List.filled(count, '?').join(', ')})';
+
+  Future<List<QueryRow>> _allOf(String table, int catalogId) => _db
+      .customSelect(
+        'SELECT $groupingColumns FROM $table WHERE catalog_id = ?1',
+        variables: [Variable.withInt(catalogId)],
+      )
+      .get();
+
+  /// Écrit les nouvelles fiches [keys] de [table] ; retourne les titres
+  /// concernés.
+  Future<List<int>> _writeKeys(String table, Map<int, String> keys) async {
+    await writeGroupingKeys(_db, table, keys);
+    return keys.keys.toList();
+  }
+
+  /// Fiches des films affichés que la passe [low]..[high] de [fresh] va
+  /// modifier.
+  Future<List<String>> _groupsOfCounterparts(
+    int fresh,
+    int shown,
+    int low,
+    int high,
+  ) async => [
+    for (final row
+        in await _db
+            .customSelect(
+              'SELECT DISTINCT a.grouping_key AS grouping_key '
+              'FROM movies AS s CROSS JOIN movies AS a '
+              'ON a.catalog_id = ?4 AND a.content_key = s.content_key '
+              'WHERE s.catalog_id = ?1 AND s.id BETWEEN ?2 AND ?3',
+              variables: [
+                for (final value in [fresh, low, high, shown])
+                  Variable.withInt(value),
+              ],
+            )
+            .get())
+      row.read<String>('grouping_key'),
+  ];
+
+  Future<List<String>> _groupsOfMovies(List<int> ids) async => [
+    for (var start = 0; start < ids.length; start += _pass)
+      for (final row
+          in await _db
+              .customSelect(
+                'SELECT DISTINCT grouping_key FROM movies WHERE id IN '
+                '(${ids.skip(start).take(_pass).join(', ')})',
+              )
+              .get())
+        row.read<String>('grouping_key'),
+  ];
+
+  /// Nom du fichier d'une affiche TMDb, seul indice que `VersionGrouper`
+  /// en retient.
+  static String? _posterFile(String? url) {
+    if (url == null) return null;
+    final uri = Uri.tryParse(url);
+    if (uri == null ||
+        !uri.host.contains('tmdb') && !uri.host.contains('themoviedb')) {
+      return null;
+    }
+    final slash = url.lastIndexOf('/');
+    return slash < 0 || slash == url.length - 1
+        ? null
+        : url.substring(slash + 1);
   }
 
   /// Les chaînes n'ont rien de propre à garder : leur section est remplacée

@@ -52,6 +52,7 @@ final class XtreamEntryMapper {
       rawGroup: _category(json, categories),
       logoUrl: readString(json['stream_icon']),
       sourceHash: sourceHash,
+      tmdbId: readString(json['tmdb']) ?? readString(json['tmdb_id']),
       locator: XtreamStream(
         namespace: XtreamNamespace.movie,
         streamId: id,

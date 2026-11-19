@@ -31,6 +31,14 @@ const String _plot =
     'voisin a disparu des cartes. Chacun cherche une explication, puis une '
     'issue, alors que le phare se remet à tourner sans gardien.';
 
+/// Jour du panneau : à partir du deuxième, des films changent de note et
+/// d'autres arrivent, comme d'un jour à l'autre chez un fournisseur.
+var _day = 0;
+
+/// Films changés et films ajoutés chaque jour.
+const int _changedEvery = 1000;
+const int _addedPerDay = 400;
+
 const XtreamCredentials _credentials = XtreamCredentials(
   serverUrl: 'http://panel.example:8080',
   username: 'essai',
@@ -57,8 +65,11 @@ Map<String, Object?> _movie(int i) {
         '(${1980 + title % 45})',
     'stream_type': 'movie',
     'stream_id': i,
-    'stream_icon': 'http://image.example/m$title.jpg',
-    'rating': '7.1',
+    // Un film et ses traductions partagent leur affiche et leur identifiant
+    // TMDb : ils forment une seule fiche.
+    'stream_icon': 'https://image.tmdb.org/t/p/w500/m$title.jpg',
+    'tmdb': '${100000 + title}',
+    'rating': _day > 0 && i % _changedEvery == 0 ? '7.2' : '7.1',
     'added': '1700000000',
     'container_extension': 'mkv',
     'category_id': '${i % _categories}',
@@ -114,7 +125,10 @@ http.StreamedResponse _panel(http.BaseRequest request) =>
         _list(_channels, _channel),
         200,
       ),
-      'get_vod_streams' => http.StreamedResponse(_list(_movies, _movie), 200),
+      'get_vod_streams' => http.StreamedResponse(
+        _list(_movies + _day * _addedPerDay, _movie),
+        200,
+      ),
       'get_series' => http.StreamedResponse(_list(_series, _show), 200),
       _ => _json([
         for (var i = 0; i < _categories; i++)
@@ -171,6 +185,16 @@ void main() {
       close('fin');
       final total = watch.elapsed;
 
+      Future<int> sheetCount() async =>
+          (await db
+                  .customSelect(
+                    'SELECT COUNT(DISTINCT grouping_key) AS n FROM movies '
+                    'WHERE catalog_id = (SELECT active_catalog_id FROM sources)',
+                  )
+                  .getSingle())
+              .read<int>('n');
+      final importedSheets = await sheetCount();
+
       Future<Duration> sync() async {
         final clock = Stopwatch()..start();
         await CatalogImportPipeline(
@@ -187,6 +211,11 @@ void main() {
       // sautent tout ce qui n'a pas changé.
       final firstSync = await sync();
       final syncTotal = await sync();
+      // Un jour ordinaire : quelques centaines de films changent ou
+      // arrivent, et leurs fiches se recomposent.
+      _day = 1;
+      final changedSync = await sync();
+      final sheets = await sheetCount();
       // Un catalogue laissé par une version d'avant les empreintes.
       await db.customStatement('UPDATE movies SET source_hash = NULL');
       await db.customStatement('UPDATE series_entries SET source_hash = NULL');
@@ -248,12 +277,20 @@ void main() {
         'Première synchronisation : ${firstSync.inSeconds} s\n'
         'Synchronisation du lendemain : '
         '${syncTotal.inMilliseconds / 1000} s\n'
+        'Synchronisation avec ${_movies ~/ _changedEvery + _addedPerDay} '
+        'films changés : ${changedSync.inMilliseconds / 1000} s\n'
+        'Fiches de films : $importedSheets, puis $sheets\n'
         'Synchronisation après mise à jour : ${upgradeSync.inSeconds} s\n'
         'Pic RSS : ${peak ~/ _mebibyte} Mio\n'
         'Base : ${sizeMb.toStringAsFixed(0)} Mio',
       );
 
       expect(series.items, hasLength(20));
+      // Chaque film et ses trois traductions ne font qu'une fiche, même
+      // regroupés pendant la synchronisation. Quelques titres générés
+      // (« Film 1985 (1985) ») se confondent, par leur année.
+      expect(importedSheets, closeTo(_movies ~/ _languages.length, 10));
+      expect(sheets, importedSheets + _addedPerDay ~/ _languages.length);
       await db.close();
       await directory.delete(recursive: true);
     },

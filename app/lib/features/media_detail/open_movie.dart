@@ -7,6 +7,7 @@ import '../../app/di/repository_providers.dart';
 import '../../design_system/components/aero_menu.dart';
 import '../../l10n/version_names.dart';
 import '../player/player_target.dart';
+import 'movie_versions.dart';
 import 'screens/movie_detail_screen.dart';
 
 /// Ouvre la fiche d'un film. Si plusieurs versions existent, le sélecteur de
@@ -20,7 +21,7 @@ Future<void> openMovie(BuildContext context, WidgetRef ref, Movie movie) async {
   if (chosen == null || !context.mounted) return;
   final history = await ref
       .read(watchProgressRepositoryProvider)
-      .progressOf(source.id, WorkKeys.movie(chosen.title));
+      .progressOf(source.id, WorkKeys.movie(chosen.groupingKey));
   await navigator.push(
     PageRouteBuilder<void>(
       transitionDuration: Duration.zero,
@@ -52,25 +53,18 @@ Future<Movie?> _chooseVersion(
   int sourceId,
   Movie movie,
 ) async {
-  final settings = ref.read(settingsProvider);
-  // Sans regroupement, chaque version est un film à part.
-  if (!settings.groupMovies) return movie;
   final l10n = context.l10n;
-  final movies = await ref.read(catalogRepositoryProvider).moviesByTitleKeys(
-    sourceId,
-    {GroupingKey.of(movie.title)},
-  );
+  final versions = await movieVersionsOf(ref, sourceId, movie);
   if (!context.mounted) return null;
-  if (movies.length <= 1) return movies.firstOrNull ?? movie;
-  final versions = versionsByLanguage(
-    movies,
-    (version) => version.languageTag ?? version.rawTitle,
-    settings.languageCode,
-  );
+  if (versions.length <= 1) return versions.single;
   final picked = await showAeroMenu(
     context,
     title: l10n.detailChooseVersion,
-    options: movieVersionNames(versions, l10n, settings.languageCode),
+    options: movieVersionNames(
+      versions,
+      l10n,
+      ref.read(settingsProvider).languageCode,
+    ),
   );
   return picked == null ? null : versions[picked];
 }

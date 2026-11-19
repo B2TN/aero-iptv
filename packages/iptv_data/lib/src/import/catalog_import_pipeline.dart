@@ -183,7 +183,7 @@ final class CatalogImportPipeline {
     // l'afficher : celle qui échoue est signalée, et l'import continue. La
     // synchronisation tient l'index de recherche à jour titre par titre ; en
     // ne traitant que les changements, elle regroupe aussi les versions des
-    // séries dans le catalogue affiché.
+    // films et des séries dans le catalogue affiché.
     final refinements = <CatalogRefinement, Future<void> Function()>{
       if (gates == null) ...{
         CatalogRefinement.homonyms: () =>
@@ -239,6 +239,12 @@ final class CatalogImportPipeline {
       }
       if (previous != null) await _discard(previous);
       shownNow = catalogId;
+    }
+    try {
+      await _db.refreshUserKeys();
+    } on Object {
+      // Un favori ou une reprise qui n'a pas suivi sa fiche s'y rattachera à
+      // la prochaine synchronisation : le catalogue reste à afficher.
     }
 
     // Le catalogue est déjà consultable : le guide se télécharge ensuite.

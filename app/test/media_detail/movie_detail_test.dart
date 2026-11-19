@@ -28,6 +28,12 @@ final class _Catalog extends Fake implements CatalogRepository {
       [_movie(1, 'FR'), _movie(2, 'EN')];
 
   @override
+  Future<List<Movie>> moviesByGroupingKeys(
+    int sourceId,
+    Set<String> keys,
+  ) async => [_movie(1, 'FR'), _movie(2, 'EN')];
+
+  @override
   Future<TitleDetails> movieDetails(int sourceId, int movieId) async {
     asked.add(movieId);
     return movieId == 1

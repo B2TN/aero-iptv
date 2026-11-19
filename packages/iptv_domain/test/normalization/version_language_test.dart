@@ -52,6 +52,31 @@ void main() {
     });
   });
 
+  test('les versions d un film : la langue, puis la meilleure qualité', () {
+    Movie movie(String tag, StreamQuality quality) => Movie(
+      id: 1,
+      title: 'Lagon',
+      rawTitle: '$tag - Lagon',
+      contentKey: '$tag ${quality.name}',
+      locator: const DirectStream('http://s/1.mkv'),
+      languageTag: tag,
+      quality: quality,
+    );
+
+    final sorted = movieVersionsByLanguage([
+      movie('EN', StreamQuality.uhd),
+      movie('FR', StreamQuality.sd),
+      movie('FR', StreamQuality.uhd),
+      movie('FR', StreamQuality.unknown),
+      movie('FR', StreamQuality.hd),
+    ], 'fr');
+
+    expect(
+      [for (final movie in sorted) movie.contentKey],
+      ['FR uhd', 'FR hd', 'FR sd', 'FR unknown', 'EN uhd'],
+    );
+  });
+
   test('liste les libellés d une langue', () {
     expect(languageTags('fr'), containsAll(['FR', 'VF', 'VFF']));
     expect(languageTags('ar'), containsAll(['AR', 'ARA']));

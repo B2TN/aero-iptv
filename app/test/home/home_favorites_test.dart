@@ -51,6 +51,12 @@ final class _Catalog extends Fake implements CatalogRepository {
       [if (keys.contains(GroupingKey.of('Dune'))) _dune];
 
   @override
+  Future<List<Movie>> moviesByGroupingKeys(
+    int sourceId,
+    Set<String> keys,
+  ) async => [if (keys.contains(GroupingKey.of('Dune'))) _dune];
+
+  @override
   Future<List<Series>> seriesByGroupingKeys(
     int sourceId,
     List<String> groupingKeys, {
