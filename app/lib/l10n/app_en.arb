@@ -73,6 +73,8 @@
   "settingsPerformanceAuto": "Automatic ({state})",
   "settingsDelay": "Live channel delay",
   "settingsDelayValue": "{seconds, plural, =0{None} other{{seconds} s}}",
+  "settingsTrendCountry": "Trends country",
+  "settingsTrendCountryAuto": "Automatic ({country})",
   "settingsLanguage": "App language",
   "settingsPlaylists": "Playlists",
   "settingsDailySync": "Sync every day",

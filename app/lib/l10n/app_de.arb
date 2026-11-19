@@ -73,6 +73,8 @@
   "settingsPerformanceAuto": "Automatisch ({state})",
   "settingsDelay": "Verzögerung bei Live-Sendern",
   "settingsDelayValue": "{seconds, plural, =0{Keine} other{{seconds} s}}",
+  "settingsTrendCountry": "Land der Trends",
+  "settingsTrendCountryAuto": "Automatisch ({country})",
   "settingsLanguage": "App-Sprache",
   "settingsPlaylists": "Playlists",
   "settingsDailySync": "Täglich synchronisieren",

@@ -135,6 +135,10 @@ final trendingRepositoryProvider = Provider<TrendingRepository>(
   ),
 );
 
+final countryLocatorProvider = Provider<CountryLocator>(
+  (ref) => CountryIsClient(ref.watch(httpClientProvider)),
+);
+
 final refreshTrendingProvider = Provider<RefreshTrending>(
   (ref) => RefreshTrending(ref.watch(trendingRepositoryProvider)),
 );

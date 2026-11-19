@@ -272,6 +272,14 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get settingsTrendCountry => 'بلد الأكثر رواجًا';
+
+  @override
+  String settingsTrendCountryAuto(String country) {
+    return 'تلقائي ($country)';
+  }
+
+  @override
   String get settingsLanguage => 'لغة التطبيق';
 
   @override

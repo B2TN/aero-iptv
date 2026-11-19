@@ -13,6 +13,8 @@ const String _catalogRulesKey = 'catalog_rules';
 const String _dailySyncKey = 'daily_sync';
 const String _betaUpdatesKey = 'beta_updates';
 const String _dismissedUpdateKey = 'dismissed_update';
+const String _trendCountryKey = 'trend_country';
+const String _detectedCountryKey = 'detected_country';
 const String _subtitleSizeKey = 'subtitle_size';
 const String _subtitleFontKey = 'subtitle_font';
 const String _subtitleColorKey = 'subtitle_color';
@@ -49,6 +51,9 @@ final class SettingsRepositoryImpl implements SettingsRepository {
       ..._subtitleRows(settings.subtitleStyle),
       if (settings.activeSourceId != null)
         _row(_activeSourceKey, '${settings.activeSourceId}'),
+      // Toujours écrits : vides, ils effacent une valeur précédente.
+      _row(_trendCountryKey, settings.trendCountry ?? ''),
+      _row(_detectedCountryKey, settings.detectedCountry ?? ''),
     ]);
   });
 
@@ -92,8 +97,14 @@ final class SettingsRepositoryImpl implements SettingsRepository {
       dailySync: _readBool(values[_dailySyncKey], defaults.dailySync),
       betaUpdates: _readBool(values[_betaUpdatesKey], defaults.betaUpdates),
       dismissedUpdate: values[_dismissedUpdateKey],
+      trendCountry: _readCountry(values[_trendCountryKey]),
+      detectedCountry: _readCountry(values[_detectedCountryKey]),
     );
   }
+
+  /// Un code de pays, ou `null` pour une valeur vide.
+  String? _readCountry(String? value) =>
+      value != null && value.length == 2 ? value : null;
 
   /// Une valeur inconnue, par exemple d'une version plus récente, garde la
   /// valeur par défaut.

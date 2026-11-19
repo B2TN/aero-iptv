@@ -271,6 +271,14 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get settingsTrendCountry => 'País de las tendencias';
+
+  @override
+  String settingsTrendCountryAuto(String country) {
+    return 'Automático ($country)';
+  }
+
+  @override
   String get settingsLanguage => 'Idioma de la aplicación';
 
   @override

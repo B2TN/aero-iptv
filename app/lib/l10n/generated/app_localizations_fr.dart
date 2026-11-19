@@ -270,6 +270,14 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get settingsTrendCountry => 'Pays des tendances';
+
+  @override
+  String settingsTrendCountryAuto(String country) {
+    return 'Automatique ($country)';
+  }
+
+  @override
   String get settingsLanguage => 'Langue de l\'application';
 
   @override

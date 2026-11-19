@@ -542,6 +542,18 @@ abstract class AppLocalizations {
   /// **'{seconds, plural, =0{Aucun} other{{seconds} s}}'**
   String settingsDelayValue(int seconds);
 
+  /// No description provided for @settingsTrendCountry.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pays des tendances'**
+  String get settingsTrendCountry;
+
+  /// No description provided for @settingsTrendCountryAuto.
+  ///
+  /// In fr, this message translates to:
+  /// **'Automatique ({country})'**
+  String settingsTrendCountryAuto(String country);
+
   /// No description provided for @settingsLanguage.
   ///
   /// In fr, this message translates to:

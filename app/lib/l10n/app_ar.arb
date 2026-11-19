@@ -73,6 +73,8 @@
   "settingsPerformanceAuto": "تلقائي ({state})",
   "settingsDelay": "تأخير القنوات المباشرة",
   "settingsDelayValue": "{seconds, plural, =0{بدون} other{{seconds} ث}}",
+  "settingsTrendCountry": "بلد الأكثر رواجًا",
+  "settingsTrendCountryAuto": "تلقائي ({country})",
   "settingsLanguage": "لغة التطبيق",
   "settingsPlaylists": "قوائم التشغيل",
   "settingsDailySync": "المزامنة يوميًا",

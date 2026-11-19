@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/app_state.dart';
+import '../../../app/trends.dart';
 import '../../../app/di/infrastructure_providers.dart';
 import '../../../app/di/repository_providers.dart';
 import '../../../design_system/components/aero_menu.dart';
@@ -60,6 +61,28 @@ class SettingsScreen extends ConsumerWidget {
       ref,
       (settings) => settings.copyWith(languageCode: codes[choice]),
     );
+  }
+
+  /// « Automatique » suit le pays de l'adresse IP, redemandé à ce moment.
+  Future<void> _chooseTrendCountry(BuildContext context, WidgetRef ref) async {
+    final l10n = context.l10n;
+    final language = ref.read(settingsProvider).languageCode;
+    final codes = knownCountryCodes.toList(growable: false);
+    final automatic = ref.read(automaticRegionProvider);
+    final choice = await showAeroMenu(
+      context,
+      title: l10n.settingsTrendCountry,
+      options: [
+        l10n.settingsTrendCountryAuto(
+          countryName(automatic, language) ?? automatic,
+        ),
+        for (final code in codes) countryName(code, language) ?? code,
+      ],
+    );
+    if (choice == null) return;
+    await ref
+        .read(trendsProvider.notifier)
+        .choose(choice == 0 ? null : codes[choice - 1]);
   }
 
   /// Sur PC, la page s'ouvre dans le navigateur. Une TV n'en a pas : la page est
@@ -131,6 +154,8 @@ class SettingsScreen extends ConsumerWidget {
         : l10n.settingsKeyUnset;
 
     final performance = ref.watch(lookProvider).isPerformance;
+    final trendCountry = settings.trendCountry;
+    final automatic = ref.watch(automaticRegionProvider);
     final rows =
         <({String label, String value, VoidCallback action, bool? toggled})>[
           (
@@ -201,6 +226,17 @@ class SettingsScreen extends ConsumerWidget {
             value:
                 languageNames[settings.languageCode] ?? settings.languageCode,
             action: () => _chooseLanguage(context, ref),
+            toggled: null,
+          ),
+          (
+            label: l10n.settingsTrendCountry,
+            value: trendCountry == null
+                ? l10n.settingsTrendCountryAuto(
+                    countryName(automatic, settings.languageCode) ?? automatic,
+                  )
+                : countryName(trendCountry, settings.languageCode) ??
+                      trendCountry,
+            action: () => _chooseTrendCountry(context, ref),
             toggled: null,
           ),
           (

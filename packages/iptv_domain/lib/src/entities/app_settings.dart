@@ -15,6 +15,8 @@ final class AppSettings {
     this.dailySync = true,
     this.betaUpdates = false,
     this.dismissedUpdate,
+    this.trendCountry,
+    this.detectedCountry,
   });
 
   /// Fusion des versions d'une série. Désactivée : vue brute de la playlist.
@@ -57,6 +59,16 @@ final class AppSettings {
   /// revient que pour une version plus récente.
   final String? dismissedUpdate;
 
+  /// Pays des tendances de l'accueil, choisi dans les Paramètres. `null` :
+  /// automatique.
+  final String? trendCountry;
+
+  /// Pays de l'adresse IP, demandé une fois puis gardé. `null` tant qu'il
+  /// n'est pas connu.
+  final String? detectedCountry;
+
+  /// [trendCountry] et [detectedCountry] peuvent redevenir `null` : ils se
+  /// passent par une fonction, `() => null` pour les effacer.
   AppSettings copyWith({
     bool? groupSeries,
     bool? groupChannels,
@@ -70,6 +82,8 @@ final class AppSettings {
     bool? dailySync,
     bool? betaUpdates,
     String? dismissedUpdate,
+    String? Function()? trendCountry,
+    String? Function()? detectedCountry,
   }) => AppSettings(
     groupSeries: groupSeries ?? this.groupSeries,
     groupChannels: groupChannels ?? this.groupChannels,
@@ -83,5 +97,9 @@ final class AppSettings {
     dailySync: dailySync ?? this.dailySync,
     betaUpdates: betaUpdates ?? this.betaUpdates,
     dismissedUpdate: dismissedUpdate ?? this.dismissedUpdate,
+    trendCountry: trendCountry == null ? this.trendCountry : trendCountry(),
+    detectedCountry: detectedCountry == null
+        ? this.detectedCountry
+        : detectedCountry(),
   );
 }

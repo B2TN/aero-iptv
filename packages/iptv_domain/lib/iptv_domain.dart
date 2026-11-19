@@ -47,6 +47,7 @@ export 'src/normalization/version_grouper.dart';
 export 'src/normalization/version_language.dart';
 export 'src/ports/catalog_importer.dart';
 export 'src/ports/catalog_repository.dart';
+export 'src/ports/country_locator.dart';
 export 'src/ports/credential_store.dart';
 export 'src/ports/epg_repository.dart';
 export 'src/ports/favorites_repository.dart';

@@ -73,6 +73,8 @@
   "settingsPerformanceAuto": "Automático ({state})",
   "settingsDelay": "Retraso de canales en directo",
   "settingsDelayValue": "{seconds, plural, =0{Ninguno} other{{seconds} s}}",
+  "settingsTrendCountry": "País de las tendencias",
+  "settingsTrendCountryAuto": "Automático ({country})",
   "settingsLanguage": "Idioma de la aplicación",
   "settingsPlaylists": "Listas",
   "settingsDailySync": "Sincronizar cada día",

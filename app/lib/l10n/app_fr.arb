@@ -125,6 +125,9 @@
       }
     }
   },
+  "settingsTrendCountry": "Pays des tendances",
+  "settingsTrendCountryAuto": "Automatique ({country})",
+  "@settingsTrendCountryAuto": {"placeholders": {"country": {"type": "String"}}},
   "settingsLanguage": "Langue de l'application",
   "settingsPlaylists": "Playlists",
   "settingsDailySync": "Synchroniser chaque jour",

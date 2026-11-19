@@ -1507,6 +1507,25 @@ void main() {
       expect((await settings.watch().first).subtitleStyle, style);
     });
 
+    test(
+      'garde le pays des tendances, et peut revenir à Automatique',
+      () async {
+        final settings = SettingsRepositoryImpl(db);
+        await settings.save(
+          const AppSettings(trendCountry: 'ES', detectedCountry: 'BE'),
+        );
+        final chosen = await settings.watch().first;
+        expect(chosen.trendCountry, 'ES');
+        expect(chosen.detectedCountry, 'BE');
+
+        await settings.save(chosen.copyWith(trendCountry: () => null));
+
+        final automatic = await settings.watch().first;
+        expect(automatic.trendCountry, isNull);
+        expect(automatic.detectedCountry, 'BE');
+      },
+    );
+
     test('une apparence illisible revient aux valeurs par défaut', () async {
       await db.customStatement(
         "INSERT INTO app_settings VALUES ('subtitle_color', 'violet'), "
