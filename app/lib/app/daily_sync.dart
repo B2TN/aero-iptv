@@ -17,7 +17,11 @@ class OpenPlayers extends Notifier<int> {
 
   void opened() => state++;
 
-  void closed() => state = math.max(0, state - 1);
+  /// Le moteur se libère après la fermeture du lecteur, parfois après celle
+  /// de l'application.
+  void closed() {
+    if (ref.mounted) state = math.max(0, state - 1);
+  }
 }
 
 final openPlayersProvider = NotifierProvider<OpenPlayers, int>(OpenPlayers.new);

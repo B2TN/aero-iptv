@@ -28,7 +28,11 @@ class WatchedRevision extends Notifier<int> {
   @override
   int build() => 0;
 
-  void bump() => state++;
+  /// Le lecteur prévient après sa fermeture : l'application a pu se fermer
+  /// entre-temps.
+  void bump() {
+    if (ref.mounted) state++;
+  }
 }
 
 final watchedRevisionProvider = NotifierProvider<WatchedRevision, int>(

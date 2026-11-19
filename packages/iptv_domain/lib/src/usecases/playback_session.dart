@@ -208,8 +208,21 @@ final class PlaybackSession {
   }
 
   /// Enregistre la position, puis libère le moteur.
-  Future<void> close() async {
-    await _saveProgress();
+  ///
+  /// [onSaved] est appelé dès la position enregistrée : libérer le moteur
+  /// peut prendre plusieurs secondes, par exemple quand le serveur tarde à
+  /// fermer le flux, et les écrans n'ont pas à l'attendre. Le moteur est
+  /// libéré dans tous les cas.
+  Future<void> close({void Function()? onSaved}) async {
+    try {
+      await _saveProgress();
+      onSaved?.call();
+    } finally {
+      await _release();
+    }
+  }
+
+  Future<void> _release() async {
     await _subscription?.cancel();
     await _cueSubscription?.cancel();
     _subscription = null;

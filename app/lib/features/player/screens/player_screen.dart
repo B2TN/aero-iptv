@@ -190,13 +190,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     _fullscreen?.exit();
     unawaited(_states?.cancel());
     unawaited(_cues?.cancel());
-    // La position finale enregistrée, l'accueil met ses reprises à jour, et
-    // la synchronisation quotidienne peut partir.
+    // La position finale enregistrée, l'accueil et la fiche se mettent à
+    // jour, sans attendre la libération du moteur, parfois lente. La
+    // synchronisation quotidienne, elle, attend le moteur libéré.
     unawaited(
-      _session.close().whenComplete(() {
-        _watched.bump();
-        _openPlayers.closed();
-      }),
+      _session.close(onSaved: _watched.bump).whenComplete(_openPlayers.closed),
     );
     _cue.dispose();
     _rootNode.dispose();

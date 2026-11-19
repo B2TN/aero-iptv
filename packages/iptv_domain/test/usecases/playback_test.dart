@@ -43,6 +43,9 @@ final class FakeEngine implements PlaybackEngine {
   final List<MediaTrack?> selected = [];
   bool disposed = false;
 
+  /// Libération du moteur, immédiate sans lui.
+  Completer<void>? releasing;
+
   @override
   PlaybackState state = const PlaybackState();
 
@@ -66,6 +69,7 @@ final class FakeEngine implements PlaybackEngine {
   @override
   Future<void> dispose() async {
     disposed = true;
+    await releasing?.future;
     await controller.close();
   }
 
@@ -344,6 +348,27 @@ void main() {
       expect(progress.saved.single.position.inSeconds, 5);
       expect(engine.disposed, isTrue);
     });
+
+    test(
+      'prévient dès la position enregistrée, sans attendre le moteur',
+      () async {
+        final release = Completer<void>();
+        engine.releasing = release;
+        final current = session();
+        await current.play(vodRequest, movie, preferredLanguage: 'fr');
+        engine.emit(playing(5));
+        var savedBefore = -1;
+        final closing = current.close(
+          onSaved: () => savedBefore = progress.saved.length,
+        );
+        await flush();
+
+        // Le moteur n'est pas encore libéré, la position est déjà là.
+        expect(savedBefore, 1);
+        release.complete();
+        await closing;
+      },
+    );
 
     test('garde un contenu terminé, marqué comme vu', () async {
       final current = session();

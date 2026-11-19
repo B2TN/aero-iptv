@@ -33,6 +33,7 @@ class DpadCollection extends ConsumerStatefulWidget {
   /// Liste horizontale.
   const DpadCollection.horizontal({
     required this.itemCount,
+    this.itemKeys,
     required this.itemExtent,
     required this.crossExtent,
     required this.itemBuilder,
@@ -56,6 +57,7 @@ class DpadCollection extends ConsumerStatefulWidget {
   /// Liste verticale.
   const DpadCollection.vertical({
     required this.itemCount,
+    this.itemKeys,
     required this.itemExtent,
     required this.itemBuilder,
     required this.onSelect,
@@ -79,6 +81,7 @@ class DpadCollection extends ConsumerStatefulWidget {
   /// Grille de [columns] colonnes, à défilement vertical.
   const DpadCollection.grid({
     required this.itemCount,
+    this.itemKeys,
     required this.itemExtent,
     required this.columns,
     required this.itemBuilder,
@@ -100,6 +103,11 @@ class DpadCollection extends ConsumerStatefulWidget {
        clipBehavior = Clip.hardEdge;
 
   final int itemCount;
+
+  /// Identité de chaque élément. Quand la liste change, l'élément actif reste
+  /// le même s'il y figure encore, par exemple le titre qui vient d'être
+  /// regardé et passe en tête. Sans elles, la liste garde la même place.
+  final List<Object?>? itemKeys;
   final DpadItemBuilder itemBuilder;
   final ValueChanged<int> onSelect;
 
@@ -178,7 +186,10 @@ class _DpadCollectionState extends ConsumerState<DpadCollection> {
   @override
   void didUpdateWidget(DpadCollection oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.itemCount != oldWidget.itemCount) {
+    final moved = _movedIndex(oldWidget.itemKeys, widget.itemKeys);
+    if (moved != null) {
+      _follow(moved);
+    } else if (widget.itemCount != oldWidget.itemCount) {
       final clamped = _clamp(_index);
       if (clamped != _index) {
         _index = clamped;
@@ -194,6 +205,30 @@ class _DpadCollectionState extends ConsumerState<DpadCollection> {
     _active.dispose();
     _ownNode?.dispose();
     super.dispose();
+  }
+
+  /// Nouvelle place de l'élément actif, ou `null` s'il n'a pas bougé ou n'est
+  /// plus là.
+  int? _movedIndex(List<Object?>? before, List<Object?>? after) {
+    if (before == null || after == null || _index >= before.length) {
+      return null;
+    }
+    final index = after.indexOf(before[_index]);
+    return index < 0 || index == _index ? null : index;
+  }
+
+  /// Suit l'élément actif à sa nouvelle place. Le défilement et les témoins
+  /// de la rangée attendent la fin de l'image, qui pose la nouvelle liste.
+  void _follow(int index) {
+    _index = index;
+    if (_hasFocus) _active.value = index;
+    final key = widget.memoryKey;
+    if (key != null) ref.read(focusMemoryProvider).write(key, index);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _index != index) return;
+      widget.onIndexChanged?.call(index);
+      _scrollToIndex(animated: false);
+    });
   }
 
   int _clamp(int index) =>

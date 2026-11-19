@@ -210,6 +210,9 @@ class _HomeContent extends ConsumerWidget {
               icon: AeroAssets.rowContinue,
               memoryKey: 'home.continue',
               itemCount: feed.continueWatching.length,
+              itemKeys: [
+                for (final item in feed.continueWatching) item.groupKey,
+              ],
               wide: true,
               onSelect: (index) =>
                   openContinued(context, ref, feed.continueWatching[index]),
@@ -238,6 +241,10 @@ class _HomeContent extends ConsumerWidget {
               glyph: Icons.star_rounded,
               memoryKey: 'home.favorites',
               itemCount: favorites.length,
+              itemKeys: [
+                for (final item in favorites)
+                  item.movie?.groupingKey ?? item.series?.groupingKey,
+              ],
               onSelect: (index) => switch (favorites[index]) {
                 (movie: final Movie movie, series: _) => openMovie(
                   context,
@@ -279,6 +286,7 @@ class _HomeContent extends ConsumerWidget {
               icon: AeroAssets.rowSeries,
               memoryKey: 'home.series',
               itemCount: feed.series.length,
+              itemKeys: [for (final item in feed.series) item.groupingKey],
               onSelect: (index) => openSeries(context, ref, feed.series[index]),
               onLongSelect: (index) =>
                   showSeriesMenu(context, ref, feed.series[index]),
@@ -294,6 +302,7 @@ class _HomeContent extends ConsumerWidget {
               icon: AeroAssets.rowMovies,
               memoryKey: 'home.movies',
               itemCount: feed.movies.length,
+              itemKeys: [for (final item in feed.movies) item.groupingKey],
               onSelect: (index) => openMovie(context, ref, feed.movies[index]),
               onLongSelect: (index) =>
                   showMovieMenu(context, ref, feed.movies[index]),
@@ -312,18 +321,23 @@ class _HomeContent extends ConsumerWidget {
 
 /// Rangée de l'accueil : son icône, ses cartes et des chevrons indicatifs. Les
 /// emplacements vides restent visibles, comme des vitres sans image.
+///
+/// Sa clé est celle de sa mémoire : une rangée qui apparaît au-dessus, comme
+/// « Continuer à regarder » après une première lecture, ne lui prend ni son
+/// état ni le focus.
 class _MediaRow extends ConsumerStatefulWidget {
-  const _MediaRow({
+  _MediaRow({
     required this.title,
     required this.memoryKey,
     this.icon,
     this.glyph,
     required this.itemCount,
+    required this.itemKeys,
     required this.itemBuilder,
     required this.onSelect,
     this.onLongSelect,
     this.wide = false,
-  });
+  }) : super(key: ValueKey(memoryKey));
 
   final String title;
 
@@ -332,6 +346,10 @@ class _MediaRow extends ConsumerStatefulWidget {
   final IconData? glyph;
   final String memoryKey;
   final int itemCount;
+
+  /// Identité de chaque carte, pour que le focus la suive quand la rangée
+  /// change d'ordre.
+  final List<Object?> itemKeys;
   final DpadItemBuilder itemBuilder;
   final ValueChanged<int> onSelect;
   final ValueChanged<int>? onLongSelect;
@@ -415,6 +433,7 @@ class _MediaRowState extends ConsumerState<_MediaRow> {
                   DpadCollection.horizontal(
                     memoryKey: widget.memoryKey,
                     itemCount: widget.itemCount,
+                    itemKeys: widget.itemKeys,
                     // Une carte large couvre deux emplacements et l'écart
                     // entre eux : les colonnes restent alignées d'une
                     // rangée à l'autre.
