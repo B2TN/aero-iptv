@@ -119,6 +119,19 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
   /// Saison à rouvrir après un changement de version.
   int? _wantedSeason;
 
+  /// Les épisodes ne prennent le focus qu'à l'ouverture. Quand l'utilisateur
+  /// change de saison, le focus reste sur elle : il va lui-même vers ses
+  /// épisodes.
+  bool _seasonChanged = false;
+
+  void _showSeason(int index) {
+    if (index == _season) return;
+    setState(() {
+      _season = index;
+      _seasonChanged = true;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -387,8 +400,8 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
               itemCount: seasons.length,
               itemExtent: 48,
               padding: const EdgeInsets.all(4),
-              onIndexChanged: (index) => setState(() => _season = index),
-              onSelect: (index) => setState(() => _season = index),
+              onIndexChanged: _showSeason,
+              onSelect: _showSeason,
               initialIndex: selected,
               itemBuilder: (context, index, focused) => SeasonLine(
                 text: l10n.detailSeason(seasons[index].number),
@@ -405,7 +418,8 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
             child: DpadCollection.vertical(
               key: ValueKey((_entryId, season.number)),
               // Le bouton de reprise a le focus quand la fiche en propose un.
-              autofocus: widget.resume == null && !_versionChanged,
+              autofocus:
+                  widget.resume == null && !_versionChanged && !_seasonChanged,
               initialIndex: resumedIndex < 0 ? 0 : resumedIndex,
               itemCount: season.episodes.length,
               itemExtent: described ? 96 : 56,

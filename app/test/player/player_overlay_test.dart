@@ -5,6 +5,7 @@ import 'package:aero_iptv/app/di/infrastructure_providers.dart';
 import 'package:aero_iptv/app/di/repository_providers.dart';
 import 'package:aero_iptv/app/platform/api_key_store.dart';
 import 'package:aero_iptv/design_system/components/progress_track.dart';
+import 'package:aero_iptv/features/media_detail/widgets/episode_lines.dart';
 import 'package:aero_iptv/features/player/player_target.dart';
 import 'package:aero_iptv/features/player/screens/player_screen.dart';
 import 'package:aero_iptv/focus/focus_frame.dart';
@@ -1422,6 +1423,35 @@ void main() {
       expect(engine.opened.last.stream.url, 'http://127.0.0.1/e21');
       // Jamais commencé : depuis le début.
       expect(engine.opened.last.startAt ?? Duration.zero, Duration.zero);
+      await _leave(tester);
+    });
+
+    testWidgets('changer de saison laisse le focus sur la saison', (
+      tester,
+    ) async {
+      await openPicker(tester);
+
+      await _press(tester, LogicalKeyboardKey.arrowLeft);
+      await _press(tester, LogicalKeyboardKey.arrowDown);
+
+      // La saison 2 s'affiche à côté, et le focus reste sur elle.
+      expect(find.text('Épisode 3'), findsNothing);
+      expect(
+        tester
+            .widgetList<SeasonLine>(find.byType(SeasonLine))
+            .where((line) => line.focused)
+            .map((line) => line.text),
+        ['Saison 2'],
+      );
+      expect(
+        tester
+            .widgetList<EpisodeLine>(find.byType(EpisodeLine))
+            .where((line) => line.focused),
+        isEmpty,
+      );
+      // Remonter revient donc à la saison 1.
+      await _press(tester, LogicalKeyboardKey.arrowUp);
+      expect(find.text('Épisode 3'), findsOneWidget);
       await _leave(tester);
     });
 

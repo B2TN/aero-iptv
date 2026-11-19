@@ -58,8 +58,21 @@ class _EpisodePickerState extends State<_EpisodePicker> {
     ),
   );
 
+  /// Les épisodes ne prennent le focus qu'à l'ouverture, sur l'épisode en
+  /// cours. Quand l'utilisateur change de saison, le focus reste sur elle :
+  /// il va lui-même vers ses épisodes.
+  bool _seasonChanged = false;
+
   bool _isCurrent(Episode episode) =>
       episode.contentKey == widget.current.contentKey;
+
+  void _showSeason(int index) {
+    if (index == _season) return;
+    setState(() {
+      _season = index;
+      _seasonChanged = true;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,9 +101,8 @@ class _EpisodePickerState extends State<_EpisodePicker> {
                         itemExtent: 48,
                         padding: const EdgeInsets.all(4),
                         initialIndex: _season,
-                        onIndexChanged: (index) =>
-                            setState(() => _season = index),
-                        onSelect: (index) => setState(() => _season = index),
+                        onIndexChanged: _showSeason,
+                        onSelect: _showSeason,
                         itemBuilder: (context, index, focused) => SeasonLine(
                           text: l10n.detailSeason(seasons[index].number),
                           focused: focused,
@@ -103,7 +115,7 @@ class _EpisodePickerState extends State<_EpisodePicker> {
                       Expanded(
                         child: DpadCollection.vertical(
                           key: ValueKey(season.number),
-                          autofocus: true,
+                          autofocus: !_seasonChanged,
                           initialIndex: math.max(0, currentIndex),
                           itemCount: season.episodes.length,
                           itemExtent: 56,

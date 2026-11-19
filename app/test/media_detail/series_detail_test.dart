@@ -2,9 +2,11 @@ import 'package:aero_iptv/app/app_state.dart';
 import 'package:aero_iptv/app/di/repository_providers.dart';
 import 'package:aero_iptv/design_system/components/progress_track.dart';
 import 'package:aero_iptv/features/media_detail/screens/media_detail_screen.dart';
+import 'package:aero_iptv/features/media_detail/widgets/episode_lines.dart';
 import 'package:aero_iptv/focus/dpad_shortcuts.dart';
 import 'package:aero_iptv/focus/focus_frame.dart';
 import 'package:aero_iptv/l10n/generated/app_localizations.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -240,6 +242,31 @@ void main() {
       isTrue,
       reason: '${FocusManager.instance.primaryFocus}',
     );
+  });
+
+  testWidgets('changer de saison laisse le focus sur la saison', (
+    tester,
+  ) async {
+    await _open(tester);
+    Future<void> press(LogicalKeyboardKey key) async {
+      await tester.sendKeyEvent(key);
+      await tester.pump();
+      await tester.pump();
+    }
+
+    await press(LogicalKeyboardKey.arrowLeft);
+    await press(LogicalKeyboardKey.arrowDown);
+
+    expect(find.text('Épisode 2'), findsNothing);
+    expect(
+      tester
+          .widgetList<SeasonLine>(find.byType(SeasonLine))
+          .where((line) => line.focused)
+          .map((line) => line.text),
+      ['Saison 2'],
+    );
+    await press(LogicalKeyboardKey.arrowUp);
+    expect(find.text('Épisode 2'), findsOneWidget);
   });
 
   testWidgets('montre le résumé, le genre et le nombre de saisons', (
