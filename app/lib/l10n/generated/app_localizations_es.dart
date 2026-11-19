@@ -139,6 +139,21 @@ class AppLocalizationsEs extends AppLocalizations {
   String get menuChooseVersion => 'Elegir la versión';
 
   @override
+  String get menuMarkWatched => 'Marcar como visto';
+
+  @override
+  String get menuMarkUnwatched => 'Marcar como no visto';
+
+  @override
+  String get menuMarkWatchedUpTo => 'Marcar vistos hasta aquí';
+
+  @override
+  String get menuMarkSeasonWatched => 'Marcar temporada como vista';
+
+  @override
+  String get menuMarkSeasonUnwatched => 'Marcar temporada como no vista';
+
+  @override
   String get menuAddFavorite => 'Añadir a favoritos';
 
   @override

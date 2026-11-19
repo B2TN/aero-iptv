@@ -137,6 +137,21 @@ class AppLocalizationsAr extends AppLocalizations {
   String get menuChooseVersion => 'اختيار النسخة';
 
   @override
+  String get menuMarkWatched => 'تعليم كمُشاهَد';
+
+  @override
+  String get menuMarkUnwatched => 'تعليم كغير مُشاهَد';
+
+  @override
+  String get menuMarkWatchedUpTo => 'تعليم كمُشاهَد حتى هنا';
+
+  @override
+  String get menuMarkSeasonWatched => 'تعليم الموسم كمُشاهَد';
+
+  @override
+  String get menuMarkSeasonUnwatched => 'تعليم الموسم كغير مُشاهَد';
+
+  @override
   String get menuAddFavorite => 'إضافة إلى المفضلة';
 
   @override

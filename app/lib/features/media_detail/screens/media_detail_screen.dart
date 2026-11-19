@@ -16,6 +16,7 @@ import '../../../focus/dpad_collection.dart';
 import '../../../focus/focus_guard.dart';
 import '../../../l10n/version_names.dart';
 import '../../player/player_target.dart';
+import '../title_menu.dart';
 import '../widgets/detail_parts.dart';
 import '../widgets/episode_lines.dart';
 
@@ -425,6 +426,16 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
               itemExtent: described ? 96 : 56,
               padding: const EdgeInsets.all(4),
               onSelect: (index) => _playEpisode(seen, season.episodes[index]),
+              onLongSelect: (index) => showEpisodeMenu(
+                context,
+                ref,
+                sourceId: widget.sourceId,
+                series: widget.series,
+                seasons: seasons,
+                episode: season.episodes[index],
+                seen: seen,
+                versions: _versions,
+              ),
               itemBuilder: (context, index, focused) {
                 final episode = season.episodes[index];
                 return EpisodeLine(

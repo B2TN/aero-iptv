@@ -155,6 +155,10 @@ final importPlaylistProvider = Provider<ImportPlaylist>(
 );
 
 /// « Continuer à regarder » : une entrée par film ou par série.
+final markEpisodesProvider = Provider<MarkEpisodes>(
+  (ref) => MarkEpisodes(ref.watch(watchProgressRepositoryProvider)),
+);
+
 final continueWatchingProvider = Provider<ContinueWatching>(
   (ref) => ContinueWatching(
     ref.watch(watchProgressRepositoryProvider),

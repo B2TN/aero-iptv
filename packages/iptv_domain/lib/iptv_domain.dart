@@ -69,6 +69,7 @@ export 'src/usecases/continue_watching.dart';
 export 'src/usecases/daily_sync.dart';
 export 'src/usecases/find_media_segments.dart';
 export 'src/usecases/import_playlist.dart';
+export 'src/usecases/mark_episodes.dart';
 export 'src/usecases/next_episode.dart';
 export 'src/usecases/playback_session.dart';
 export 'src/usecases/refresh_trending.dart';

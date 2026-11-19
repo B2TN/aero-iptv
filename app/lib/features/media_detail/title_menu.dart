@@ -13,6 +13,7 @@ import 'open_continued.dart';
 import 'open_movie.dart';
 import 'open_series.dart';
 import 'screens/movie_detail_screen.dart';
+import 'widgets/episode_lines.dart';
 
 /// Reprises gardées au plus : de quoi couvrir largement celles de l'accueil.
 const int _progressScanned = 200;
@@ -228,6 +229,143 @@ Future<void> showContinueMenu(
       },
     ),
   ]);
+}
+
+/// Menu d'un épisode de la fiche d'une série : appui long sur OK, touche
+/// Menu, ou clic droit. [seasons] sont celles de la version montrée,
+/// [versions] celles de la série, vides sans regroupement.
+Future<void> showEpisodeMenu(
+  BuildContext context,
+  WidgetRef ref, {
+  required int sourceId,
+  required Series series,
+  required List<Season> seasons,
+  required Episode episode,
+  required SeriesProgress seen,
+  required List<MediaVersion> versions,
+}) async {
+  final l10n = context.l10n;
+  final watched = seen.of(episode.season, episode.number);
+  bool done(Episode other) =>
+      seen.of(other.season, other.number)?.finished ?? false;
+  int place(Episode other) => other.season * 10000 + other.number;
+  // Toute la série jusqu'à cet épisode, saisons précédentes comprises.
+  final upToHere = [
+    for (final season in seasons)
+      for (final other in season.episodes)
+        if (place(other) <= place(episode)) other,
+  ];
+  final season = [
+    for (final season in seasons)
+      if (season.number == episode.season) ...season.episodes,
+  ];
+  final target = PlayerTarget.episode(sourceId, series, episode);
+  final mark = ref.read(markEpisodesProvider);
+  // Les fiches et l'accueil relisent ce qui a été vu.
+  Future<void> marked(Future<void> change) async {
+    await change;
+    ref.read(watchedRevisionProvider.notifier).bump();
+  }
+
+  await _run(context, episodeLabel(l10n, series, episode), [
+    if (watched != null && watched.inProgress) ...[
+      (
+        label: l10n.detailResume,
+        run: () => openPlayer(context, target.resumingAt(watched.position)),
+      ),
+      (
+        label: l10n.detailPlayFromStart,
+        run: () => openPlayer(context, target.resumingAt(Duration.zero)),
+      ),
+    ] else
+      (label: l10n.homePlay, run: () => openPlayer(context, target)),
+    if (!done(episode))
+      (
+        label: l10n.menuMarkWatched,
+        run: () => marked(mark.watched(sourceId, series, [episode], seen)),
+      ),
+    if (watched != null)
+      (
+        label: l10n.menuMarkUnwatched,
+        run: () => marked(mark.unwatched(sourceId, [episode], seen)),
+      ),
+    if (upToHere.length > 1 && !upToHere.every(done))
+      (
+        label: l10n.menuMarkWatchedUpTo,
+        run: () => marked(mark.watched(sourceId, series, upToHere, seen)),
+      ),
+    if (season.every(done))
+      (
+        label: l10n.menuMarkSeasonUnwatched,
+        run: () => marked(mark.unwatched(sourceId, season, seen)),
+      )
+    else
+      (
+        label: l10n.menuMarkSeasonWatched,
+        run: () => marked(mark.watched(sourceId, series, season, seen)),
+      ),
+    if (versions.length > 1)
+      (
+        label: l10n.menuChooseVersion,
+        run: () => _playEpisodeVersion(
+          context,
+          ref,
+          sourceId,
+          series,
+          episode,
+          seen,
+          versions,
+        ),
+      ),
+  ]);
+}
+
+/// Lit [episode] dans une autre version, où il en était dans n'importe
+/// laquelle.
+Future<void> _playEpisodeVersion(
+  BuildContext context,
+  WidgetRef ref,
+  int sourceId,
+  Series series,
+  Episode episode,
+  SeriesProgress seen,
+  List<MediaVersion> versions,
+) async {
+  final l10n = context.l10n;
+  final language = ref.read(settingsProvider).languageCode;
+  final picked = await showAeroMenu(
+    context,
+    title: l10n.detailChooseVersion,
+    options: [
+      for (final version in versions)
+        versionName(version.label, l10n, language, variant: version.variant),
+    ],
+  );
+  if (picked == null || !context.mounted) return;
+  Episode? same;
+  String? problem;
+  try {
+    same = [
+      for (final season
+          in await ref
+              .read(catalogRepositoryProvider)
+              .seasonsOf(sourceId, versions[picked].seriesEntryId))
+        if (season.number == episode.season) ...season.episodes,
+    ].where((other) => other.number == episode.number).firstOrNull;
+    if (same == null) problem = l10n.playerVersionMissing;
+  } on Failure {
+    problem = l10n.loadErrorTitle;
+  }
+  if (!context.mounted) return;
+  if (same == null) {
+    await showAeroMenu(
+      context,
+      title: problem ?? l10n.playerVersionMissing,
+      options: [l10n.actionBack],
+    );
+    return;
+  }
+  await openPlayer(context, episodeTarget(sourceId, series, same, seen));
 }
 
 Future<void> _run(

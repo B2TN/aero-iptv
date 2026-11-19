@@ -90,9 +90,10 @@ final class _Catalog extends Fake implements CatalogRepository {
       details;
 }
 
-/// Positions enregistrées, toutes versions confondues.
+/// Positions enregistrées, toutes versions confondues, la plus récente
+/// d'abord.
 final class _Progress extends Fake implements WatchProgressRepository {
-  _Progress(this.items);
+  _Progress(List<WatchProgress> items) : items = [...items];
 
   final List<WatchProgress> items;
 
@@ -100,6 +101,21 @@ final class _Progress extends Fake implements WatchProgressRepository {
   Future<List<WatchProgress>> progressOf(int sourceId, String key) async => [
     for (final item in items)
       if (item.workKey == key || item.seriesKey == key) item,
+  ];
+
+  @override
+  Future<void> save(WatchProgress progress) async => items
+    ..removeWhere((item) => item.contentKey == progress.contentKey)
+    ..insert(0, progress);
+
+  @override
+  Future<void> remove(int sourceId, String contentKey) async =>
+      items.removeWhere((item) => item.contentKey == contentKey);
+
+  /// Épisodes vus jusqu'au bout, par saison et numéro.
+  List<(int?, int?)> get finished => [
+    for (final item in items)
+      if (item.finished) (item.season, item.episode),
   ];
 }
 
@@ -168,7 +184,7 @@ final ShowSchedule _behind = ShowSchedule(
   upcoming: _running.upcoming,
 );
 
-Future<void> _open(
+Future<_Progress> _open(
   WidgetTester tester, {
   TitleDetails details = const TitleDetails(
     overview: _overview,
@@ -185,6 +201,7 @@ Future<void> _open(
     ..physicalSize = size
     ..devicePixelRatio = 1;
   addTearDown(tester.view.reset);
+  final saved = _Progress(progress);
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -192,7 +209,7 @@ Future<void> _open(
         catalogRepositoryProvider.overrideWithValue(
           _Catalog(details: details, overviews: overviews, versions: versions),
         ),
-        watchProgressRepositoryProvider.overrideWithValue(_Progress(progress)),
+        watchProgressRepositoryProvider.overrideWithValue(saved),
         scheduleRepositoryProvider.overrideWithValue(
           schedule ?? _Schedule(_running),
         ),
@@ -218,7 +235,28 @@ Future<void> _open(
   for (var i = 0; i < 4; i++) {
     await tester.pump();
   }
+  return saved;
 }
+
+Future<void> _press(WidgetTester tester, LogicalKeyboardKey key) async {
+  await tester.sendKeyEvent(key);
+  for (var i = 0; i < 4; i++) {
+    await tester.pump();
+  }
+}
+
+Future<void> _choose(WidgetTester tester, String option) async {
+  await tester.tap(find.text(option));
+  for (var i = 0; i < 6; i++) {
+    await tester.pump();
+  }
+}
+
+/// Lignes d'épisodes affichées, par titre, vues jusqu'au bout ou non.
+Map<String, bool> _watchedLines(WidgetTester tester) => {
+  for (final line in tester.widgetList<EpisodeLine>(find.byType(EpisodeLine)))
+    line.title: line.watched?.finished ?? false,
+};
 
 /// Vrai si l'élément qui a le focus le montre par son cadre.
 bool _focusIsVisible() {
@@ -424,6 +462,97 @@ void main() {
     await _open(tester, versions: _twoVersions, progress: [third]);
 
     expect(find.text('Reprendre'), findsNothing);
+  });
+
+  group('menu d un épisode', () {
+    testWidgets('la touche Menu l ouvre, et marque l épisode vu', (
+      tester,
+    ) async {
+      final saved = await _open(tester);
+
+      await _press(tester, LogicalKeyboardKey.contextMenu);
+      // Jamais commencé : rien à reprendre, rien à oublier.
+      expect(find.text('Lire'), findsOneWidget);
+      expect(find.text('Reprendre'), findsNothing);
+      expect(find.text('Marquer comme non vu'), findsNothing);
+      // Le premier épisode : « jusqu'ici » serait le même choix.
+      expect(find.text('Marquer vus jusqu\'ici'), findsNothing);
+      expect(find.text('Marquer la saison comme vue'), findsOneWidget);
+      await _choose(tester, 'Marquer comme vu');
+
+      expect(saved.finished, [(1, 1)]);
+      expect(_watchedLines(tester), {'Épisode 1': true, 'Épisode 2': false});
+    });
+
+    testWidgets('marque vus tous les épisodes jusqu ici, saisons '
+        'précédentes comprises', (tester) async {
+      final saved = await _open(tester);
+      await _press(tester, LogicalKeyboardKey.arrowLeft);
+      await _press(tester, LogicalKeyboardKey.arrowDown);
+      await _press(tester, LogicalKeyboardKey.arrowRight);
+
+      await _press(tester, LogicalKeyboardKey.contextMenu);
+      await _choose(tester, 'Marquer vus jusqu\'ici');
+
+      expect(saved.finished, unorderedEquals([(1, 1), (1, 2), (2, 1)]));
+    });
+
+    testWidgets('un épisode commencé se reprend, ou s oublie dans toutes '
+        'ses versions', (tester) async {
+      final saved = await _open(
+        tester,
+        versions: _twoVersions,
+        progress: [_startedInEnglish],
+      );
+
+      // Le focus est sur l'épisode commencé.
+      await _press(tester, LogicalKeyboardKey.contextMenu);
+      expect(find.text('Reprendre'), findsWidgets);
+      expect(find.text('Lecture depuis le début'), findsOneWidget);
+      await _choose(tester, 'Marquer comme non vu');
+
+      expect(saved.items, isEmpty);
+      expect(find.text('Reprendre'), findsNothing);
+    });
+
+    testWidgets('une saison vue peut redevenir non vue', (tester) async {
+      final saved = await _open(tester);
+      await _press(tester, LogicalKeyboardKey.contextMenu);
+      await _choose(tester, 'Marquer la saison comme vue');
+      expect(saved.finished, unorderedEquals([(1, 1), (1, 2)]));
+
+      await _press(tester, LogicalKeyboardKey.contextMenu);
+      await _choose(tester, 'Marquer la saison comme non vue');
+
+      expect(saved.items, isEmpty);
+    });
+
+    testWidgets('une version sans l épisode le dit', (tester) async {
+      await _open(tester, versions: _twoVersions);
+      await _press(tester, LogicalKeyboardKey.arrowLeft);
+      await _press(tester, LogicalKeyboardKey.arrowDown);
+      await _press(tester, LogicalKeyboardKey.arrowRight);
+
+      await _press(tester, LogicalKeyboardKey.contextMenu);
+      await _choose(tester, 'Choisir la version');
+      // La VO n'a qu'une saison.
+      await _choose(tester, 'Anglais');
+
+      expect(
+        find.text('Cet épisode n\'existe pas dans cette version'),
+        findsOneWidget,
+      );
+      // Le message est au-dessus de la fiche et de son propre bouton Retour.
+      await tester.tap(find.text('Retour').last);
+      for (var i = 0; i < 4; i++) {
+        await tester.pump();
+      }
+      expect(
+        find.text('Cet épisode n\'existe pas dans cette version'),
+        findsNothing,
+      );
+      expect(find.byType(MediaDetailScreen), findsOneWidget);
+    });
   });
 
   testWidgets('une série terminée n a ni panneau ni étiquette', (tester) async {

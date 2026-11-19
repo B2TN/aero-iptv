@@ -338,6 +338,36 @@ abstract class AppLocalizations {
   /// **'Choisir la version'**
   String get menuChooseVersion;
 
+  /// No description provided for @menuMarkWatched.
+  ///
+  /// In fr, this message translates to:
+  /// **'Marquer comme vu'**
+  String get menuMarkWatched;
+
+  /// No description provided for @menuMarkUnwatched.
+  ///
+  /// In fr, this message translates to:
+  /// **'Marquer comme non vu'**
+  String get menuMarkUnwatched;
+
+  /// Marque vus tous les épisodes de la série jusqu'à celui-ci, saisons précédentes comprises.
+  ///
+  /// In fr, this message translates to:
+  /// **'Marquer vus jusqu\'ici'**
+  String get menuMarkWatchedUpTo;
+
+  /// No description provided for @menuMarkSeasonWatched.
+  ///
+  /// In fr, this message translates to:
+  /// **'Marquer la saison comme vue'**
+  String get menuMarkSeasonWatched;
+
+  /// No description provided for @menuMarkSeasonUnwatched.
+  ///
+  /// In fr, this message translates to:
+  /// **'Marquer la saison comme non vue'**
+  String get menuMarkSeasonUnwatched;
+
   /// No description provided for @menuAddFavorite.
   ///
   /// In fr, this message translates to:
