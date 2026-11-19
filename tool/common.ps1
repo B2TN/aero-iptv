@@ -66,8 +66,13 @@ function Get-AppVersion {
 # Injecte les clés de services si elles sont renseignées, et la version, que
 # l'application compare à celles publiées sur GitHub.
 function Get-SecretArguments {
-    $version = "--dart-define=AERO_VERSION=$(Get-AppVersion)"
-    if (Test-Path $SecretsFile) { return @("--dart-define-from-file=$SecretsFile", $version) }
-    Write-Warning 'config\secrets.json absent : tendances TMDb et clé DeepL de compilation désactivées.'
-    return @($version)
+    $arguments = @("--dart-define=AERO_VERSION=$(Get-AppVersion)")
+    if (Test-Path $SecretsFile) {
+        $arguments += "--dart-define-from-file=$SecretsFile"
+    } else {
+        Write-Warning 'config\secrets.json absent : tendances TMDb et clé DeepL de compilation désactivées.'
+    }
+    # La virgule garde le tableau : PowerShell déroulerait une liste d'un seul
+    # élément en simple texte, que @secrets étalerait lettre par lettre.
+    return ,$arguments
 }
