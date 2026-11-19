@@ -187,6 +187,11 @@ void main() {
       // sautent tout ce qui n'a pas changé.
       final firstSync = await sync();
       final syncTotal = await sync();
+      // Un catalogue laissé par une version d'avant les empreintes.
+      await db.customStatement('UPDATE movies SET source_hash = NULL');
+      await db.customStatement('UPDATE series_entries SET source_hash = NULL');
+      await db.customStatement('UPDATE sources SET live_hash = NULL');
+      final upgradeSync = await sync();
 
       Future<void> timed(String name, Future<Object?> Function() query) async {
         final clock = Stopwatch()..start();
@@ -243,6 +248,7 @@ void main() {
         'Première synchronisation : ${firstSync.inSeconds} s\n'
         'Synchronisation du lendemain : '
         '${syncTotal.inMilliseconds / 1000} s\n'
+        'Synchronisation après mise à jour : ${upgradeSync.inSeconds} s\n'
         'Pic RSS : ${peak ~/ _mebibyte} Mio\n'
         'Base : ${sizeMb.toStringAsFixed(0)} Mio',
       );

@@ -180,6 +180,61 @@ final class CatalogMergeDao {
     };
   }
 
+  /// Enregistre les empreintes [hashes] des films de [catalogId] qui n'en
+  /// avaient pas encore, sans rien d'autre : ils viennent d'un catalogue
+  /// importé avant les empreintes, et sont tenus pour inchangés.
+  Future<void> backfillMovieHashes(
+    int catalogId,
+    List<(String, int)> hashes,
+  ) async {
+    const chunk = 500;
+    for (var start = 0; start < hashes.length; start += chunk) {
+      final pairs = hashes.skip(start).take(chunk).toList();
+      await _db.customStatement(
+        'UPDATE movies SET source_hash = CASE content_key '
+        '${List.filled(pairs.length, 'WHEN ? THEN ?').join(' ')} END '
+        'WHERE catalog_id = ? AND source_hash IS NULL AND content_key IN '
+        '(${List.filled(pairs.length, '?').join(', ')})',
+        [
+          for (final (key, hash) in pairs) ...[key, hash],
+          catalogId,
+          for (final (key, _) in pairs) key,
+        ],
+      );
+    }
+  }
+
+  /// Retire de [catalogId] les lignes de séparation (`##### MAROC #####`)
+  /// gardées d'avant leur exclusion : elles ne sont pas des titres.
+  Future<void> removeHeaderEntries(int catalogId, TitleCleaner cleaner) async {
+    for (final (table, offset) in [('movies', 0), ('series_entries', 1)]) {
+      // Une ligne de séparation commence par un signe : les autres titres
+      // ne passent pas par le nettoyeur.
+      final rows = await _db
+          .customSelect(
+            "SELECT id, raw_title FROM $table WHERE catalog_id = ?1 "
+            "AND raw_title NOT GLOB '[A-Za-z0-9]*'",
+            variables: [Variable.withInt(catalogId)],
+          )
+          .get();
+      final ids = [
+        for (final row in rows)
+          if (cleaner.isHeaderEntry(row.read<String>('raw_title')))
+            row.read<int>('id'),
+      ];
+      if (ids.isEmpty) continue;
+      if (table == 'series_entries') {
+        await _deleteIn('episodes', 'series_entry_id', ids);
+      }
+      await _reindex(
+        (removed: ids, touched: const <int>[]),
+        offset: offset,
+        insert: '',
+      );
+      await _deleteIn(table, 'id', ids);
+    }
+  }
+
   /// Empreinte de la liste des chaînes au dernier passage.
   Future<int?> liveHashOf(int sourceId) async {
     final row = await _db

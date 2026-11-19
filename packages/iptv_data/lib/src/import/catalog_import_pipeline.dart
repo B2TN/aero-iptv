@@ -284,6 +284,7 @@ final class CatalogImportPipeline {
         shown,
         removed: gates.removed(ContentKind.movie),
       );
+      await _merge.backfillMovieHashes(shown, gates.unhashedMovies);
     }
     if (!failed.containsKey(ContentKind.series)) {
       await _merge.mergeSeries(
@@ -291,6 +292,11 @@ final class CatalogImportPipeline {
         shown,
         removed: gates.removed(ContentKind.series),
       );
+    }
+    // Premier passage depuis les empreintes : le catalogue vient d'avant
+    // l'exclusion des lignes de séparation.
+    if (gates.hadUnhashed) {
+      await _merge.removeHeaderEntries(shown, const TitleCleaner());
     }
   }
 
@@ -381,6 +387,14 @@ final class _SyncGates {
   final Map<ContentKind, Map<String, int?>> _known;
   final int? _liveBefore;
   final Map<ContentKind, Set<String>> _seen = {};
+
+  /// Films affichés sans empreinte, avec celle qu'ils viennent de recevoir.
+  final List<(String, int)> unhashedMovies = [];
+
+  /// Le catalogue affiché avait des titres sans empreinte : il vient d'avant
+  /// elles.
+  bool get hadUnhashed =>
+      _known.values.any((hashes) => hashes.values.any((hash) => hash == null));
   int _live = _liveSeed;
   int? _liveFinal;
 
@@ -397,7 +411,17 @@ final class _SyncGates {
     final seen = _seen[kind] ??= <String>{};
     return (identity, hash) {
       seen.add(identity);
-      return known[identity] != hash;
+      final before = known[identity];
+      // Un film d'avant les empreintes est tenu pour inchangé : le traiter
+      // ralentirait toute la première synchronisation. Une série, elle,
+      // l'est toujours, pour ne pas manquer ses nouveaux épisodes.
+      if (before == null &&
+          kind == ContentKind.movie &&
+          known.containsKey(identity)) {
+        unhashedMovies.add((identity, hash));
+        return false;
+      }
+      return before != hash;
     };
   }
 
@@ -414,6 +438,7 @@ final class _SyncGates {
       if (_liveFinal == null) _live = _liveSeed;
     } else {
       _seen[kind]?.clear();
+      if (kind == ContentKind.movie) unhashedMovies.clear();
     }
   }
 

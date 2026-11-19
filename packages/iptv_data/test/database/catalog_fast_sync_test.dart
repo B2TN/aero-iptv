@@ -220,6 +220,38 @@ void main() {
       expect(await found('lost'), hasLength(1));
     });
 
+    test('un catalogue d avant les empreintes passe vite, sans rien '
+        'perdre', () async {
+      final dune = await idOf('movies', 'content_key', 'x:m:10');
+      final lost = (await idOf('series_entries', 'entry_key', 'x:s:20'))!;
+      // Le catalogue tel qu'une version précédente l'a laissé : sans
+      // empreintes, avec une ligne de séparation.
+      await db.customStatement('UPDATE movies SET source_hash = NULL');
+      await db.customStatement('UPDATE series_entries SET source_hash = NULL');
+      await db.customStatement('UPDATE sources SET live_hash = NULL');
+      await db.customStatement(
+        "INSERT INTO movies (catalog_id, raw_title, display_title, title_key, "
+        "content_key, sort_order) SELECT active_catalog_id, '##### FILMS #####', "
+        "'FILMS', 'films', 'x:m:99', 0 FROM sources",
+      );
+      panel.series[20] = ('FR - Lost', 200, '4607');
+
+      await sync();
+
+      expect(await idOf('movies', 'content_key', 'x:m:10'), dune);
+      expect(await idOf('movies', 'content_key', 'x:m:99'), isNull);
+      final unhashed = await db
+          .customSelect(
+            'SELECT COUNT(*) AS n FROM movies WHERE source_hash IS NULL',
+          )
+          .getSingle();
+      expect(unhashed.read<int>('n'), 0);
+      // Une série, elle, est traitée : sa modification n'est pas perdue.
+      final row = await db.seriesEntryById(id: lost).getSingle();
+      expect(row.lastModified, 200);
+      expect(await found('dune'), ['Dune']);
+    });
+
     test('une série modifiée sera redemandée', () async {
       final lost = (await idOf('series_entries', 'entry_key', 'x:s:20'))!;
       await db.saveSeriesDetails(
