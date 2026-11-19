@@ -88,46 +88,188 @@ final class CatalogMergeDao {
   }
 
   /// Applique la section [kind] de [fresh] à [shown] ; toutes si `null`.
+  ///
+  /// [fresh] contient la section entière : ce qui n'y est pas a disparu.
   Future<void> merge(int fresh, int shown, ContentKind? kind) async {
     if (kind == null || kind == ContentKind.live) {
-      await _replaceLive(fresh, shown);
+      await replaceLive(fresh, shown);
     }
     if (kind == null || kind == ContentKind.movie) {
-      final movies = await _mergeTitles(
-        table: 'movies',
-        key: 'content_key',
-        columns: _movieColumns,
-        fresh: fresh,
-        shown: shown,
-      );
-      await _reindex(
-        movies,
-        offset: 0,
-        insert: CatalogMaintenanceDao.indexMoviesSql,
-      );
+      await mergeMovies(fresh, shown);
     }
     if (kind == null || kind == ContentKind.series) {
-      final series = await _mergeTitles(
-        table: 'series_entries',
-        key: 'entry_key',
-        columns: _seriesColumns,
-        fresh: fresh,
-        shown: shown,
-        beforeUpdate: (low, high) => _markRefreshed(fresh, shown, low, high),
-        beforeDelete: (ids) => _deleteIn('episodes', 'series_entry_id', ids),
-      );
-      await _mergeEpisodes(fresh, shown);
-      await _reindex(
-        series,
-        offset: 1,
-        insert: CatalogMaintenanceDao.indexSeriesSql,
-      );
+      await mergeSeries(fresh, shown);
     }
+  }
+
+  /// Applique les films de [fresh] à [shown]. Sans [removed], [fresh] les
+  /// contient tous ; avec, il ne contient que ceux qui ont changé, et
+  /// [removed] nomme ceux qui ont disparu.
+  Future<void> mergeMovies(
+    int fresh,
+    int shown, {
+    List<String>? removed,
+  }) async {
+    final movies = await _mergeTitles(
+      table: 'movies',
+      key: 'content_key',
+      columns: _movieColumns,
+      fresh: fresh,
+      shown: shown,
+      removedKeys: removed,
+    );
+    await _reindex(
+      movies,
+      offset: 0,
+      insert: CatalogMaintenanceDao.indexMoviesSql,
+    );
+  }
+
+  /// Applique les séries de [fresh] à [shown], comme [mergeMovies].
+  ///
+  /// Avec [removed], les versions des séries sont regroupées à nouveau dans
+  /// [shown] dès qu'une série a changé : [fresh] n'en contient qu'une partie.
+  Future<void> mergeSeries(
+    int fresh,
+    int shown, {
+    List<String>? removed,
+  }) async {
+    final series = await _mergeTitles(
+      table: 'series_entries',
+      key: 'entry_key',
+      columns: _seriesColumns,
+      fresh: fresh,
+      shown: shown,
+      removedKeys: removed,
+      beforeUpdate: (low, high) => _markRefreshed(fresh, shown, low, high),
+      beforeDelete: (ids) => _deleteIn('episodes', 'series_entry_id', ids),
+    );
+    var touched = series.touched;
+    if (removed == null) {
+      await _mergeEpisodes(fresh, shown);
+    } else {
+      await _refreshUndated(shown);
+      if (series.touched.isNotEmpty || series.removed.isNotEmpty) {
+        touched = {...touched, ...await _regroupSeries(shown)}.toList();
+      }
+    }
+    await _reindex(
+      (removed: series.removed, touched: touched),
+      offset: 1,
+      insert: CatalogMaintenanceDao.indexSeriesSql,
+    );
+  }
+
+  /// Empreintes des titres de [catalogId], par identité : `content_key` d'un
+  /// film, `entry_key` d'une série.
+  Future<Map<String, int?>> hashesOf(int catalogId, ContentKind kind) async {
+    final (table, key) = switch (kind) {
+      ContentKind.movie => ('movies', 'content_key'),
+      _ => ('series_entries', 'entry_key'),
+    };
+    final rows = await _db
+        .customSelect(
+          'SELECT $key AS identity, source_hash AS hash FROM $table '
+          'WHERE catalog_id = ?1',
+          variables: [Variable.withInt(catalogId)],
+        )
+        .get();
+    return {
+      for (final row in rows)
+        row.read<String>('identity'): row.readNullable<int>('hash'),
+    };
+  }
+
+  /// Empreinte de la liste des chaînes au dernier passage.
+  Future<int?> liveHashOf(int sourceId) async {
+    final row = await _db
+        .customSelect(
+          'SELECT live_hash AS hash FROM sources WHERE id = ?1',
+          variables: [Variable.withInt(sourceId)],
+        )
+        .getSingleOrNull();
+    return row?.readNullable<int>('hash');
+  }
+
+  Future<void> saveLiveHash(int sourceId, int hash) => _db.customStatement(
+    'UPDATE sources SET live_hash = ?1 WHERE id = ?2',
+    [hash, sourceId],
+  );
+
+  /// Une série Xtream qui ne dit jamais quand elle change est redemandée à
+  /// chaque synchronisation, à sa prochaine ouverture : rien d'autre ne
+  /// signalerait ses nouveaux épisodes.
+  Future<void> _refreshUndated(int shown) => _db.customStatement(
+    '''
+    UPDATE series_entries SET details_loaded = FALSE
+    WHERE catalog_id = ?1 AND details_loaded
+      AND xtream_series_id IS NOT NULL AND last_modified IS NULL
+    ''',
+    [shown],
+  );
+
+  /// Regroupe les versions des séries de [catalogId] comme à l'import :
+  /// titre, année des homonymes, puis titres traduits. Seules les séries
+  /// dont la clé change sont réécrites ; retourne leurs identifiants.
+  Future<List<int>> _regroupSeries(int catalogId) async {
+    final rows = await _db
+        .customSelect(
+          '''
+          SELECT id, title_key, grouping_key, display_title, language_tag,
+                 year, poster_url, tmdb_id
+          FROM series_entries WHERE catalog_id = ?1
+          ''',
+          variables: [Variable.withInt(catalogId)],
+        )
+        .get();
+    final years = <String, Set<int>>{};
+    for (final row in rows) {
+      final year = row.readNullable<int>('year');
+      if (year != null) {
+        (years[row.read<String>('title_key')] ??= {}).add(year);
+      }
+    }
+    String baseKey(QueryRow row) {
+      final title = row.read<String>('title_key');
+      final year = row.readNullable<int>('year');
+      return year != null && years[title]!.length > 1 ? '$title#$year' : title;
+    }
+
+    final merged = VersionGrouper.merge([
+      for (final row in rows)
+        VersionCandidate(
+          groupingKey: baseKey(row),
+          title: row.read<String>('display_title'),
+          label: row.readNullable<String>('language_tag'),
+          year: row.readNullable<int>('year'),
+          posterUrl: row.readNullable<String>('poster_url'),
+          tmdbId: row.readNullable<String>('tmdb_id'),
+        ),
+    ]);
+    final changed = <({int id, String key})>[];
+    for (final row in rows) {
+      final base = baseKey(row);
+      final key = merged[base] ?? base;
+      if (key != row.read<String>('grouping_key')) {
+        changed.add((id: row.read<int>('id'), key: key));
+      }
+    }
+    if (changed.isNotEmpty) {
+      await transactionKeepingCause(_db, () async {
+        for (final row in changed) {
+          await _db.customStatement(
+            'UPDATE series_entries SET grouping_key = ?1 WHERE id = ?2',
+            [row.key, row.id],
+          );
+        }
+      });
+    }
+    return [for (final row in changed) row.id];
   }
 
   /// Les chaînes n'ont rien de propre à garder : leur section est remplacée
   /// d'un seul coup, sans moment où la liste serait vide.
-  Future<void> _replaceLive(int fresh, int shown) =>
+  Future<void> replaceLive(int fresh, int shown) =>
       transactionKeepingCause(_db, () async {
         for (final table in ['live_channels', 'channel_groups']) {
           await _db.customStatement(
@@ -152,10 +294,13 @@ final class CatalogMergeDao {
     required List<String> columns,
     required int fresh,
     required int shown,
+    List<String>? removedKeys,
     Future<void> Function(int low, int high)? beforeUpdate,
     Future<void> Function(List<int> ids)? beforeDelete,
   }) async {
-    final removed = await _vanished(table, key, fresh, shown);
+    final removed = removedKeys == null
+        ? await _vanished(table, key, fresh, shown)
+        : await _idsOfKeys(table, key, shown, removedKeys);
     if (removed.isNotEmpty) {
       await beforeDelete?.call(removed);
       await _deleteIn(table, 'id', removed);
@@ -184,17 +329,19 @@ final class CatalogMergeDao {
           variables,
         ),
       );
-      // L'ordre du fournisseur bouge sans que le titre change : la recherche
-      // n'a pas à le savoir.
+      // L'ordre du fournisseur et l'empreinte bougent sans que le titre
+      // change : la recherche n'a pas à le savoir.
       await _db.customStatement(
-        'UPDATE $table SET sort_order = (SELECT s.sort_order $counterpart) '
-        'WHERE id IN ($matched AND a.sort_order IS NOT s.sort_order)',
+        'UPDATE $table SET (sort_order, source_hash) = '
+        '(SELECT s.sort_order, s.source_hash $counterpart) '
+        'WHERE id IN ($matched AND (a.sort_order IS NOT s.sort_order '
+        'OR a.source_hash IS NOT s.source_hash))',
         variables,
       );
       touched.addAll(
         await _ids(
-          'INSERT INTO $table (catalog_id, $list, sort_order) '
-          'SELECT ?4, $selected, s.sort_order FROM $table AS s '
+          'INSERT INTO $table (catalog_id, $list, sort_order, source_hash) '
+          'SELECT ?4, $selected, s.sort_order, s.source_hash FROM $table AS s '
           'WHERE s.catalog_id = ?1 AND s.id BETWEEN ?2 AND ?3 '
           'AND NOT EXISTS (SELECT 1 FROM $table AS a '
           'WHERE a.catalog_id = ?4 AND a.$key = s.$key) '
@@ -291,6 +438,31 @@ final class CatalogMergeDao {
         variables,
       );
     });
+  }
+
+  /// Titres de [catalogId] dont l'identité est parmi [keys].
+  Future<List<int>> _idsOfKeys(
+    String table,
+    String key,
+    int catalogId,
+    List<String> keys,
+  ) async {
+    final ids = <int>[];
+    for (var start = 0; start < keys.length; start += _pass) {
+      final chunk = keys.skip(start).take(_pass).toList();
+      final rows = await _db
+          .customSelect(
+            'SELECT id FROM $table WHERE catalog_id = ?1 AND $key IN '
+            '(${List.filled(chunk.length, '?').join(', ')})',
+            variables: [
+              Variable.withInt(catalogId),
+              for (final value in chunk) Variable.withString(value),
+            ],
+          )
+          .get();
+      ids.addAll([for (final row in rows) row.read<int>('id')]);
+    }
+    return ids;
   }
 
   /// Titres de [shown] absents de [fresh].

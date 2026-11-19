@@ -26,6 +26,7 @@ final class ImportProgress {
     this.epgFailed = false,
     this.failedSections = const {},
     this.failedRefinements = const {},
+    this.merged = false,
   });
 
   final ImportStage stage;
@@ -47,4 +48,8 @@ final class ImportProgress {
   /// Finitions qui ont échoué, avec leur cause. Le catalogue est affiché sans
   /// elles.
   final Map<CatalogRefinement, Failure> failedRefinements;
+
+  /// Le catalogue affiché ne reçoit que ses différences avec celui du
+  /// fournisseur : une synchronisation de routine, pas un premier import.
+  final bool merged;
 }

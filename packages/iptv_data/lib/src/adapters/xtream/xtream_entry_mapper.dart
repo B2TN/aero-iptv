@@ -13,15 +13,22 @@ const String _defaultVodContainer = 'mp4';
 final class XtreamEntryMapper {
   const XtreamEntryMapper();
 
-  LiveEntry? live(Map<String, dynamic> json, Map<String, String> categories) {
+  LiveEntry? live(
+    Map<String, dynamic> json,
+    Map<String, String> categories, [
+    int? sourceHash,
+    int? position,
+  ]) {
     final id = readInt(json['stream_id']);
     final name = readString(json['name']);
     if (id == null || name == null) return null;
     return LiveEntry(
+      position: position,
       rawName: name,
       rawGroup: _category(json, categories),
       logoUrl: readString(json['stream_icon']),
       tvgId: readString(json['epg_channel_id']),
+      sourceHash: sourceHash,
       locator: XtreamStream(
         namespace: XtreamNamespace.live,
         streamId: id,
@@ -30,14 +37,21 @@ final class XtreamEntryMapper {
     );
   }
 
-  MovieEntry? movie(Map<String, dynamic> json, Map<String, String> categories) {
+  MovieEntry? movie(
+    Map<String, dynamic> json,
+    Map<String, String> categories, [
+    int? sourceHash,
+    int? position,
+  ]) {
     final id = readInt(json['stream_id']);
     final name = readString(json['name']);
     if (id == null || name == null) return null;
     return MovieEntry(
+      position: position,
       rawName: name,
       rawGroup: _category(json, categories),
       logoUrl: readString(json['stream_icon']),
+      sourceHash: sourceHash,
       locator: XtreamStream(
         namespace: XtreamNamespace.movie,
         streamId: id,
@@ -49,16 +63,20 @@ final class XtreamEntryMapper {
 
   SeriesEntry? series(
     Map<String, dynamic> json,
-    Map<String, String> categories,
-  ) {
+    Map<String, String> categories, [
+    int? sourceHash,
+    int? position,
+  ]) {
     final id = readInt(json['series_id']);
     final name = readString(json['name']);
     if (id == null || name == null) return null;
     return SeriesEntry(
+      position: position,
       rawName: name,
       rawGroup: _category(json, categories),
       logoUrl: readString(json['cover']),
       xtreamSeriesId: id,
+      sourceHash: sourceHash,
       tmdbId: readString(json['tmdb']) ?? readString(json['tmdb_id']),
       lastModified: readInt(json['last_modified']),
     );

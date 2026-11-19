@@ -107,7 +107,7 @@ final class CatalogSession {
       containerExt: Value(locator.containerExt),
       userAgent: Value(locator.userAgent),
       referrer: Value(locator.referrer),
-      sortOrder: _sortOrder,
+      sortOrder: entry.position ?? _sortOrder,
     );
   }
 
@@ -137,7 +137,8 @@ final class CatalogSession {
       containerExt: Value(locator.containerExt),
       userAgent: Value(locator.userAgent),
       referrer: Value(locator.referrer),
-      sortOrder: _sortOrder,
+      sortOrder: entry.position ?? _sortOrder,
+      sourceHash: Value(entry.sourceHash),
     );
   }
 
@@ -212,9 +213,10 @@ final class CatalogSession {
             posterUrl: Value(entry.logoUrl),
             xtreamSeriesId: Value(xtreamSeriesId),
             tmdbId: Value(tmdbId),
-            sortOrder: _sortOrder,
+            sortOrder: entry.position ?? _sortOrder,
             entryKey: Value(entryKey),
             lastModified: Value(lastModified),
+            sourceHash: Value(entry.sourceHash),
           ),
         );
   }

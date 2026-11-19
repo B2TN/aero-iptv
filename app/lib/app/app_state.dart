@@ -98,6 +98,7 @@ final class ImportStatus {
     this.finished = false,
     this.failedSections = const {},
     this.failedRefinements = const {},
+    this.merged = false,
   });
 
   final bool running;
@@ -117,6 +118,10 @@ final class ImportStatus {
 
   /// Finitions du catalogue qui ont échoué. Le catalogue est affiché sans elles.
   final Map<CatalogRefinement, Failure> failedRefinements;
+
+  /// Synchronisation de routine : seules les différences sont appliquées au
+  /// catalogue affiché. Le guide s'y met à jour sans le dire.
+  final bool merged;
 
   /// L'utilisateur doit en être informé, même une fois l'import terminé.
   bool get needsAttention =>
@@ -176,6 +181,7 @@ class ImportController extends Notifier<ImportStatus> {
               epgFailed: progress.epgFailed,
               failedSections: progress.failedSections,
               failedRefinements: progress.failedRefinements,
+              merged: progress.merged,
             );
             if (!done) return;
             _keepAwake(false);
@@ -210,6 +216,10 @@ final importControllerProvider =
 /// Texte d'avancement de la synchronisation, ou `null` s'il n'y a rien à dire.
 String? importMessage(AppLocalizations l10n, ImportStatus status) =>
     switch (status) {
+      // Le catalogue est déjà à jour : le guide se télécharge en silence, et
+      // un guide que le fournisseur ne sert pas n'a pas à le rappeler chaque
+      // jour.
+      ImportStatus(running: true, merged: true, stage: ImportStage.epg) => null,
       ImportStatus(running: true) => _runningMessage(l10n, status),
       ImportStatus(:final Failure failure) => importFailureMessage(
         l10n,
@@ -220,7 +230,7 @@ String? importMessage(AppLocalizations l10n, ImportStatus status) =>
       ImportStatus(:final failedRefinements)
           when failedRefinements.isNotEmpty =>
         _unrefinedMessage(l10n, failedRefinements),
-      ImportStatus(epgFailed: true) => l10n.importEpgFailed,
+      ImportStatus(epgFailed: true, merged: false) => l10n.importEpgFailed,
       ImportStatus(finished: true) => l10n.importDone,
       _ => null,
     };

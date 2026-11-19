@@ -24,6 +24,15 @@ const List<String> _progressColumns = [
 /// Ramène une base neuve au schéma de [version] : sans les favoris avant la
 /// version 5, sans les colonnes de résumés avant la version 4.
 Future<void> _downgrade(AppDatabase database, int version) async {
+  if (version < 9) {
+    for (final (table, column) in [
+      ('movies', 'source_hash'),
+      ('series_entries', 'source_hash'),
+      ('sources', 'live_hash'),
+    ]) {
+      await database.customStatement('ALTER TABLE $table DROP COLUMN $column');
+    }
+  }
   if (version < 8) {
     await database.customStatement(
       'ALTER TABLE live_channels DROP COLUMN national_rank',

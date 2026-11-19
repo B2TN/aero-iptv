@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:aero_iptv/app/app_state.dart';
 import 'package:aero_iptv/app/di/infrastructure_providers.dart';
 import 'package:aero_iptv/app/di/repository_providers.dart';
+import 'package:aero_iptv/l10n/generated/app_localizations.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:iptv_domain/iptv_domain.dart';
@@ -61,6 +63,48 @@ final class _Importer implements CatalogImporter {
 }
 
 void main() {
+  group('message d avancement', () {
+    final l10n = lookupAppLocalizations(const Locale('fr'));
+
+    test('une synchronisation de routine ne parle pas du guide', () {
+      expect(
+        importMessage(
+          l10n,
+          const ImportStatus(
+            running: true,
+            stage: ImportStage.epg,
+            merged: true,
+          ),
+        ),
+        isNull,
+      );
+      expect(
+        importMessage(
+          l10n,
+          const ImportStatus(finished: true, epgFailed: true, merged: true),
+        ),
+        l10n.importDone,
+      );
+    });
+
+    test('un premier import, si', () {
+      expect(
+        importMessage(
+          l10n,
+          const ImportStatus(running: true, stage: ImportStage.epg),
+        ),
+        l10n.importGuide,
+      );
+      expect(
+        importMessage(
+          l10n,
+          const ImportStatus(finished: true, epgFailed: true),
+        ),
+        l10n.importEpgFailed,
+      );
+    });
+  });
+
   /// Demandes faites à l'écran : `true` pour le garder allumé.
   final awake = <bool>[];
 

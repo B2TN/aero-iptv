@@ -9,11 +9,21 @@ sealed class CatalogEntry {
     required this.rawName,
     required this.rawGroup,
     this.logoUrl,
+    this.sourceHash,
+    this.position,
   });
 
   final String rawName;
   final String rawGroup;
   final String? logoUrl;
+
+  /// Place dans la liste du fournisseur, quand l'adapter la connaît : une
+  /// synchronisation qui saute les entrées inchangées garde ainsi l'ordre.
+  final int? position;
+
+  /// Empreinte de l'objet tel que le fournisseur l'a envoyé : la
+  /// synchronisation suivante saute l'entrée si elle n'a pas changé.
+  final int? sourceHash;
 }
 
 /// Chaîne en direct.
@@ -23,6 +33,8 @@ final class LiveEntry extends CatalogEntry {
     required super.rawGroup,
     required this.locator,
     super.logoUrl,
+    super.sourceHash,
+    super.position,
     this.tvgId,
     this.tvgCountry,
   });
@@ -39,6 +51,8 @@ final class MovieEntry extends CatalogEntry {
     required super.rawGroup,
     required this.locator,
     super.logoUrl,
+    super.sourceHash,
+    super.position,
   });
 
   final StreamLocator locator;
@@ -51,6 +65,8 @@ final class SeriesEntry extends CatalogEntry {
     required super.rawGroup,
     required this.xtreamSeriesId,
     super.logoUrl,
+    super.sourceHash,
+    super.position,
     this.tmdbId,
     this.lastModified,
   });
@@ -78,9 +94,14 @@ final class EpisodeEntry extends CatalogEntry {
 
 /// Lot d'entrées, dont la taille borne la mémoire utilisée par l'import.
 final class CatalogBatch {
-  const CatalogBatch(this.entries, {this.discoveredEpgUrl});
+  const CatalogBatch(this.entries, {this.discoveredEpgUrl, int? received})
+    : _received = received;
 
   final List<CatalogEntry> entries;
+  final int? _received;
+
+  /// Objets reçus du fournisseur pour ce lot, entrées sautées comprises.
+  int get received => _received ?? entries.length;
 
   /// Guide annoncé par l'en-tête `#EXTM3U`.
   final String? discoveredEpgUrl;

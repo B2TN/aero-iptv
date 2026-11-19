@@ -17,7 +17,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   /// Retrouve, dans le catalogue actif, l'identité commune aux versions des
   /// reprises enregistrées avant qu'elle n'existe. Une reprise dont le
@@ -113,6 +113,13 @@ class AppDatabase extends _$AppDatabase {
         // Rang dans la numérotation nationale : la prochaine
         // synchronisation, qui remplace les chaînes, le remplit.
         await migrator.addColumn(liveChannels, liveChannels.nationalRank);
+      }
+      if (from < 9) {
+        // Empreintes des objets du fournisseur : vides, la prochaine
+        // synchronisation traite tout, puis ne traite que les changements.
+        await migrator.addColumn(movies, movies.sourceHash);
+        await migrator.addColumn(seriesEntries, seriesEntries.sourceHash);
+        await migrator.addColumn(sources, sources.liveHash);
       }
     },
   );

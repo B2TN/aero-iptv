@@ -1,10 +1,29 @@
 import 'package:http/http.dart' as http;
 import 'package:iptv_domain/iptv_domain.dart';
 
+import 'dart:convert';
+
 import '../catalog_batch.dart';
 import '../playlist_source_adapter.dart';
+import 'raw_entry.dart';
 import 'xtream_api_client.dart';
 import 'xtream_entry_mapper.dart';
+
+/// Objets reçus sans rien livrer au-delà desquels un lot vide part quand
+/// même : l'avancement de la synchronisation reste à jour.
+const int _receivedPerBatch = catalogBatchSize * 8;
+
+/// Section d'une liste Xtream : ses actions et le champ qui identifie ses
+/// objets.
+typedef _List = ({
+  ContentKind kind,
+  String categories,
+  String list,
+  String idField,
+  String identity,
+  CatalogEntry? Function(Map<String, dynamic>, Map<String, String>, int?, int?)
+  map,
+});
 
 /// Adapter de l'API Xtream Codes.
 ///
@@ -23,63 +42,82 @@ final class XtreamSourceAdapter implements PlaylistSourceAdapter {
   Future<List<SourceSection>> open(PlaylistCredentials credentials) async {
     final api = XtreamApiClient(_client, credentials as XtreamCredentials);
     await api.authenticate();
+    final List<_List> lists = [
+      (
+        kind: ContentKind.live,
+        categories: 'get_live_categories',
+        list: 'get_live_streams',
+        idField: 'stream_id',
+        identity: 'x:l:',
+        map: _mapper.live,
+      ),
+      (
+        kind: ContentKind.movie,
+        categories: 'get_vod_categories',
+        list: 'get_vod_streams',
+        idField: 'stream_id',
+        identity: 'x:m:',
+        map: _mapper.movie,
+      ),
+      (
+        kind: ContentKind.series,
+        categories: 'get_series_categories',
+        list: 'get_series',
+        idField: 'series_id',
+        identity: 'x:s:',
+        map: _mapper.series,
+      ),
+    ];
     return [
-      SourceSection(
-        ContentKind.live,
-        () => _section(
-          api,
-          'get_live_categories',
-          'get_live_streams',
-          _mapper.live,
+      for (final list in lists)
+        SourceSection(
+          list.kind,
+          () => _section(api, list, null),
+          fetchChanges: (gate) => _section(api, list, gate),
         ),
-      ),
-      SourceSection(
-        ContentKind.movie,
-        () => _section(
-          api,
-          'get_vod_categories',
-          'get_vod_streams',
-          _mapper.movie,
-        ),
-      ),
-      SourceSection(
-        ContentKind.series,
-        () => _section(
-          api,
-          'get_series_categories',
-          'get_series',
-          _mapper.series,
-        ),
-      ),
     ];
   }
 
   /// Les catégories font partie de la section : sans elles, ses entrées
   /// n'auraient pas de groupe.
+  ///
+  /// Chaque objet garde l'empreinte de son texte brut. Avec une [gate], un
+  /// objet qu'elle refuse n'est même pas décodé.
   Stream<CatalogBatch> _section(
     XtreamApiClient api,
-    String categoriesAction,
-    String listAction,
-    CatalogEntry? Function(Map<String, dynamic>, Map<String, String>) map,
+    _List list,
+    EntryGate? gate,
   ) async* {
-    final categories = await api.categories(categoriesAction);
-    yield* _batches(api.objects(listAction), (json) => map(json, categories));
-  }
-
-  Stream<CatalogBatch> _batches(
-    Stream<Map<String, dynamic>> objects,
-    CatalogEntry? Function(Map<String, dynamic>) map,
-  ) async* {
+    final categories = await api.categories(list.categories);
+    final groups = categoriesHash(categories);
     var entries = <CatalogEntry>[];
-    await for (final object in objects) {
-      final entry = map(object);
-      if (entry == null) continue;
-      entries.add(entry);
-      if (entries.length >= catalogBatchSize) {
-        yield CatalogBatch(entries);
+    var received = 0;
+    var position = 0;
+    await for (final raw in api.rawObjects(list.list)) {
+      received++;
+      position++;
+      final hash = rawEntryHash(raw, groups);
+      final id = rawEntryId(raw, list.idField);
+      if (gate == null || id == null || gate('${list.identity}$id', hash)) {
+        final Object? json;
+        try {
+          json = jsonDecode(raw);
+        } on FormatException {
+          throw const ParseFailure('Réponse Xtream illisible.');
+        }
+        final entry = json is Map<String, dynamic>
+            ? list.map(json, categories, hash, position)
+            : null;
+        if (entry != null) entries.add(entry);
+      }
+      if (entries.length >= catalogBatchSize || received >= _receivedPerBatch) {
+        yield CatalogBatch(entries, received: received);
         entries = [];
+        received = 0;
       }
     }
-    if (entries.isNotEmpty) yield CatalogBatch(entries);
+    if (entries.isNotEmpty || received > 0) {
+      yield CatalogBatch(entries, received: received);
+    }
   }
 }

@@ -12,7 +12,10 @@ CREATE TABLE sources (
   kind INTEGER NOT NULL,
   default_country_code TEXT,
   active_catalog_id INTEGER,
-  last_synced_at INTEGER
+  last_synced_at INTEGER,
+  -- Empreinte de la liste des chaînes à la dernière synchronisation : la
+  -- même liste n'est pas réécrite.
+  live_hash INTEGER
 ) AS SourceRow;
 
 CREATE TABLE catalogs (
@@ -80,7 +83,10 @@ CREATE TABLE movies (
   overview TEXT,
   genre TEXT,
   runtime_minutes INTEGER,
-  details_loaded BOOLEAN NOT NULL DEFAULT FALSE
+  details_loaded BOOLEAN NOT NULL DEFAULT FALSE,
+  -- Empreinte de l'objet du fournisseur : la synchronisation saute un film
+  -- qui n'a pas changé.
+  source_hash INTEGER
 ) AS MovieRow;
 
 CREATE INDEX movies_browse ON movies (catalog_id, sort_order);
@@ -113,7 +119,9 @@ CREATE TABLE series_entries (
   entry_key TEXT NOT NULL DEFAULT '',
   -- Dernière modification annoncée par le panneau Xtream, en secondes : une
   -- nouvelle valeur signale de nouveaux épisodes.
-  last_modified INTEGER
+  last_modified INTEGER,
+  -- Empreinte de l'objet du fournisseur, comme pour un film.
+  source_hash INTEGER
 ) AS SeriesEntryRow;
 
 CREATE INDEX series_browse ON series_entries (catalog_id, grouping_key);

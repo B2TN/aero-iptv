@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:iptv_domain/iptv_domain.dart';
 
+import '../adapters/catalog_batch.dart';
 import '../adapters/playlist_source_adapter.dart';
 import '../database/app_database.dart';
 import '../database/daos/catalog_maintenance_dao.dart';
@@ -71,44 +72,91 @@ final class CatalogImportPipeline {
 
     final shown = await _maintenance.activeCatalogOf(sourceId);
     final merging = !full && shown != null && await _merge.canMergeInto(shown);
+    // Quand chaque section reconnaît ses entrées avant de les décoder
+    // (Xtream), seules celles qui ont changé sont traitées.
+    final gates =
+        merging &&
+            sections.every(
+              (section) => section.kind != null && section.fetchChanges != null,
+            )
+        ? await _SyncGates.load(_merge, sourceId, shown)
+        : null;
     final catalogId = await _maintenance.create(sourceId, _clock());
     final session = CatalogSession(_db, catalogId);
     final failed = <ContentKind, Failure>{};
     var processed = 0;
     String? discoveredEpgUrl;
 
+    /// Télécharge [section] par [fetch], en la reprenant après une panne
+    /// passagère. Une section restée en échec rejoint [failed].
+    Stream<ImportProgress> download(
+      SourceSection section,
+      Stream<CatalogBatch> Function() fetch,
+    ) async* {
+      final kind = section.kind;
+      for (var attempt = 1; ; attempt++) {
+        var received = 0;
+        try {
+          await for (final batch in fetch()) {
+            await session.write(batch);
+            received += batch.received;
+            discoveredEpgUrl ??= batch.discoveredEpgUrl;
+            yield ImportProgress(
+              ImportStage.catalog,
+              section: kind,
+              processed: processed + received,
+              merged: merging,
+            );
+          }
+          processed += received;
+          return;
+        } on Object catch (error, stack) {
+          // Même imprévue, l'erreur d'une section ne coûte pas les autres.
+          final failure = importFailureOf(error);
+          // Ce que l'essai a écrit est incomplet : le suivant repart de zéro.
+          await _maintenance.purgeSection(catalogId, kind);
+          session.forget(kind);
+          gates?.forget(kind);
+          if (attempt < _sectionAttempts && _isTransient(failure)) {
+            await _pause(_retryDelay * attempt);
+            continue;
+          }
+          // Une source d'un seul tenant n'a rien d'autre à sauver.
+          if (kind == null) Error.throwWithStackTrace(failure, stack);
+          failed[kind] = failure;
+          return;
+        }
+      }
+    }
+
     try {
       for (final section in sections) {
         final kind = section.kind;
-        for (var attempt = 1; ; attempt++) {
-          var received = 0;
-          try {
-            await for (final batch in section.fetch()) {
-              await session.write(batch);
-              received += batch.entries.length;
-              discoveredEpgUrl ??= batch.discoveredEpgUrl;
-              yield ImportProgress(
-                ImportStage.catalog,
-                section: kind,
-                processed: processed + received,
-              );
+        final gate = kind == null ? null : gates?.gateFor(kind);
+        // Pas de `yield*` : il transmettrait les erreurs de la section sans
+        // passer par le `catch` ci-dessous, qui efface le catalogue en cours.
+        if (gate == null) {
+          await for (final progress in download(section, section.fetch)) {
+            yield progress;
+          }
+          continue;
+        }
+        final before = processed;
+        await for (final progress in download(
+          section,
+          () => section.fetchChanges!(gate),
+        )) {
+          yield progress;
+        }
+        // Les chaînes se comparent d'un bloc : si leur liste a changé, elle
+        // est téléchargée à nouveau, entière.
+        if (kind == ContentKind.live && !failed.containsKey(kind)) {
+          gates!.finishLive();
+          if (gates.liveChanged) {
+            processed = before;
+            await for (final progress in download(section, section.fetch)) {
+              yield progress;
             }
-            processed += received;
-            break;
-          } on Object catch (error, stack) {
-            // Même imprévue, l'erreur d'une section ne coûte pas les autres.
-            final failure = importFailureOf(error);
-            // Ce que l'essai a écrit est incomplet : le suivant repart de zéro.
-            await _maintenance.purgeSection(catalogId, kind);
-            session.forget(kind);
-            if (attempt < _sectionAttempts && _isTransient(failure)) {
-              await _pause(_retryDelay * attempt);
-              continue;
-            }
-            // Une source d'un seul tenant n'a rien d'autre à sauver.
-            if (kind == null) Error.throwWithStackTrace(failure, stack);
-            failed[kind] = failure;
-            break;
           }
         }
       }
@@ -121,7 +169,11 @@ final class CatalogImportPipeline {
           await _maintenance.carryOver(shown, catalogId, kind);
         }
       }
-      yield ImportProgress(ImportStage.indexing, processed: processed);
+      yield ImportProgress(
+        ImportStage.indexing,
+        processed: processed,
+        merged: merging,
+      );
     } catch (_) {
       await _discard(catalogId);
       rethrow;
@@ -129,12 +181,16 @@ final class CatalogImportPipeline {
 
     // Les finitions améliorent le catalogue, mais aucune ne doit empêcher de
     // l'afficher : celle qui échoue est signalée, et l'import continue. La
-    // synchronisation tient l'index de recherche à jour titre par titre.
+    // synchronisation tient l'index de recherche à jour titre par titre ; en
+    // ne traitant que les changements, elle regroupe aussi les versions des
+    // séries dans le catalogue affiché.
     final refinements = <CatalogRefinement, Future<void> Function()>{
-      CatalogRefinement.homonyms: () =>
-          _maintenance.separateHomonyms(catalogId),
-      CatalogRefinement.versions: () =>
-          _maintenance.mergeTranslatedVersions(catalogId),
+      if (gates == null) ...{
+        CatalogRefinement.homonyms: () =>
+            _maintenance.separateHomonyms(catalogId),
+        CatalogRefinement.versions: () =>
+            _maintenance.mergeTranslatedVersions(catalogId),
+      },
       if (!merging)
         CatalogRefinement.search: () =>
             _maintenance.buildSearchIndex(catalogId),
@@ -151,10 +207,14 @@ final class CatalogImportPipeline {
     final int shownNow;
     if (merging) {
       try {
-        // Une source d'un seul tenant (M3U) n'a qu'une section, sans genre.
-        for (final kind in {for (final section in sections) section.kind}) {
-          if (failed.containsKey(kind)) continue;
-          await _merge.merge(catalogId, shown, kind);
+        if (gates != null) {
+          await _mergeChanges(sourceId, catalogId, shown, gates, failed);
+        } else {
+          // Une source d'un seul tenant (M3U) n'a qu'une section, sans genre.
+          for (final kind in {for (final section in sections) section.kind}) {
+            if (failed.containsKey(kind)) continue;
+            await _merge.merge(catalogId, shown, kind);
+          }
         }
         await _maintenance.markSynced(sourceId, _clock());
       } finally {
@@ -187,6 +247,7 @@ final class CatalogImportPipeline {
       processed: processed,
       failedSections: failed,
       failedRefinements: failedRefinements,
+      merged: merging,
     );
     final epgFailed = !await _importEpg(
       sourceId,
@@ -200,7 +261,37 @@ final class CatalogImportPipeline {
       epgFailed: epgFailed,
       failedSections: failed,
       failedRefinements: failedRefinements,
+      merged: merging,
     );
+  }
+
+  /// Applique à [shown] les seuls changements que [gates] ont laissé passer
+  /// dans [fresh], et retire ce qu'elles n'ont plus vu.
+  Future<void> _mergeChanges(
+    int sourceId,
+    int fresh,
+    int shown,
+    _SyncGates gates,
+    Map<ContentKind, Failure> failed,
+  ) async {
+    if (!failed.containsKey(ContentKind.live)) {
+      if (gates.liveChanged) await _merge.replaceLive(fresh, shown);
+      await _merge.saveLiveHash(sourceId, gates.liveHash);
+    }
+    if (!failed.containsKey(ContentKind.movie)) {
+      await _merge.mergeMovies(
+        fresh,
+        shown,
+        removed: gates.removed(ContentKind.movie),
+      );
+    }
+    if (!failed.containsKey(ContentKind.series)) {
+      await _merge.mergeSeries(
+        fresh,
+        shown,
+        removed: gates.removed(ContentKind.series),
+      );
+    }
   }
 
   /// Retire un catalogue qui ne sera pas affiché. S'il résiste, le prochain
@@ -265,4 +356,73 @@ final class CatalogImportPipeline {
 
   int _seconds(DateTime instant) =>
       instant.millisecondsSinceEpoch ~/ Duration.millisecondsPerSecond;
+}
+
+/// Graine et multiplicateur de l'empreinte de la liste des chaînes.
+const int _liveSeed = 0x84222325cbf29ce4;
+const int _liveMix = 0x100000001b3;
+
+/// Ce que la synchronisation sait du catalogue affiché : l'empreinte de
+/// chaque film et de chaque série, et celle de la liste des chaînes. Les
+/// portes qu'elle ouvre laissent passer ce qui a changé, et notent ce qui a
+/// été vu pour retirer le reste.
+final class _SyncGates {
+  _SyncGates._(this._known, this._liveBefore);
+
+  static Future<_SyncGates> load(
+    CatalogMergeDao merge,
+    int sourceId,
+    int shown,
+  ) async => _SyncGates._({
+    ContentKind.movie: await merge.hashesOf(shown, ContentKind.movie),
+    ContentKind.series: await merge.hashesOf(shown, ContentKind.series),
+  }, await merge.liveHashOf(sourceId));
+
+  final Map<ContentKind, Map<String, int?>> _known;
+  final int? _liveBefore;
+  final Map<ContentKind, Set<String>> _seen = {};
+  int _live = _liveSeed;
+  int? _liveFinal;
+
+  /// Porte d'une section. Celle des chaînes ne laisse rien passer : elle
+  /// résume la liste, qui ne se télécharge à nouveau que si elle a changé.
+  EntryGate gateFor(ContentKind kind) {
+    if (kind == ContentKind.live) {
+      return (identity, hash) {
+        _live = (_live ^ hash) * _liveMix;
+        return false;
+      };
+    }
+    final known = _known[kind] ?? const <String, int?>{};
+    final seen = _seen[kind] ??= <String>{};
+    return (identity, hash) {
+      seen.add(identity);
+      return known[identity] != hash;
+    };
+  }
+
+  /// La liste des chaînes a été lue en entier.
+  void finishLive() => _liveFinal = _live;
+
+  int get liveHash => _liveFinal ?? _live;
+
+  bool get liveChanged => liveHash != _liveBefore;
+
+  /// Une section reprise repart de zéro.
+  void forget(ContentKind? kind) {
+    if (kind == ContentKind.live) {
+      if (_liveFinal == null) _live = _liveSeed;
+    } else {
+      _seen[kind]?.clear();
+    }
+  }
+
+  /// Identités affichées que la section n'a plus envoyées.
+  List<String> removed(ContentKind kind) {
+    final seen = _seen[kind] ?? const <String>{};
+    return [
+      for (final identity in (_known[kind] ?? const <String, int?>{}).keys)
+        if (!seen.contains(identity)) identity,
+    ];
+  }
 }

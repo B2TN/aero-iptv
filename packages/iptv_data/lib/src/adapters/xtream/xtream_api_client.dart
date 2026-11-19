@@ -63,17 +63,34 @@ final class XtreamApiClient {
 
   /// Lit une liste en flux, sans charger la réponse complète.
   Stream<Map<String, dynamic>> objects(String action) async* {
+    await for (final raw in rawObjects(action)) {
+      final Object? decoded;
+      try {
+        decoded = jsonDecode(raw);
+      } on FormatException {
+        throw const ParseFailure('Réponse Xtream illisible.');
+      }
+      if (decoded is Map<String, dynamic>) yield decoded;
+    }
+  }
+
+  /// Comme [objects], mais livre le texte de chaque objet sans le décoder.
+  Stream<String> rawObjects(String action) async* {
     final response = await openGet(
       _client,
       _apiUri({'action': action}),
       timeout: catalogResponseTimeout,
     );
+    final splitter = JsonArraySplitter();
     try {
-      // Pas de `yield*` : il transmettrait les erreurs du décodeur telles
+      // Pas de `yield*` : il transmettrait les erreurs du découpage telles
       // quelles, sans passer par les `on` ci-dessous.
-      await for (final object in decodeJsonObjects(textChunks(response))) {
-        yield object;
+      await for (final chunk in textChunks(response)) {
+        for (final element in splitter.add(chunk)) {
+          yield element;
+        }
       }
+      if (!splitter.isComplete) throw const TruncatedJsonException();
     } on TruncatedJsonException {
       throw const NetworkFailure('Réponse Xtream interrompue.');
     } on FormatException {

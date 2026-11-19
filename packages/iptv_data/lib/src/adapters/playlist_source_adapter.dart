@@ -5,12 +5,18 @@ import 'catalog_batch.dart';
 /// Nombre d'entrées par lot : compromis entre mémoire et vitesse d'écriture.
 const int catalogBatchSize = 500;
 
+/// Décide, pendant une synchronisation, si une entrée reçue mérite d'être
+/// traitée : [identity] la reconnaît d'un catalogue à l'autre (`x:m:123`),
+/// [hash] résume ce que le fournisseur en dit. Une entrée refusée n'est ni
+/// décodée ni livrée.
+typedef EntryGate = bool Function(String identity, int hash);
+
 /// Partie d'une source, téléchargée d'un seul tenant.
 ///
 /// Ce découpage permet de reprendre une partie sans tout recommencer, et de
 /// garder les autres si l'une d'elles reste en échec.
 final class SourceSection {
-  const SourceSection(this.kind, this.fetch);
+  const SourceSection(this.kind, this.fetch, {this.fetchChanges});
 
   /// Nature des entrées. `null` si la section les mêle toutes, comme un fichier
   /// M3U.
@@ -21,6 +27,11 @@ final class SourceSection {
   /// Le flux émet des lots au fil du téléchargement : aucune implémentation ne
   /// doit charger la section complète en mémoire.
   final Stream<CatalogBatch> Function() fetch;
+
+  /// Comme [fetch], mais ne livre que les entrées que la porte accepte.
+  /// `null` si la source ne sait pas reconnaître ses entrées avant de les
+  /// décoder.
+  final Stream<CatalogBatch> Function(EntryGate gate)? fetchChanges;
 }
 
 /// Contrat commun aux formats de source.
