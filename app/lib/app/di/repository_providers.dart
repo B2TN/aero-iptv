@@ -111,6 +111,11 @@ final segmentRepositoryProvider = Provider<SegmentRepository>((ref) {
 });
 
 /// Gardé pour toute la session : il se souvient des calendriers déjà lus.
+/// Versions publiées de l'application, sur son dépôt GitHub.
+final releaseRepositoryProvider = Provider<ReleaseRepository>(
+  (ref) => GithubReleaseRepository(ref.watch(httpClientProvider)),
+);
+
 final scheduleRepositoryProvider = Provider<ScheduleRepository>(
   (ref) => ScheduleRepositoryImpl(TvMazeClient(ref.watch(httpClientProvider))),
 );

@@ -14,6 +14,7 @@ import '../../../l10n/country_names.dart';
 import '../playlist/playlist_manager_screen.dart';
 import '../widgets/setting_row.dart';
 import 'subtitle_appearance_screen.dart';
+import '../../updates/update_controller.dart';
 
 /// Page du compte où se trouve la clé d'API de DeepL.
 const String _deepLKeysPage = 'https://www.deepl.com/your-account/keys';
@@ -146,6 +147,20 @@ class SettingsScreen extends ConsumerWidget {
               (current) => current.copyWith(dailySync: !current.dailySync),
             ),
             toggled: settings.dailySync,
+          ),
+          (
+            label: l10n.settingsBetaUpdates,
+            value: onOff(settings.betaUpdates),
+            action: () async {
+              final repository = ref.read(settingsRepositoryProvider);
+              final current = await repository.watch().first;
+              await repository.save(
+                current.copyWith(betaUpdates: !current.betaUpdates),
+              );
+              // Le bandeau suit le réglage aussitôt.
+              await ref.read(updateControllerProvider.notifier).check();
+            },
+            toggled: settings.betaUpdates,
           ),
           (
             label: l10n.settingsGroupSeries,

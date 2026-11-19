@@ -19,9 +19,14 @@ Compression=lzma2/max
 SolidCompression=yes
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
+; Installation dans le profil de l'utilisateur, sans droits d'administrateur :
+; la mise à jour depuis l'application se fait sans demande de Windows.
 PrivilegesRequired=lowest
-PrivilegesRequiredOverridesAllowed=dialog
 WizardStyle=modern
+; L'application se ferme d'elle-même avant une mise à jour : si elle tarde,
+; l'installateur la ferme.
+CloseApplications=force
+RestartApplications=no
 
 [Languages]
 Name: "french"; MessagesFile: "compiler:Languages\French.isl"
@@ -41,3 +46,5 @@ Name: "{autodesktop}\Aero IPTV"; Filename: "{app}\aero_iptv.exe"; Tasks: desktop
 
 [Run]
 Filename: "{app}\aero_iptv.exe"; Description: "{cm:LaunchProgram,Aero IPTV}"; Flags: nowait postinstall skipifsilent
+; Mise à jour lancée par l'application, en silence : elle est relancée.
+Filename: "{app}\aero_iptv.exe"; Flags: nowait; Check: WizardSilent

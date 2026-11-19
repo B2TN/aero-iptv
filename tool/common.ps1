@@ -63,9 +63,11 @@ function Get-AppVersion {
     return $line.Matches[0].Groups[1].Value
 }
 
-# Injecte les clés de services si elles sont renseignées.
+# Injecte les clés de services si elles sont renseignées, et la version, que
+# l'application compare à celles publiées sur GitHub.
 function Get-SecretArguments {
-    if (Test-Path $SecretsFile) { return @("--dart-define-from-file=$SecretsFile") }
+    $version = "--dart-define=AERO_VERSION=$(Get-AppVersion)"
+    if (Test-Path $SecretsFile) { return @("--dart-define-from-file=$SecretsFile", $version) }
     Write-Warning 'config\secrets.json absent : tendances TMDb et clé DeepL de compilation désactivées.'
-    return @()
+    return @($version)
 }

@@ -12,5 +12,6 @@ class MainActivity : FlutterActivity() {
         SecureStoreChannel(applicationContext).attach(messenger)
         ExternalPlayerChannel(applicationContext).attach(messenger)
         KeepAwakeChannel(this).attach(messenger)
+        UpdateInstallerChannel(this).attach(messenger)
     }
 }

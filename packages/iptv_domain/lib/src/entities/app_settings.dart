@@ -13,6 +13,8 @@ final class AppSettings {
     this.catalogRules = 0,
     this.subtitleStyle = const SubtitleStyle(),
     this.dailySync = true,
+    this.betaUpdates = false,
+    this.dismissedUpdate,
   });
 
   /// Fusion des versions d'une série. Désactivée : vue brute de la playlist.
@@ -47,6 +49,14 @@ final class AppSettings {
   /// Synchronisation automatique de la playlist, une fois par jour.
   final bool dailySync;
 
+  /// Propose aussi les préversions de l'application, pas seulement les
+  /// versions officielles.
+  final bool betaUpdates;
+
+  /// Étiquette de la release dont l'utilisateur a fermé le bandeau : il ne
+  /// revient que pour une version plus récente.
+  final String? dismissedUpdate;
+
   AppSettings copyWith({
     bool? groupSeries,
     bool? groupChannels,
@@ -58,6 +68,8 @@ final class AppSettings {
     int? catalogRules,
     SubtitleStyle? subtitleStyle,
     bool? dailySync,
+    bool? betaUpdates,
+    String? dismissedUpdate,
   }) => AppSettings(
     groupSeries: groupSeries ?? this.groupSeries,
     groupChannels: groupChannels ?? this.groupChannels,
@@ -69,5 +81,7 @@ final class AppSettings {
     catalogRules: catalogRules ?? this.catalogRules,
     subtitleStyle: subtitleStyle ?? this.subtitleStyle,
     dailySync: dailySync ?? this.dailySync,
+    betaUpdates: betaUpdates ?? this.betaUpdates,
+    dismissedUpdate: dismissedUpdate ?? this.dismissedUpdate,
   );
 }

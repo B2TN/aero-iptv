@@ -19,6 +19,8 @@ import '../focus/focus_guard.dart';
 import '../focus/focusable.dart';
 import 'aero_iptv_app.dart';
 import 'app_state.dart';
+import '../features/updates/update_banner.dart';
+import '../features/updates/update_controller.dart';
 import 'daily_sync.dart';
 
 /// Structure commune : barre supérieure et onglet actif.
@@ -68,11 +70,19 @@ class _AppShellState extends ConsumerState<AppShell> {
             .then((_) => daily.check(atLaunch: true)),
       );
     }, fireImmediately: true);
-    _lifecycle = AppLifecycleListener(onResume: () => unawaited(daily.check()));
-    _hourly = Timer.periodic(
-      const Duration(hours: 1),
-      (_) => unawaited(daily.check()),
+    final updates = ref.read(updateControllerProvider.notifier);
+    // Nouvelle version : au lancement, puis toutes les 24 h.
+    unawaited(updates.check());
+    _lifecycle = AppLifecycleListener(
+      onResume: () {
+        unawaited(daily.check());
+        unawaited(updates.checkIfDue());
+      },
     );
+    _hourly = Timer.periodic(const Duration(hours: 1), (_) {
+      unawaited(daily.check());
+      unawaited(updates.checkIfDue());
+    });
   }
 
   @override
@@ -205,6 +215,7 @@ class _TopBar extends ConsumerWidget {
               ),
             ),
           ),
+          const PositionedDirectional(end: 20, top: 14, child: UpdateBanner()),
           if (message != null)
             PositionedDirectional(
               start: 20,

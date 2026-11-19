@@ -281,6 +281,40 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsDailySync => 'المزامنة يوميًا';
 
   @override
+  String updateAvailable(String version) {
+    return 'الإصدار $version متاح';
+  }
+
+  @override
+  String get updateInstall => 'تحديث';
+
+  @override
+  String get updateNotes => 'ملاحظات الإصدار';
+
+  @override
+  String get updateDismiss => 'إغلاق';
+
+  @override
+  String updateDownloading(int percent) {
+    return 'جارٍ التنزيل: $percent٪';
+  }
+
+  @override
+  String get updatePermission =>
+      'اسمح لـ Aero IPTV بتثبيت التطبيقات، ثم أعد المحاولة.';
+
+  @override
+  String get updateFailed => 'فشل التحديث.';
+
+  @override
+  String updateNotesTitle(String version) {
+    return 'الجديد في الإصدار $version';
+  }
+
+  @override
+  String get settingsBetaUpdates => 'تحديثات تجريبية';
+
+  @override
   String settingsPlaylistCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

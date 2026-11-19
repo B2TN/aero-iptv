@@ -560,6 +560,60 @@ abstract class AppLocalizations {
   /// **'Synchroniser chaque jour'**
   String get settingsDailySync;
 
+  /// No description provided for @updateAvailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Version {version} disponible'**
+  String updateAvailable(String version);
+
+  /// No description provided for @updateInstall.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mettre à jour'**
+  String get updateInstall;
+
+  /// No description provided for @updateNotes.
+  ///
+  /// In fr, this message translates to:
+  /// **'Notes de version'**
+  String get updateNotes;
+
+  /// No description provided for @updateDismiss.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fermer'**
+  String get updateDismiss;
+
+  /// No description provided for @updateDownloading.
+  ///
+  /// In fr, this message translates to:
+  /// **'Téléchargement : {percent} %'**
+  String updateDownloading(int percent);
+
+  /// No description provided for @updatePermission.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autorisez Aero IPTV à installer des applications, puis réessayez.'**
+  String get updatePermission;
+
+  /// No description provided for @updateFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'La mise à jour a échoué.'**
+  String get updateFailed;
+
+  /// No description provided for @updateNotesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouveautés de la version {version}'**
+  String updateNotesTitle(String version);
+
+  /// No description provided for @settingsBetaUpdates.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mises à jour bêta'**
+  String get settingsBetaUpdates;
+
   /// No description provided for @settingsPlaylistCount.
   ///
   /// In fr, this message translates to:
