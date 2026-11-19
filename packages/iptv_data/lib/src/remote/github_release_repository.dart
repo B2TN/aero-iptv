@@ -79,6 +79,7 @@ final class GithubReleaseRepository implements ReleaseRepository {
     return AppRelease(
       version: version,
       tag: tag,
+      preRelease: json['prerelease'] == true || version.isPreRelease,
       notes: json['body'] is String ? json['body'] as String : '',
       pageUrl: json['html_url'] is String ? json['html_url'] as String : '',
       assets: {

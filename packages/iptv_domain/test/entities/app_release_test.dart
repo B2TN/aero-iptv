@@ -61,6 +61,28 @@ void main() {
       expect(update?.tag, 'v0.2.2-beta.1');
     });
 
+    test('une préversion marquée comme telle, même sans suffixe', () {
+      final marked = [
+        _release('v0.2.4'),
+        AppRelease(
+          version: _v('v0.2.5'),
+          tag: 'v0.2.5',
+          notes: '',
+          pageUrl: '',
+          preRelease: true,
+        ),
+      ];
+
+      expect(
+        findUpdate(marked, current: _v('0.2.4'), preReleases: false),
+        isNull,
+      );
+      expect(
+        findUpdate(marked, current: _v('0.2.4'), preReleases: true)?.tag,
+        'v0.2.5',
+      );
+    });
+
     test('rien de plus récent, ou la version écartée : rien', () {
       expect(
         findUpdate(releases, current: _v('0.2.1'), preReleases: false),

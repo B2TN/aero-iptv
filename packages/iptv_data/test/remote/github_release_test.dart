@@ -45,6 +45,15 @@ void main() {
     final release = releases.single;
     expect(release.tag, 'v0.2.1-beta.4');
     expect(release.isPreRelease, isTrue);
+    // Le drapeau de GitHub compte, même sur un numéro sans suffixe.
+    final flagged = await GithubReleaseRepository(
+      MockClient(
+        (_) async => _json([
+          {'tag_name': 'v0.2.5', 'prerelease': true},
+        ]),
+      ),
+    ).releases();
+    expect(flagged.single.isPreRelease, isTrue);
     expect(release.notes, startsWith('## Nouveautés'));
     expect(release.assets['aero-iptv-fire-tv-armeabi-v7a.apk']?.size, 30000000);
   });

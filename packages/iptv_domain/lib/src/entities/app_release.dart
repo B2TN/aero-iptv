@@ -93,7 +93,8 @@ final class AppRelease {
     required this.notes,
     required this.pageUrl,
     this.assets = const {},
-  });
+    bool? preRelease,
+  }) : _preRelease = preRelease;
 
   final AppVersion version;
 
@@ -110,7 +111,12 @@ final class AppRelease {
   /// Fichiers joints, par nom.
   final Map<String, ReleaseAsset> assets;
 
-  bool get isPreRelease => version.isPreRelease;
+  final bool? _preRelease;
+
+  /// Préversion : marquée comme telle à la publication, ou numérotée comme
+  /// telle (`0.2.5-beta.1`). Une préversion peut porter un numéro simple,
+  /// comme `0.2.5`.
+  bool get isPreRelease => _preRelease ?? version.isPreRelease;
 }
 
 /// Mise à jour à proposer parmi [releases] : la plus récente, plus récente
