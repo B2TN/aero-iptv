@@ -271,6 +271,72 @@ void main() {
     });
   });
 
+  test('un import complet garde les épisodes et résumés déjà chargés', () async {
+    await sync(
+      _panel(
+        live: [_channel(1, 'FR: TF1')],
+        movies: [_movie(1, 'FR - Dune')],
+        series: [
+          _series(9, 'FR - Lost', lastModified: 100),
+          _series(10, 'FR - Fringe', lastModified: 100),
+        ],
+      ),
+    );
+    final dune = (await idOf('movies', 'content_key', 'x:m:1'))!;
+    await db.saveMovieDetails(
+      id: dune,
+      overview: 'Une planète des sables.',
+      genre: null,
+      runtimeMinutes: null,
+    );
+    for (final key in ['x:s:9', 'x:s:10']) {
+      final entry = (await idOf('series_entries', 'entry_key', key))!;
+      await db.saveSeriesDetails(
+        id: entry,
+        overview: 'Résumé',
+        genre: null,
+        runtimeMinutes: null,
+      );
+      await db.customStatement(
+        'INSERT INTO episodes (catalog_id, series_entry_id, season, number, '
+        "title, content_key, xtream_stream_id) VALUES (?1, ?2, 1, 1, 'Pilote', "
+        "'x:e:' || ?2, ?2)",
+        [await activeCatalog(), entry],
+      );
+    }
+
+    await sync(
+      _panel(
+        live: [_channel(1, 'FR: TF1')],
+        movies: [_movie(1, 'FR - Dune')],
+        series: [
+          _series(9, 'FR - Lost', lastModified: 100),
+          _series(10, 'FR - Fringe', lastModified: 200),
+        ],
+      ),
+      full: true,
+    );
+
+    final movie = await db
+        .movieById(id: (await idOf('movies', 'content_key', 'x:m:1'))!)
+        .getSingle();
+    expect(movie.overview, 'Une planète des sables.');
+    expect(movie.detailsLoaded, isTrue);
+    final lost = (await idOf('series_entries', 'entry_key', 'x:s:9'))!;
+    final fringe = (await idOf('series_entries', 'entry_key', 'x:s:10'))!;
+    expect(await db.episodesForEntry(entryId: lost).get(), hasLength(1));
+    expect(await db.episodesForEntry(entryId: fringe).get(), hasLength(1));
+    expect(
+      (await db.seriesEntryById(id: lost).getSingle()).detailsLoaded,
+      isTrue,
+    );
+    // Modifiée chez le fournisseur : redemandée à son ouverture.
+    expect(
+      (await db.seriesEntryById(id: fringe).getSingle()).detailsLoaded,
+      isFalse,
+    );
+  });
+
   test('un import complet remplace le catalogue', () async {
     final panel = _panel(
       live: [_channel(1, 'FR: TF1')],

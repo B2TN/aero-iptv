@@ -180,6 +180,61 @@ final class CatalogMaintenanceDao {
     }
   }
 
+  /// Garde, d'un catalogue à celui qui le remplace en entier, ce qui a été
+  /// chargé à l'ouverture des titres : les résumés des films et des séries,
+  /// et les épisodes des séries Xtream. « Continuer à regarder » retrouve
+  /// ainsi ses épisodes, et leurs fiches restent complètes.
+  ///
+  /// Une série modifiée depuis chez le fournisseur garde ses épisodes, mais
+  /// sera redemandée à sa prochaine ouverture, pour ajouter les nouveaux.
+  Future<void> carryLoaded(int fromCatalogId, int toCatalogId) async {
+    final ids = [fromCatalogId, toCatalogId];
+    await _db.customStatement('''
+      UPDATE movies
+      SET (overview, genre, runtime_minutes, details_loaded) = (
+        SELECT o.overview, o.genre, o.runtime_minutes, TRUE FROM movies AS o
+        WHERE o.catalog_id = ?1 AND o.content_key = movies.content_key
+          AND o.details_loaded
+        LIMIT 1)
+      WHERE id IN (
+        SELECT n.id FROM movies AS o CROSS JOIN movies AS n
+          ON n.catalog_id = ?2 AND n.content_key = o.content_key
+        WHERE o.catalog_id = ?1 AND o.details_loaded)
+      ''', ids);
+    // Les séries Xtream se reconnaissent à leur identifiant chez le
+    // fournisseur : un catalogue d'avant la version 7 n'a pas d'identité.
+    const counterpart = '''
+      CROSS JOIN series_entries AS n
+        ON n.catalog_id = ?2 AND n.entry_key = 'x:s:' || o.xtream_series_id''';
+    await _db.customStatement('''
+      UPDATE series_entries
+      SET (overview, genre, runtime_minutes, details_loaded) = (
+        SELECT o.overview, o.genre, o.runtime_minutes,
+               o.last_modified IS series_entries.last_modified
+        FROM series_entries AS o
+        WHERE o.catalog_id = ?1
+          AND 'x:s:' || o.xtream_series_id = series_entries.entry_key
+          AND o.details_loaded
+        LIMIT 1)
+      WHERE id IN (
+        SELECT n.id FROM series_entries AS o $counterpart
+        WHERE o.catalog_id = ?1 AND o.xtream_series_id IS NOT NULL
+          AND o.details_loaded)
+      ''', ids);
+    await _db.customStatement('''
+      INSERT INTO episodes (catalog_id, series_entry_id, season, number, title,
+        content_key, stream_url, xtream_stream_id, container_ext, user_agent,
+        referrer, overview)
+      SELECT ?2, n.id, e.season, e.number, e.title, e.content_key,
+             e.stream_url, e.xtream_stream_id, e.container_ext, e.user_agent,
+             e.referrer, e.overview
+      FROM series_entries AS o
+      CROSS JOIN episodes AS e ON e.series_entry_id = o.id
+      $counterpart
+      WHERE o.catalog_id = ?1 AND o.xtream_series_id IS NOT NULL
+      ''', ids);
+  }
+
   /// Supprime un catalogue par petites passes.
   Future<void> purge(int catalogId) async {
     await purgeSection(catalogId, null);

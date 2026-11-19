@@ -32,19 +32,16 @@ Future<void> openContinued(
                     resumeAt: item.position,
                   ),
           ),
-    ContentKind.series =>
-      await catalog
-          .episodeByContentKey(item.sourceId, item.contentKey)
-          .then(
-            (found) => found == null
-                ? null
-                : MediaDetailScreen(
-                    sourceId: item.sourceId,
-                    series: found.$1,
-                    seriesEntryId: found.$2.seriesEntryId,
-                    resume: (episode: found.$2, position: item.position),
-                  ),
-          ),
+    ContentKind.series => await _findEpisode(catalog, item).then(
+      (found) => found == null
+          ? null
+          : MediaDetailScreen(
+              sourceId: item.sourceId,
+              series: found.$1,
+              seriesEntryId: found.$2.seriesEntryId,
+              resume: (episode: found.$2, position: item.position),
+            ),
+    ),
     ContentKind.live => null,
   };
   if (!context.mounted) return;
@@ -59,4 +56,47 @@ Future<void> openContinued(
       pageBuilder: (context, _, _) => page,
     ),
   );
+}
+
+/// L'épisode d'une reprise dans le catalogue affiché.
+///
+/// Les épisodes d'une série Xtream ne sont connus qu'une fois la série
+/// ouverte, et un catalogue réimporté a pu les oublier. La série est alors
+/// redemandée, version après version, jusqu'à retrouver l'épisode ; à défaut,
+/// celui de même saison et de même numéro dans une autre version.
+Future<(Series, Episode)?> _findEpisode(
+  CatalogRepository catalog,
+  WatchProgress item,
+) async {
+  final known = await catalog.episodeByContentKey(
+    item.sourceId,
+    item.contentKey,
+  );
+  final seriesKey = item.seriesKey;
+  if (known != null || seriesKey == null) return known;
+  Episode? sameNumber;
+  for (final version in await catalog.versionsOf(item.sourceId, seriesKey)) {
+    final List<Season> seasons;
+    try {
+      seasons = await catalog.seasonsOf(item.sourceId, version.seriesEntryId);
+    } on Failure {
+      continue;
+    }
+    final found = await catalog.episodeByContentKey(
+      item.sourceId,
+      item.contentKey,
+    );
+    if (found != null) return found;
+    sameNumber ??= seasons
+        .expand((season) => season.episodes)
+        .where(
+          (episode) =>
+              episode.season == item.season && episode.number == item.episode,
+        )
+        .firstOrNull;
+  }
+  final other = sameNumber;
+  return other == null
+      ? null
+      : catalog.episodeByContentKey(item.sourceId, other.contentKey);
 }

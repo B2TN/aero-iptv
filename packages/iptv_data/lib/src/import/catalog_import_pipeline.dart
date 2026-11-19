@@ -162,6 +162,14 @@ final class CatalogImportPipeline {
       }
       shownNow = shown;
     } else {
+      if (shown != null) {
+        try {
+          await _maintenance.carryLoaded(shown, catalogId);
+        } on Object {
+          // Ce qui a été chargé se redemande à l'ouverture : son oubli ne
+          // doit pas empêcher d'afficher le catalogue.
+        }
+      }
       final int? previous;
       try {
         previous = await _maintenance.activate(sourceId, catalogId, _clock());

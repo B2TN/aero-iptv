@@ -60,9 +60,13 @@ WatchProgress _progress(ContentKind kind, String key) => WatchProgress(
 );
 
 final class _Catalog extends Fake implements CatalogRepository {
-  _Catalog({this.knowsContent = true});
+  _Catalog({this.knowsContent = true, this.forgotEpisodes = false});
 
   final bool knowsContent;
+
+  /// Catalogue réimporté : les épisodes ne reviennent qu'à l'ouverture de la
+  /// série.
+  bool forgotEpisodes;
 
   @override
   Future<Movie?> movieByContentKey(int sourceId, String contentKey) async =>
@@ -76,10 +80,15 @@ final class _Catalog extends Fake implements CatalogRepository {
   Future<(Series, Episode)?> episodeByContentKey(
     int sourceId,
     String contentKey,
-  ) async => knowsContent ? (_series, _episode(2, 3)) : null;
+  ) async => knowsContent && !forgotEpisodes ? (_series, _episode(2, 3)) : null;
 
   @override
-  Future<List<Season>> seasonsOf(int sourceId, int seriesEntryId) async => [
+  Future<List<Season>> seasonsOf(int sourceId, int seriesEntryId) async {
+    forgotEpisodes = false;
+    return _seasons;
+  }
+
+  List<Season> get _seasons => [
     Season(number: 1, episodes: [_episode(1, 1), _episode(1, 2)]),
     Season(
       number: 2,
@@ -95,7 +104,14 @@ final class _Catalog extends Fake implements CatalogRepository {
   Future<List<MediaVersion>> versionsOf(
     int sourceId,
     String groupingKey,
-  ) async => const [];
+  ) async => [
+    if (groupingKey == 'abysses')
+      const MediaVersion(
+        seriesEntryId: 7,
+        label: 'FR',
+        rawTitle: 'FR - Abysses',
+      ),
+  ];
 
   @override
   Future<TitleDetails> movieDetails(int sourceId, int movieId) async =>
@@ -316,6 +332,20 @@ void main() {
       expect(request.startAt ?? Duration.zero, Duration.zero);
       await _leave(tester);
     });
+  });
+
+  testWidgets('après un réimport, la série est redemandée et sa fiche '
+      's ouvre', (tester) async {
+    final engine = await _open(
+      tester,
+      _progress(ContentKind.series, 'x:e:23'),
+      catalog: _Catalog(forgotEpisodes: true),
+    );
+
+    expect(engine.opened, isEmpty);
+    expect(find.text('Saison 2, épisode 3'), findsOneWidget);
+    expect(find.text('Reprendre'), findsOneWidget);
+    await _leave(tester);
   });
 
   testWidgets('un contenu retiré du catalogue reprend directement', (
