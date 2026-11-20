@@ -48,6 +48,7 @@ export 'src/normalization/text_folding.dart';
 export 'src/normalization/title_cleaner.dart';
 export 'src/normalization/version_grouper.dart';
 export 'src/normalization/version_language.dart';
+export 'src/ports/artwork_repository.dart';
 export 'src/ports/catalog_importer.dart';
 export 'src/ports/catalog_repository.dart';
 export 'src/ports/country_locator.dart';

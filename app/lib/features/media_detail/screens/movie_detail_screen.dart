@@ -136,6 +136,16 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
             .value ??
         TitleDetails.none;
     final runtime = details.runtime;
+    // L'image de TMDB, si celle du fournisseur manque ou ne s'affiche pas.
+    final artwork = ref
+        .watch(
+          titleArtworkProvider((
+            kind: ContentKind.movie,
+            title: _movie.title,
+            year: year,
+          )),
+        )
+        .value;
     return FocusGuard(
       fallback: () => _firstNode,
       child: AeroCanvas(
@@ -143,7 +153,7 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
           fit: StackFit.expand,
           children: [
             DetailBackdrop(
-              imageUrl: details.backdropUrl,
+              imageUrls: [?details.backdropUrl, ?artwork],
               posterUrl: _movie.posterUrl,
             ),
             Padding(

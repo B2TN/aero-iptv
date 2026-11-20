@@ -1,8 +1,10 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:iptv_domain/iptv_domain.dart';
 
 import '../../../app/app_state.dart';
+import '../../../app/di/repository_providers.dart';
 import '../../../design_system/components/art_backdrop.dart';
 import '../../../design_system/components/meta_tag.dart';
 import '../../../design_system/glass/glass_panel.dart';
@@ -28,6 +30,22 @@ String airDateLabel(AppLocalizations l10n, DateTime day) {
   return text.isEmpty ? text : text[0].toUpperCase() + text.substring(1);
 }
 
+/// Image large d'un titre sur TMDB, quand le fournisseur n'en donne pas ou que
+/// la sienne ne s'affiche pas. Cherchée une fois par session.
+final titleArtworkProvider = FutureProvider.autoDispose
+    .family<String?, ({ContentKind kind, String title, int? year})>(
+      (ref, key) => ref
+          .watch(artworkRepositoryProvider)
+          .backdrop(
+            key.kind,
+            key.title,
+            year: key.year,
+            language: ref.watch(
+              settingsProvider.select((settings) => settings.languageCode),
+            ),
+          ),
+    );
+
 /// Largeur du texte d'une fiche : l'image occupe le reste.
 const double detailTextWidth = 640;
 
@@ -35,13 +53,15 @@ const double detailTextWidth = 640;
 /// la fin de la ligne, et un voile qui garde le texte lisible.
 class DetailBackdrop extends StatelessWidget {
   const DetailBackdrop({
-    required this.imageUrl,
+    required this.imageUrls,
     required this.posterUrl,
     this.compactPoster = false,
     super.key,
   });
 
-  final String? imageUrl;
+  /// Images larges, de la préférée à la dernière : celle du fournisseur,
+  /// puis celle de TMDB.
+  final List<String> imageUrls;
   final String? posterUrl;
 
   /// Affiche plus petite, en haut : la fiche d'une série garde la place de
@@ -58,7 +78,7 @@ class DetailBackdrop extends StatelessWidget {
         right: 0,
         height: 470,
         child: ArtBackdrop(
-          imageUrl: imageUrl,
+          imageUrls: imageUrls,
           posterUrl: posterUrl,
           artShare: 0.72,
           textShare: 0.3,

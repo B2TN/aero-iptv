@@ -21,6 +21,108 @@ http.Response _page(List<Map<String, Object?>> results) =>
 final DateTime _now = DateTime(2026, 11, 20, 9);
 
 void main() {
+  group('image large d un titre', () {
+    test(
+      'cherche le titre et son année, et garde le premier résultat',
+      () async {
+        late Uri asked;
+        final client = MockClient((request) async {
+          asked = request.url;
+          return _page([_movie(7, 'Dune: Part Two'), _movie(8, 'Dune')]);
+        });
+
+        final url = await TmdbClient(client, readToken: 'jeton').backdrop(
+          ContentKind.movie,
+          'Dune: Part Two',
+          year: 2024,
+          language: 'en',
+        );
+
+        expect(url, 'https://image.tmdb.org/t/p/w1280/b7.jpg');
+        expect(asked.path, '/3/search/movie');
+        expect(asked.queryParameters, {
+          'query': 'Dune: Part Two',
+          'language': 'en',
+          'include_adult': 'false',
+          'year': '2024',
+        });
+      },
+    );
+
+    test('une série se cherche par l année de sa première diffusion', () async {
+      late Uri asked;
+      final client = MockClient((request) async {
+        asked = request.url;
+        return _page(const []);
+      });
+
+      final url = await TmdbClient(
+        client,
+        readToken: 'jeton',
+      ).backdrop(ContentKind.series, 'Dexter', year: 2006, language: 'fr');
+
+      expect(url, isNull);
+      expect(asked.path, '/3/search/tv');
+      expect(asked.queryParameters['first_air_date_year'], '2006');
+    });
+  });
+
+  group('images gardées pendant la session', () {
+    test('une seule recherche par titre, rien sans service', () async {
+      var calls = 0;
+      final client = MockClient((request) async {
+        calls++;
+        return _page([_movie(7, 'Dune')]);
+      });
+      final artwork = ArtworkRepositoryImpl(
+        tmdb: TmdbClient(client, readToken: 'jeton'),
+      );
+
+      for (var i = 0; i < 2; i++) {
+        expect(
+          await artwork.backdrop(
+            ContentKind.movie,
+            'Dune',
+            year: 2021,
+            language: 'en',
+          ),
+          'https://image.tmdb.org/t/p/w1280/b7.jpg',
+        );
+      }
+      expect(calls, 1);
+      expect(
+        await ArtworkRepositoryImpl().backdrop(
+          ContentKind.movie,
+          'Dune',
+          language: 'en',
+        ),
+        isNull,
+      );
+    });
+
+    test('un échec n est pas gardé : la fiche suivante réessaie', () async {
+      var calls = 0;
+      final client = MockClient((request) async {
+        calls++;
+        return calls == 1
+            ? http.Response('panne', 503)
+            : _page([_movie(7, 'Dune')]);
+      });
+      final artwork = ArtworkRepositoryImpl(
+        tmdb: TmdbClient(client, readToken: 'jeton'),
+      );
+
+      expect(
+        await artwork.backdrop(ContentKind.movie, 'Dune', language: 'en'),
+        isNull,
+      );
+      expect(
+        await artwork.backdrop(ContentKind.movie, 'Dune', language: 'en'),
+        'https://image.tmdb.org/t/p/w1280/b7.jpg',
+      );
+    });
+  });
+
   test('la semaine d abord, si on peut la regarder dans le pays', () async {
     final asked = <Uri>[];
     final client = MockClient((request) async {

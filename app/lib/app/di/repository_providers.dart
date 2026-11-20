@@ -138,6 +138,15 @@ final trendingRepositoryProvider = Provider<TrendingRepository>(
   ),
 );
 
+/// Images larges cherchées sur TMDB, quand la playlist n'en donne pas.
+final artworkRepositoryProvider = Provider<ArtworkRepository>(
+  (ref) => ArtworkRepositoryImpl(
+    tmdb: _tmdbToken.isEmpty
+        ? null
+        : TmdbClient(ref.watch(httpClientProvider), readToken: _tmdbToken),
+  ),
+);
+
 final countryLocatorProvider = Provider<CountryLocator>(
   (ref) => CountryIsClient(ref.watch(httpClientProvider)),
 );

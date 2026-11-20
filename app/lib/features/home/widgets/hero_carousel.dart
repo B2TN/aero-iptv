@@ -109,7 +109,7 @@ class _HeroCarouselState extends State<HeroCarousel> {
         children: [
           ArtBackdrop(
             key: ValueKey(_index),
-            imageUrl: wide,
+            imageUrls: [?wide],
             posterUrl: poster,
             posterHeight: 290,
           ),

@@ -236,6 +236,16 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
         )
         .value;
     final seasonCount = seasons.value?.length ?? 0;
+    // L'image de TMDB, si celle du fournisseur manque ou ne s'affiche pas.
+    final artwork = ref
+        .watch(
+          titleArtworkProvider((
+            kind: ContentKind.series,
+            title: widget.series.title,
+            year: widget.series.year,
+          )),
+        )
+        .value;
     return FocusGuard(
       fallback: () => _backNode,
       child: AeroCanvas(
@@ -243,7 +253,7 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
           fit: StackFit.expand,
           children: [
             DetailBackdrop(
-              imageUrl: details.backdropUrl,
+              imageUrls: [?details.backdropUrl, ?artwork],
               posterUrl: widget.series.posterUrl,
               compactPoster: true,
             ),

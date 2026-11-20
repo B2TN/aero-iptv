@@ -13,6 +13,7 @@ export 'src/remote/deepl_translator.dart';
 export 'src/remote/http_stream_probe.dart';
 export 'src/remote/segment_clients.dart';
 export 'src/remote/tmdb_client.dart';
+export 'src/repositories/artwork_repository_impl.dart';
 export 'src/repositories/catalog_repository_impl.dart';
 export 'src/repositories/epg_repository_impl.dart';
 export 'src/repositories/favorites_repository_impl.dart';

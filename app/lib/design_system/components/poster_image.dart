@@ -111,6 +111,8 @@ class PosterImage extends ConsumerWidget {
     this.fit = BoxFit.cover,
     this.alignment = Alignment.center,
     this.placeholder,
+    this.onError,
+    this.fadeIn = false,
     super.key,
   });
 
@@ -119,6 +121,13 @@ class PosterImage extends ConsumerWidget {
   final BoxFit fit;
   final AlignmentGeometry alignment;
   final Widget? placeholder;
+
+  /// Appelé une fois si l'image ne peut pas s'afficher, après l'image en
+  /// cours : l'appelant peut alors en proposer une autre.
+  final VoidCallback? onError;
+
+  /// L'image apparaît en fondu, plutôt que d'un coup, une fois chargée.
+  final bool fadeIn;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -135,9 +144,25 @@ class PosterImage extends ConsumerWidget {
       alignment: alignment,
       gaplessPlayback: true,
       filterQuality: FilterQuality.low,
-      frameBuilder: (context, child, frame, wasSynchronouslyLoaded) =>
-          frame == null && !wasSynchronouslyLoaded ? fallback : child,
-      errorBuilder: (context, error, stackTrace) => fallback,
+      frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+        if (wasSynchronouslyLoaded) return child;
+        if (fadeIn) {
+          return AnimatedOpacity(
+            opacity: frame == null ? 0 : 1,
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeOut,
+            child: child,
+          );
+        }
+        return frame == null ? fallback : child;
+      },
+      errorBuilder: (context, error, stackTrace) {
+        final report = onError;
+        if (report != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) => report());
+        }
+        return fallback;
+      },
     );
   }
 }

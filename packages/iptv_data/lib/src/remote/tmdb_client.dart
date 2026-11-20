@@ -73,8 +73,38 @@ final class TmdbClient {
     ];
   }
 
+  /// Image large du titre de [kind] nommé [title], sorti en [year] si elle est
+  /// connue. Seul le premier résultat compte : le suivant serait un autre
+  /// titre, et son image tromperait.
+  Future<String?> backdrop(
+    ContentKind kind,
+    String title, {
+    int? year,
+    required String language,
+  }) async {
+    final isMovie = kind == ContentKind.movie;
+    final results = await _get('/3/search/${isMovie ? 'movie' : 'tv'}', {
+      'query': title,
+      'language': language,
+      'include_adult': 'false',
+      if (year != null) isMovie ? 'year' : 'first_air_date_year': '$year',
+    });
+    final first = results.firstOrNull;
+    return first == null
+        ? null
+        : _imageUrl(_backdropBase, first['backdrop_path']);
+  }
+
   Future<List<_Result>> _results(
     ContentKind kind,
+    String path,
+    Map<String, String> query,
+  ) async => [
+    for (final result in await _get(path, query)) ?_toResult(result, kind),
+  ];
+
+  /// Résultats d'une requête de l'API.
+  Future<List<Map<String, dynamic>>> _get(
     String path,
     Map<String, String> query,
   ) async {
@@ -94,10 +124,7 @@ final class TmdbClient {
     }
     final results = json is Map<String, dynamic> ? json['results'] : null;
     if (results is! List) return const [];
-    return [
-      for (final result in results)
-        if (result is Map<String, dynamic>) ?_toResult(result, kind),
-    ];
+    return results.whereType<Map<String, dynamic>>().toList();
   }
 
   _Result? _toResult(Map<String, dynamic> json, ContentKind kind) {

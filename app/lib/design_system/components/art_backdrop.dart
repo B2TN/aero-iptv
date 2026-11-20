@@ -15,15 +15,16 @@ const Color _performanceFade = Color(0xFF07305F);
 /// La boîte reçue couvre toute la largeur : le masque part ainsi du bord de
 /// l'écran, et le bord de l'image ne se voit nulle part.
 ///
-/// Sans image large, l'affiche agrandie et très floue colore la place, et
-/// l'affiche nette se pose par-dessus.
+/// Les images larges sont essayées dans l'ordre : si l'une ne s'affiche pas,
+/// la suivante prend sa place, en fondu. Sans image large, l'affiche agrandie
+/// et très floue colore la place, et l'affiche nette se pose par-dessus.
 ///
 /// En mode Performance, l'image ne se fond pas dans l'aurore, ce qui demanderait
 /// un masque calculé à chaque image : elle prend toute la largeur, sous deux
 /// voiles sombres en dégradé.
-class ArtBackdrop extends StatelessWidget {
+class ArtBackdrop extends StatefulWidget {
   const ArtBackdrop({
-    required this.imageUrl,
+    required this.imageUrls,
     this.posterUrl,
     this.decodeWidth = 1280,
     this.artShare = 0.78,
@@ -34,8 +35,8 @@ class ArtBackdrop extends StatelessWidget {
     super.key,
   });
 
-  /// Image large, au format 16:9.
-  final String? imageUrl;
+  /// Images larges au format 16:9, de la préférée à la dernière.
+  final List<String> imageUrls;
 
   /// À défaut d'image large, l'affiche.
   final String? posterUrl;
@@ -60,8 +61,27 @@ class ArtBackdrop extends StatelessWidget {
   static const int _ambientWidth = 32;
 
   @override
+  State<ArtBackdrop> createState() => _ArtBackdropState();
+}
+
+class _ArtBackdropState extends State<ArtBackdrop> {
+  /// Images qui n'ont pas pu s'afficher : la suivante les remplace.
+  final Set<String> _failed = {};
+
+  @override
   Widget build(BuildContext context) {
-    final wide = imageUrl;
+    final ArtBackdrop(
+      :posterUrl,
+      :decodeWidth,
+      :artShare,
+      :textShare,
+      :fadeFrom,
+      :posterHeight,
+      :posterAlignment,
+    ) = widget;
+    final wide = widget.imageUrls
+        .where((url) => !_failed.contains(url))
+        .firstOrNull;
     final poster = posterUrl;
     if (wide == null && poster == null) return const SizedBox.shrink();
     final performance = AeroLook.of(context).isPerformance;
@@ -77,17 +97,22 @@ class ArtBackdrop extends StatelessWidget {
     final art = region(
       wide != null
           ? PosterImage(
+              key: ValueKey(wide),
               url: wide,
               decodeWidth: decodeWidth,
               alignment: Alignment.topCenter,
               placeholder: const SizedBox.shrink(),
+              fadeIn: true,
+              onError: () {
+                if (mounted) setState(() => _failed.add(wide));
+              },
             )
           : Stack(
               fit: StackFit.expand,
               children: [
                 PosterImage(
                   url: poster,
-                  decodeWidth: _ambientWidth,
+                  decodeWidth: ArtBackdrop._ambientWidth,
                   placeholder: const SizedBox.shrink(),
                 ),
                 const ColoredBox(color: Color(0x6603152B)),
