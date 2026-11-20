@@ -58,6 +58,10 @@ Future<List<String>> _openEntry(
   );
   await tester.pump();
   final l10n = lookupAppLocalizations(Locale(language));
+  // La clé est dans la catégorie des sous-titres.
+  await tester.tap(find.text(l10n.settingsCategorySubtitles));
+  await tester.pump();
+  await tester.pump();
   await tester.tap(find.text(row ?? l10n.settingsDeepL));
   await tester.pump();
   await tester.pump();

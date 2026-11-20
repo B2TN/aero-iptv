@@ -83,19 +83,23 @@ class UpdateController extends Notifier<UpdateState> {
 
   /// Cherche une version plus récente que celle-ci. Une panne de réseau ne
   /// se voit pas : la vérification se refera.
-  Future<void> check() async {
+  ///
+  /// Vrai si une mise à jour est proposée, faux si l'application est à jour,
+  /// `null` si la vérification n'a pas abouti, ou pour une version de
+  /// développement.
+  Future<bool?> check() async {
     final current = ref.read(appVersionProvider);
-    if (current == null) return;
+    if (current == null) return null;
     _checkedAt = ref.read(clockProvider)();
     final settings = await ref.read(settingsRepositoryProvider).watch().first;
     final List<AppRelease> releases;
     try {
       releases = await ref.read(releaseRepositoryProvider).releases();
     } on Failure {
-      return;
+      return null;
     }
     // Un téléchargement en cours garde sa release.
-    if (state.phase == UpdatePhase.downloading) return;
+    if (state.phase == UpdatePhase.downloading) return true;
     state = UpdateState(
       release: findUpdate(
         releases,
@@ -104,6 +108,7 @@ class UpdateController extends Notifier<UpdateState> {
         dismissedTag: settings.dismissedUpdate,
       ),
     );
+    return state.release != null;
   }
 
   /// Ferme le bandeau ; il ne revient que pour une version plus récente.

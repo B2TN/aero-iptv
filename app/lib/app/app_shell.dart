@@ -157,6 +157,11 @@ class _AppShellState extends ConsumerState<AppShell> {
       ref.read(selectedCountryProvider.notifier).clear();
       return;
     }
+    // Dans les Paramètres, les réglages rendent la main aux catégories.
+    if (tab == AppTab.settings && ref.read(settingsPaneProvider)) {
+      ref.read(settingsPaneProvider.notifier).close();
+      return;
+    }
     if (tab != AppTab.home) {
       ref.read(currentTabProvider.notifier).show(AppTab.home);
       _tabNodes[AppTab.home]!.requestFocus();

@@ -1681,6 +1681,228 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Épisode diffusé, bientôt dans la playlist'**
   String get homeNextEpisodeAired;
+
+  /// No description provided for @settingsCategoryPlaylist.
+  ///
+  /// In fr, this message translates to:
+  /// **'Playlist'**
+  String get settingsCategoryPlaylist;
+
+  /// No description provided for @settingsCategoryCatalog.
+  ///
+  /// In fr, this message translates to:
+  /// **'Catalogue'**
+  String get settingsCategoryCatalog;
+
+  /// No description provided for @settingsCategoryPlayback.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lecture'**
+  String get settingsCategoryPlayback;
+
+  /// No description provided for @settingsCategorySubtitles.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sous-titres'**
+  String get settingsCategorySubtitles;
+
+  /// No description provided for @settingsCategoryAppearance.
+  ///
+  /// In fr, this message translates to:
+  /// **'Apparence'**
+  String get settingsCategoryAppearance;
+
+  /// No description provided for @settingsCategoryUpdates.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mises à jour'**
+  String get settingsCategoryUpdates;
+
+  /// No description provided for @settingsCategoryAbout.
+  ///
+  /// In fr, this message translates to:
+  /// **'À propos'**
+  String get settingsCategoryAbout;
+
+  /// No description provided for @settingsLastSync.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dernière synchronisation'**
+  String get settingsLastSync;
+
+  /// No description provided for @settingsLastSyncNever.
+  ///
+  /// In fr, this message translates to:
+  /// **'Jamais'**
+  String get settingsLastSyncNever;
+
+  /// No description provided for @settingsLastSyncValue.
+  ///
+  /// In fr, this message translates to:
+  /// **'{date}, {duration}'**
+  String settingsLastSyncValue(String date, String duration);
+
+  /// No description provided for @syncDurationSeconds.
+  ///
+  /// In fr, this message translates to:
+  /// **'{seconds} s'**
+  String syncDurationSeconds(int seconds);
+
+  /// No description provided for @syncDurationMinutes.
+  ///
+  /// In fr, this message translates to:
+  /// **'{minutes} min {seconds} s'**
+  String syncDurationMinutes(int minutes, int seconds);
+
+  /// No description provided for @syncReportFull.
+  ///
+  /// In fr, this message translates to:
+  /// **'import complet'**
+  String get syncReportFull;
+
+  /// No description provided for @syncReportChanges.
+  ///
+  /// In fr, this message translates to:
+  /// **'changements seulement'**
+  String get syncReportChanges;
+
+  /// No description provided for @syncReportTotal.
+  ///
+  /// In fr, this message translates to:
+  /// **'Total'**
+  String get syncReportTotal;
+
+  /// No description provided for @syncReportCounts.
+  ///
+  /// In fr, this message translates to:
+  /// **'{received} reçus, {changed} modifiés'**
+  String syncReportCounts(int received, int changed);
+
+  /// No description provided for @syncReportProgrammes.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} programmes'**
+  String syncReportProgrammes(int count);
+
+  /// No description provided for @syncPhaseConnection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connexion'**
+  String get syncPhaseConnection;
+
+  /// No description provided for @syncPhaseCatalog.
+  ///
+  /// In fr, this message translates to:
+  /// **'Liste'**
+  String get syncPhaseCatalog;
+
+  /// No description provided for @syncPhaseLive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chaînes'**
+  String get syncPhaseLive;
+
+  /// No description provided for @syncPhaseMovies.
+  ///
+  /// In fr, this message translates to:
+  /// **'Films'**
+  String get syncPhaseMovies;
+
+  /// No description provided for @syncPhaseSeries.
+  ///
+  /// In fr, this message translates to:
+  /// **'Séries'**
+  String get syncPhaseSeries;
+
+  /// No description provided for @syncPhaseRefinement.
+  ///
+  /// In fr, this message translates to:
+  /// **'Finitions'**
+  String get syncPhaseRefinement;
+
+  /// No description provided for @syncPhaseUpdate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mise à jour du catalogue'**
+  String get syncPhaseUpdate;
+
+  /// No description provided for @syncPhaseGuide.
+  ///
+  /// In fr, this message translates to:
+  /// **'Guide des programmes'**
+  String get syncPhaseGuide;
+
+  /// No description provided for @settingsVersion.
+  ///
+  /// In fr, this message translates to:
+  /// **'Version installée'**
+  String get settingsVersion;
+
+  /// No description provided for @settingsVersionDev.
+  ///
+  /// In fr, this message translates to:
+  /// **'Version de développement'**
+  String get settingsVersionDev;
+
+  /// No description provided for @settingsUpToDate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aero IPTV est à jour.'**
+  String get settingsUpToDate;
+
+  /// No description provided for @settingsUpdateCheckFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'La vérification n\'a pas abouti. Réessayez plus tard.'**
+  String get settingsUpdateCheckFailed;
+
+  /// No description provided for @settingsReportProblem.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signaler un problème'**
+  String get settingsReportProblem;
+
+  /// No description provided for @settingsReportScan.
+  ///
+  /// In fr, this message translates to:
+  /// **'Scannez ce code pour signaler un problème depuis votre téléphone.'**
+  String get settingsReportScan;
+
+  /// No description provided for @settingsLicenses.
+  ///
+  /// In fr, this message translates to:
+  /// **'Licences et sources'**
+  String get settingsLicenses;
+
+  /// No description provided for @licensesFree.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aero IPTV est un logiciel libre, sous licence GPL-3.0.'**
+  String get licensesFree;
+
+  /// No description provided for @licensesTvMaze.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prochains épisodes : TVmaze (CC BY-SA 4.0).'**
+  String get licensesTvMaze;
+
+  /// No description provided for @licensesSegments.
+  ///
+  /// In fr, this message translates to:
+  /// **'Intros et génériques : TheIntroDB et IntroDB (ODbL).'**
+  String get licensesSegments;
+
+  /// No description provided for @licensesCharts.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tendances sans clé TMDB : classements publics d\'Apple.'**
+  String get licensesCharts;
+
+  /// No description provided for @actionClose.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fermer'**
+  String get actionClose;
 }
 
 class _AppLocalizationsDelegate

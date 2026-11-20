@@ -115,6 +115,8 @@ void main() {
       ),
     );
     await _settle(tester);
+    await tester.tap(find.text('Catalogue'));
+    await _settle(tester);
     // Le pays détecté est affiché.
     expect(find.text('Automatique (Belgique)'), findsOneWidget);
 

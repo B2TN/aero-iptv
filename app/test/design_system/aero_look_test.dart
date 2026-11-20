@@ -174,12 +174,14 @@ void main() {
       'le mode Performance suit l appareil tant que rien n est choisi',
       (tester) async {
         await _openSettings(tester, tier: MemoryTier.low);
+        await _tap(tester, 'Apparence');
         expect(find.text('Automatique (Activé)'), findsOneWidget);
       },
     );
 
     testWidgets('activer le mode Performance l enregistre', (tester) async {
       final settings = await _openSettings(tester);
+      await _tap(tester, 'Apparence');
 
       await _tap(tester, 'Mode Performance');
 
@@ -189,6 +191,7 @@ void main() {
     testWidgets('le regroupement des films se désactive', (tester) async {
       final settings = await _openSettings(tester);
       expect(settings.current.groupMovies, isTrue);
+      await _tap(tester, 'Catalogue');
 
       await _tap(tester, 'Regrouper les versions des films');
 

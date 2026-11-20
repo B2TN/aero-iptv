@@ -164,6 +164,7 @@ void main() {
     tester,
   ) async {
     await _pump(tester, const SettingsScreen());
+    await _tapAndSettle(tester, 'Sous-titres');
 
     expect(find.text('Moyenne, Blanc'), findsOneWidget);
     await _tapAndSettle(tester, 'Apparence des sous-titres');

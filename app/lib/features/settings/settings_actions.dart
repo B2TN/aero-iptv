@@ -72,28 +72,35 @@ Future<void> editApiKey(
     obscure: true,
     action: (
       label: l10n.settingsKeyGet,
-      onSelect: () => _showKeyPage(context, ref, service),
+      onSelect: () => openPageOrCode(
+        context,
+        ref,
+        url: service.page,
+        title: l10n.settingsKeyGet,
+        hint: l10n.settingsKeyScan(service.name),
+      ),
     ),
   );
   final key = value?.trim() ?? '';
   if (key.isNotEmpty) await keys.save(key);
 }
 
-/// Sur PC, la page s'ouvre dans le navigateur. Une TV n'en a pas : la page est
-/// proposée en QR code, à ouvrir sur un téléphone.
-Future<void> _showKeyPage(
+/// Ouvre [url]. Sur PC, la page s'ouvre dans le navigateur ; une TV n'en a
+/// pas : la page est proposée en QR code, à ouvrir sur un téléphone.
+Future<void> openPageOrCode(
   BuildContext context,
-  WidgetRef ref,
-  ApiKeyService service,
-) async {
-  final l10n = context.l10n;
-  if (await ref.read(webPageOpenerProvider)(service.page)) return;
+  WidgetRef ref, {
+  required String url,
+  required String title,
+  required String hint,
+}) async {
+  if (await ref.read(webPageOpenerProvider)(url)) return;
   if (!context.mounted) return;
   await showQrSheet(
     context,
-    title: l10n.settingsKeyGet,
-    hint: l10n.settingsKeyScan(service.name),
-    url: service.page,
-    closeLabel: l10n.actionBack,
+    title: title,
+    hint: hint,
+    url: url,
+    closeLabel: context.l10n.actionBack,
   );
 }

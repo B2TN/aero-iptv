@@ -927,4 +927,137 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get homeNextEpisodeAired => 'حلقة بُثّت، تصل قريبًا إلى القائمة';
+
+  @override
+  String get settingsCategoryPlaylist => 'قائمة التشغيل';
+
+  @override
+  String get settingsCategoryCatalog => 'الكتالوج';
+
+  @override
+  String get settingsCategoryPlayback => 'التشغيل';
+
+  @override
+  String get settingsCategorySubtitles => 'الترجمة';
+
+  @override
+  String get settingsCategoryAppearance => 'المظهر';
+
+  @override
+  String get settingsCategoryUpdates => 'التحديثات';
+
+  @override
+  String get settingsCategoryAbout => 'حول التطبيق';
+
+  @override
+  String get settingsLastSync => 'آخر مزامنة';
+
+  @override
+  String get settingsLastSyncNever => 'أبدًا';
+
+  @override
+  String settingsLastSyncValue(String date, String duration) {
+    return '$date، $duration';
+  }
+
+  @override
+  String syncDurationSeconds(int seconds) {
+    return '$seconds ث';
+  }
+
+  @override
+  String syncDurationMinutes(int minutes, int seconds) {
+    return '$minutes د $seconds ث';
+  }
+
+  @override
+  String get syncReportFull => 'استيراد كامل';
+
+  @override
+  String get syncReportChanges => 'التغييرات فقط';
+
+  @override
+  String get syncReportTotal => 'المجموع';
+
+  @override
+  String syncReportCounts(int received, int changed) {
+    final intl.NumberFormat receivedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String receivedString = receivedNumberFormat.format(received);
+    final intl.NumberFormat changedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String changedString = changedNumberFormat.format(changed);
+
+    return '$receivedString مستلَم، $changedString معدَّل';
+  }
+
+  @override
+  String syncReportProgrammes(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return '$countString برنامج';
+  }
+
+  @override
+  String get syncPhaseConnection => 'الاتصال';
+
+  @override
+  String get syncPhaseCatalog => 'القائمة';
+
+  @override
+  String get syncPhaseLive => 'القنوات';
+
+  @override
+  String get syncPhaseMovies => 'الأفلام';
+
+  @override
+  String get syncPhaseSeries => 'المسلسلات';
+
+  @override
+  String get syncPhaseRefinement => 'اللمسات الأخيرة';
+
+  @override
+  String get syncPhaseUpdate => 'تحديث الكتالوج';
+
+  @override
+  String get syncPhaseGuide => 'دليل البرامج';
+
+  @override
+  String get settingsVersion => 'الإصدار المثبت';
+
+  @override
+  String get settingsVersionDev => 'نسخة تطوير';
+
+  @override
+  String get settingsUpToDate => 'Aero IPTV محدَّث.';
+
+  @override
+  String get settingsUpdateCheckFailed => 'تعذّر التحقق الآن. حاول لاحقًا.';
+
+  @override
+  String get settingsReportProblem => 'الإبلاغ عن مشكلة';
+
+  @override
+  String get settingsReportScan => 'امسح هذا الرمز للإبلاغ عن مشكلة من هاتفك.';
+
+  @override
+  String get settingsLicenses => 'التراخيص والمصادر';
+
+  @override
+  String get licensesFree => 'Aero IPTV برنامج حر، مرخَّص بموجب GPL-3.0.';
+
+  @override
+  String get licensesTvMaze => 'الحلقات القادمة: TVmaze (CC BY-SA 4.0).';
+
+  @override
+  String get licensesSegments =>
+      'المقدمات والخاتمات: TheIntroDB وIntroDB (ODbL).';
+
+  @override
+  String get licensesCharts => 'الرائج دون مفتاح TMDB: قوائم Apple العامة.';
+
+  @override
+  String get actionClose => 'إغلاق';
 }

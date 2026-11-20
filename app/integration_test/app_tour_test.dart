@@ -381,14 +381,20 @@ void main() {
     expectFocus('paramètres');
     await shot(tester, '13_parametres');
     where = 'parametres';
-    // Une pression de plus que de lignes : la liste est parcourue en entier.
-    await press(tester, LogicalKeyboardKey.arrowDown, times: 14);
-    await press(tester, LogicalKeyboardKey.arrowLeft);
+    // Une pression de plus que de catégories : la colonne est parcourue en
+    // entier, puis les réglages de la dernière.
+    await press(tester, LogicalKeyboardKey.arrowDown, times: 8);
     await press(tester, LogicalKeyboardKey.arrowRight);
-    await press(tester, LogicalKeyboardKey.arrowUp, times: 14);
-    // Haut depuis la liste mène à l'onglet affiché, pas à son voisin.
+    await shot(tester, '13b_parametres_a_propos');
+    await press(tester, LogicalKeyboardKey.arrowDown, times: 3);
+    await press(tester, LogicalKeyboardKey.arrowLeft);
+    await press(tester, LogicalKeyboardKey.arrowUp, times: 8);
+    // Haut depuis les catégories mène à l'onglet affiché, pas à son voisin.
     expect(FocusManager.instance.primaryFocus?.debugLabel, 'settings');
+    // Playlist, la première catégorie, puis sa première ligne.
     await press(tester, LogicalKeyboardKey.arrowDown);
+    await press(tester, LogicalKeyboardKey.enter);
+    expect(FocusManager.instance.primaryFocus?.debugLabel, 'SettingsRows');
     await press(tester, LogicalKeyboardKey.enter);
     await wait(tester, 500);
     expectFocus('playlists');
