@@ -14,6 +14,7 @@ import '../../../design_system/components/aero_menu.dart';
 import '../../../design_system/components/aero_states.dart';
 import '../../../design_system/components/poster_image.dart';
 import '../../../design_system/glass/glass_panel.dart';
+import '../../../design_system/components/focus_row.dart';
 import '../../../design_system/tokens/aero_tokens.dart';
 import '../../../focus/dpad_collection.dart';
 import '../../../l10n/country_names.dart';
@@ -494,18 +495,16 @@ class _GroupRow extends StatelessWidget {
   final bool selected;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 12),
+  Widget build(BuildContext context) => FocusRow(
+    focused: focused,
+    selected: selected,
     child: Align(
       alignment: AlignmentDirectional.centerStart,
       child: Text(
         name,
         style: AeroText.body.copyWith(
-          color: focused
-              ? AeroColors.leaf
-              : selected
-              ? AeroColors.aqua
-              : AeroColors.foam,
+          color: rowInk(focused: focused, selected: selected),
+          fontWeight: focused || selected ? FontWeight.w600 : null,
         ),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
@@ -526,8 +525,8 @@ class _ChannelRow extends StatelessWidget {
   final bool focused;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 12),
+  Widget build(BuildContext context) => FocusRow(
+    focused: focused,
     child: Row(
       children: [
         SizedBox(
@@ -549,7 +548,8 @@ class _ChannelRow extends StatelessWidget {
               Text(
                 channel.name,
                 style: AeroText.body.copyWith(
-                  color: focused ? AeroColors.leaf : AeroColors.foam,
+                  color: rowInk(focused: focused),
+                  fontWeight: focused ? FontWeight.w600 : null,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -557,7 +557,9 @@ class _ChannelRow extends StatelessWidget {
               if (programme != null)
                 Text(
                   programme!,
-                  style: AeroText.caption,
+                  style: AeroText.caption.copyWith(
+                    color: rowSubtleInk(focused: focused),
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),

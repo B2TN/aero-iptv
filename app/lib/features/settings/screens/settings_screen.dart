@@ -10,6 +10,7 @@ import '../../../app/di/repository_providers.dart';
 import '../../../design_system/components/aero_menu.dart';
 import '../../../design_system/components/info_sheet.dart';
 import '../../../design_system/glass/glass_panel.dart';
+import '../../../design_system/components/focus_row.dart';
 import '../../../design_system/tokens/aero_tokens.dart';
 import '../../../focus/dpad_collection.dart';
 import '../../../focus/focus_memory.dart';
@@ -523,13 +524,10 @@ class _CategoryLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = focused
-        ? AeroColors.leaf
-        : selected
-        ? AeroColors.aqua
-        : AeroColors.foam;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14),
+    final color = rowInk(focused: focused, selected: selected);
+    return FocusRow(
+      focused: focused,
+      selected: selected,
       child: Row(
         children: [
           Icon(icon, size: 24, color: color),
@@ -537,9 +535,12 @@ class _CategoryLine extends StatelessWidget {
           Expanded(
             child: Text(
               title,
-              style: AeroText.heading.copyWith(
+              style: AeroText.body.copyWith(
+                fontSize: 18,
                 color: color,
-                fontWeight: selected ? FontWeight.w500 : FontWeight.w300,
+                fontWeight: focused || selected
+                    ? FontWeight.w600
+                    : FontWeight.w500,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

@@ -12,6 +12,7 @@ import '../../../design_system/components/aero_states.dart';
 import '../../../design_system/components/poster_card.dart';
 import '../../../design_system/components/virtual_keyboard.dart';
 import '../../../design_system/glass/glass_panel.dart';
+import '../../../design_system/components/focus_row.dart';
 import '../../../design_system/tokens/aero_tokens.dart';
 import '../../../focus/dpad_collection.dart';
 import '../../home/screens/home_screen.dart';
@@ -224,16 +225,16 @@ class SearchScreen extends ConsumerWidget {
                       onSelect: (index) => ref
                           .read(searchQueryProvider.notifier)
                           .set(suggestions[index]),
-                      itemBuilder: (context, index, focused) => Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                      itemBuilder: (context, index, focused) => FocusRow(
+                        focused: focused,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
                         child: Align(
                           alignment: AlignmentDirectional.centerStart,
                           child: Text(
                             suggestions[index],
                             style: AeroText.body.copyWith(
-                              color: focused
-                                  ? AeroColors.leaf
-                                  : AeroColors.foam,
+                              color: rowInk(focused: focused),
+                              fontWeight: focused ? FontWeight.w600 : null,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,

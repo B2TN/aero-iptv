@@ -431,7 +431,7 @@ class _Setting extends StatelessWidget {
           Text(
             value,
             style: AeroText.body.copyWith(
-              color: AeroColors.leaf,
+              color: AeroColors.aqua,
               fontWeight: FontWeight.w600,
             ),
           ),

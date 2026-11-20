@@ -4,6 +4,7 @@ import '../../focus/dpad_collection.dart';
 import '../glass/glass_panel.dart';
 import '../tokens/aero_tokens.dart';
 import 'aero_canvas.dart';
+import 'focus_row.dart';
 
 const double _rowHeight = 48;
 const double _menuWidth = 440;
@@ -85,14 +86,15 @@ class _MenuRow extends StatelessWidget {
   final bool focused;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 14),
+  Widget build(BuildContext context) => FocusRow(
+    focused: focused,
     child: Align(
       alignment: AlignmentDirectional.centerStart,
       child: Text(
         label,
         style: AeroText.body.copyWith(
-          color: focused ? AeroColors.leaf : AeroColors.foam,
+          color: rowInk(focused: focused),
+          fontWeight: focused ? FontWeight.w600 : null,
         ),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,

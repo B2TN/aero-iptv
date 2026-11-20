@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../../../design_system/components/focus_row.dart';
 import '../../../design_system/tokens/aero_tokens.dart';
 
 /// Ligne de réglage : un libellé et sa valeur.
@@ -20,16 +21,18 @@ class SettingRow extends StatelessWidget {
   final bool? toggled;
 
   @override
-  Widget build(BuildContext context) => Padding(
+  Widget build(BuildContext context) => FocusRow(
+    focused: focused,
     padding: const EdgeInsets.symmetric(horizontal: 16),
     child: Row(
       children: [
         Expanded(
           child: Text(
             label,
-            style: AeroText.heading.copyWith(
-              color: focused ? AeroColors.leaf : AeroColors.foam,
-              fontWeight: FontWeight.w300,
+            style: AeroText.body.copyWith(
+              fontSize: 18,
+              color: rowInk(focused: focused),
+              fontWeight: focused ? FontWeight.w600 : FontWeight.w500,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -43,7 +46,10 @@ class SettingRow extends StatelessWidget {
         Flexible(
           child: Text(
             value,
-            style: AeroText.body.copyWith(color: AeroColors.aqua),
+            // Sur la pastille blanche, le cyan ne se lirait pas.
+            style: AeroText.body.copyWith(
+              color: focused ? AeroColors.lagoon : AeroColors.aqua,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -65,7 +71,7 @@ class _Switch extends StatelessWidget {
     height: 26,
     child: DecoratedBox(
       decoration: BoxDecoration(
-        color: on ? const Color(0xFF34C77B) : const Color(0x8C010A18),
+        color: on ? const Color(0xFF5BC93E) : const Color(0x8C010A18),
         borderRadius: const BorderRadius.all(Radius.circular(13)),
         border: Border.all(color: const Color(0x4DEAF8FF)),
       ),

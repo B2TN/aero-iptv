@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:iptv_domain/iptv_domain.dart';
 
 import '../../../app/app_state.dart';
+import '../../../design_system/components/focus_row.dart';
 import '../../../design_system/components/progress_track.dart';
 import '../../../design_system/tokens/aero_tokens.dart';
 import '../../../l10n/generated/app_localizations.dart';
@@ -55,7 +56,7 @@ class EpisodeLine extends StatelessWidget {
           Icon(
             Icons.play_arrow_rounded,
             size: 22,
-            color: focused ? AeroColors.leaf : AeroColors.aqua,
+            color: rowInk(focused: focused, selected: true),
             semanticLabel: l10n.playerNowPlaying,
           ),
           const SizedBox(width: 6),
@@ -64,11 +65,8 @@ class EpisodeLine extends StatelessWidget {
           child: Text(
             title,
             style: AeroText.body.copyWith(
-              color: focused
-                  ? AeroColors.leaf
-                  : current
-                  ? AeroColors.aqua
-                  : AeroColors.foam,
+              color: rowInk(focused: focused, selected: current),
+              fontWeight: focused ? FontWeight.w600 : null,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -78,16 +76,17 @@ class EpisodeLine extends StatelessWidget {
       ],
     );
     if (summary == null) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+      return FocusRow(
+        focused: focused,
         child: Align(
           alignment: AlignmentDirectional.centerStart,
           child: heading,
         ),
       );
     }
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    return FocusRow(
+      focused: focused,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
@@ -97,9 +96,8 @@ class EpisodeLine extends StatelessWidget {
           Text(
             summary,
             style: AeroText.caption.copyWith(
-              color: AeroColors.mist,
+              color: rowSubtleInk(focused: focused),
               height: 1.35,
-              shadows: const [],
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -125,18 +123,16 @@ class SeasonLine extends StatelessWidget {
   final bool selected;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 12),
+  Widget build(BuildContext context) => FocusRow(
+    focused: focused,
+    selected: selected,
     child: Align(
       alignment: AlignmentDirectional.centerStart,
       child: Text(
         text,
         style: AeroText.body.copyWith(
-          color: focused
-              ? AeroColors.leaf
-              : selected
-              ? AeroColors.aqua
-              : AeroColors.foam,
+          color: rowInk(focused: focused, selected: selected),
+          fontWeight: focused || selected ? FontWeight.w600 : null,
         ),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,

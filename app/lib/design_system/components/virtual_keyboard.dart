@@ -104,7 +104,7 @@ class _KeyCap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = focused ? AeroColors.leaf : AeroColors.foam;
+    final color = focused ? AeroColors.abyss : AeroColors.foam;
     final Widget label = switch (value) {
       final String character => Text(
         character,
@@ -118,10 +118,12 @@ class _KeyCap extends StatelessWidget {
       ),
       _ => Icon(Icons.keyboard_alt_outlined, color: color, size: 22),
     };
+    // Touche active : blanche au texte sombre, comme les boutons.
     return DecoratedBox(
-      decoration: const BoxDecoration(
-        color: Color(0x33E8FBFF),
-        borderRadius: BorderRadius.all(Radius.circular(8)),
+      decoration: BoxDecoration(
+        color: focused ? AeroColors.foam : const Color(0x29FFFFFF),
+        borderRadius: const BorderRadius.all(Radius.circular(10)),
+        border: focused ? null : Border.all(color: const Color(0x33FFFFFF)),
       ),
       child: Center(child: label),
     );
