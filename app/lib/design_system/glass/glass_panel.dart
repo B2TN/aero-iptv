@@ -9,7 +9,7 @@ const BorderRadius _radius = BorderRadius.all(Radius.circular(18));
 /// Flou du verre dépoli, en mode Aero seulement.
 const double _blurSigma = 16;
 
-/// Verre teinté de bleu nuit : le texte blanc s'y lit aussi bien devant le ciel
+/// Verre teinté de bleu nuit : le texte blanc s'y lit aussi bien devant la lumière
 /// clair que devant les collines sombres. Le haut s'éclaire d'un liseré, comme
 /// la lumière sur l'arête du verre.
 const BoxDecoration _aeroGlass = BoxDecoration(

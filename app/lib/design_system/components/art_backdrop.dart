@@ -4,9 +4,13 @@ import '../tokens/aero_look.dart';
 import '../tokens/aero_tokens.dart';
 import 'poster_image.dart';
 
-/// Grande image d'un titre, fondue dans le paysage : elle occupe la fin de la
+/// Bleu de l'aurore à la hauteur où finit l'image, en mode Performance : le
+/// voile du bas y aboutit, et l'image rejoint le fond sans trait.
+const Color _performanceFade = Color(0xFF07305F);
+
+/// Grande image d'un titre, fondue dans l'aurore : elle occupe la fin de la
 /// ligne et s'efface vers son début, là où s'écrit le texte, et vers le bas, où
-/// passent les rangées. Le ciel et ses nuages restent visibles autour.
+/// passent les rangées. Les rubans de lumière restent visibles autour.
 ///
 /// La boîte reçue couvre toute la largeur : le masque part ainsi du bord de
 /// l'écran, et le bord de l'image ne se voit nulle part.
@@ -14,7 +18,7 @@ import 'poster_image.dart';
 /// Sans image large, l'affiche agrandie et très floue colore la place, et
 /// l'affiche nette se pose par-dessus.
 ///
-/// En mode Performance, l'image ne se fond pas dans le ciel, ce qui demanderait
+/// En mode Performance, l'image ne se fond pas dans l'aurore, ce qui demanderait
 /// un masque calculé à chaque image : elle prend toute la largeur, sous deux
 /// voiles sombres en dégradé.
 class ArtBackdrop extends StatelessWidget {
@@ -109,7 +113,7 @@ class ArtBackdrop extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: AlignmentDirectional.centerStart,
                   end: AlignmentDirectional.centerEnd,
-                  colors: const [Color(0xF2020D1C), Color(0x00020D1C)],
+                  colors: const [Color(0xF207305F), Color(0x0007305F)],
                   stops: [textShare * 0.6, textShare + 0.3],
                 ),
               ),
@@ -119,7 +123,7 @@ class ArtBackdrop extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: const [Color(0x00020D1C), Color(0xE6020D1C)],
+                  colors: const [Color(0x0007305F), _performanceFade],
                   stops: [fadeFrom, 1],
                 ),
               ),

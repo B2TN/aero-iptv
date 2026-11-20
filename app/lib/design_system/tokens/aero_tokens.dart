@@ -3,7 +3,7 @@ import 'package:flutter/widgets.dart';
 /// Palette Frutiger Aero : un bleu profond traversé de lumière, du verre clair,
 /// et un vert d'herbe réservé à l'action principale.
 abstract final class AeroColors {
-  /// Bleu du ciel, couleur de la marque.
+  /// Bleu de la marque.
   static const Color lagoon = Color(0xFF1F6FC5);
 
   /// Cyan clair : valeurs, liens et lueurs.
@@ -54,7 +54,7 @@ abstract final class AeroText {
   static const String displayFamily = 'InterDisplay';
   static const List<String> fallback = ['NotoSansArabic'];
 
-  /// Lisibilité sur le ciel : une ombre douce sous les titres.
+  /// Lisibilité sur les zones claires : une ombre douce sous les titres.
   static const List<Shadow> _lift = [
     Shadow(color: Color(0x8C020D1C), offset: Offset(0, 1), blurRadius: 6),
   ];

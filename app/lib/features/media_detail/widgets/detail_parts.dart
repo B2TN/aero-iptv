@@ -31,7 +31,7 @@ String airDateLabel(AppLocalizations l10n, DateTime day) {
 /// Largeur du texte d'une fiche : l'image occupe le reste.
 const double detailTextWidth = 640;
 
-/// Fond d'une fiche : son image large fondue dans le ciel, en haut, du côté de
+/// Fond d'une fiche : son image large fondue dans l'aurore, en haut, du côté de
 /// la fin de la ligne, et un voile qui garde le texte lisible.
 class DetailBackdrop extends StatelessWidget {
   const DetailBackdrop({

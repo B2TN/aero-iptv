@@ -21,8 +21,8 @@ const double _infoWidth = 132;
 /// Largeur du texte : l'image occupe le reste.
 const double _textWidth = 540;
 
-/// Grand visuel de l'accueil, en plein cadre : l'image du titre se fond dans le
-/// ciel, le texte et les boutons se posent à côté.
+/// Grand visuel de l'accueil, en plein cadre : l'image du titre se fond dans
+/// l'aurore, le texte et les boutons se posent à côté.
 ///
 /// Le carrousel n'avance pas seul, pour ne pas décoder d'image tant que personne
 /// ne regarde. Gauche sur Lecture et droite sur Informations changent de titre.
@@ -113,7 +113,7 @@ class _HeroCarouselState extends State<HeroCarousel> {
             posterUrl: poster,
             posterHeight: 290,
           ),
-          // Le texte reste lisible même devant le ciel clair : un voile en
+          // Le texte reste lisible même devant la lumière : un voile en
           // ellipse autour de lui, qui s'éteint avant ses bords, sans trait.
           const PositionedDirectional(
             start: -120,
