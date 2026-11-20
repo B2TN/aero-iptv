@@ -183,10 +183,12 @@ class _AppShellState extends ConsumerState<AppShell> {
       child: FocusGuard(
         fallback: () => _tabNodes[tab]!,
         child: AeroCanvas(
-          child: Column(
+          child: Stack(
             children: [
-              _TopBar(tab: tab, nodes: _tabNodes),
-              Expanded(
+              // La barre se pose sur le contenu : le grand visuel de l'accueil
+              // monte jusqu'en haut de l'écran.
+              Positioned.fill(
+                top: tab == AppTab.home ? 0 : AeroMetrics.topBarHeight,
                 child: Focus(
                   canRequestFocus: false,
                   skipTraversal: true,
@@ -199,6 +201,31 @@ class _AppShellState extends ConsumerState<AppShell> {
                   },
                 ),
               ),
+              // Le haut s'assombrit sous la barre : elle reste lisible quand
+              // les rangées défilent dessous.
+              const Positioned(
+                left: 0,
+                right: 0,
+                top: 0,
+                height: 128,
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Color(0xA6020D1C), Color(0x00020D1C)],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 0,
+                right: 0,
+                top: 0,
+                child: _TopBar(tab: tab, nodes: _tabNodes),
+              ),
             ],
           ),
         ),
@@ -207,6 +234,8 @@ class _AppShellState extends ConsumerState<AppShell> {
   }
 }
 
+/// Barre de navigation : la marque, les onglets au centre, et à droite
+/// l'heure ou la nouvelle version.
 class _TopBar extends ConsumerWidget {
   const _TopBar({required this.tab, required this.nodes});
 
@@ -218,6 +247,9 @@ class _TopBar extends ConsumerWidget {
     final l10n = context.l10n;
     final status = ref.watch(importControllerProvider);
     final message = status.needsAttention ? importMessage(l10n, status) : null;
+    final update = ref.watch(
+      updateControllerProvider.select((state) => state.release != null),
+    );
 
     Widget item(AppTab target, IconData icon, String label) => _NavItem(
       icon: icon,
@@ -230,35 +262,36 @@ class _TopBar extends ConsumerWidget {
     return SizedBox(
       height: AeroMetrics.topBarHeight,
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
+          const PositionedDirectional(
+            start: AeroMetrics.pagePadding,
+            top: 0,
+            bottom: 0,
+            child: _Brand(),
+          ),
           Align(
-            alignment: Alignment.topCenter,
-            child: Padding(
-              padding: const EdgeInsets.only(top: 14),
-              child: GlassPanel(
-                padding: const EdgeInsets.all(7),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    item(AppTab.home, Icons.home_rounded, l10n.navHome),
-                    item(AppTab.live, Icons.live_tv_rounded, l10n.navLive),
-                    item(AppTab.search, Icons.search_rounded, l10n.navSearch),
-                    item(
-                      AppTab.settings,
-                      Icons.settings_rounded,
-                      l10n.navSettings,
-                    ),
-                  ],
-                ),
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                item(AppTab.home, Icons.home_rounded, l10n.navHome),
+                item(AppTab.live, Icons.live_tv_rounded, l10n.navLive),
+                item(AppTab.search, Icons.search_rounded, l10n.navSearch),
+                item(AppTab.settings, Icons.settings_rounded, l10n.navSettings),
+              ],
             ),
           ),
-          const PositionedDirectional(end: 20, top: 14, child: UpdateBanner()),
+          PositionedDirectional(
+            end: 20,
+            top: update ? 12 : 0,
+            bottom: update ? null : 0,
+            child: update ? const UpdateBanner() : const _BarClock(),
+          ),
           if (message != null)
             PositionedDirectional(
-              start: 20,
-              top: 14,
-              width: 250,
+              start: AeroMetrics.pagePadding,
+              top: AeroMetrics.topBarHeight - 6,
+              width: 280,
               child: GlassPanel(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -278,8 +311,86 @@ class _TopBar extends ConsumerWidget {
   }
 }
 
-/// Onglet de la barre : un bouton rond, et l'onglet ouvert s'allonge pour
-/// afficher son nom. Il reste ainsi identifiable quand le focus est ailleurs.
+/// Marque : une bulle de verre et le nom de l'application.
+class _Brand extends StatelessWidget {
+  const _Brand();
+
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      const SizedBox(
+        width: 26,
+        height: 26,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(
+              center: Alignment(-0.35, -0.45),
+              radius: 0.9,
+              colors: [Color(0xFFFFFFFF), Color(0xFF8FE4FF), Color(0xFF1F6FC5)],
+              stops: [0, 0.35, 1],
+            ),
+            border: Border.fromBorderSide(BorderSide(color: Color(0x99FFFFFF))),
+            boxShadow: [BoxShadow(color: Color(0x668FE4FF), blurRadius: 10)],
+          ),
+        ),
+      ),
+      const SizedBox(width: 10),
+      Text(
+        'Aero IPTV',
+        style: AeroText.title.copyWith(fontSize: 20, letterSpacing: 0),
+      ),
+    ],
+  );
+}
+
+/// Heure, à droite de la barre, remise à jour à chaque minute.
+class _BarClock extends StatefulWidget {
+  const _BarClock();
+
+  @override
+  State<_BarClock> createState() => _BarClockState();
+}
+
+class _BarClockState extends State<_BarClock> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _schedule();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _schedule() {
+    _timer = Timer(Duration(seconds: 60 - DateTime.now().second), () {
+      if (!mounted) return;
+      setState(() {});
+      _schedule();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    String two(int value) => value.toString().padLeft(2, '0');
+    return Center(
+      child: Text(
+        '${two(now.hour)}:${two(now.minute)}',
+        style: AeroText.heading.copyWith(fontWeight: FontWeight.w500),
+      ),
+    );
+  }
+}
+
+/// Onglet de la barre : son icône et son nom. L'onglet ouvert est souligné
+/// d'un trait vert ; l'onglet qui a le focus devient une pastille blanche.
 class _NavItem extends StatelessWidget {
   const _NavItem({
     required this.icon,
@@ -295,46 +406,11 @@ class _NavItem extends StatelessWidget {
   final FocusNode focusNode;
   final VoidCallback onSelect;
 
-  BoxDecoration _decoration({required bool performance}) {
-    if (selected) {
-      return performance
-          ? const BoxDecoration(
-              color: AeroColors.leaf,
-              borderRadius: BorderRadius.all(Radius.circular(26)),
-            )
-          : const BoxDecoration(
-              borderRadius: BorderRadius.all(Radius.circular(26)),
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xFFE9FFF2), AeroColors.leaf, Color(0xFF5CD993)],
-                stops: [0, 0.55, 1],
-              ),
-              boxShadow: [BoxShadow(color: Color(0x738CF5B4), blurRadius: 18)],
-            );
-    }
-    return performance
-        ? const BoxDecoration(
-            color: PerformanceColors.button,
-            shape: BoxShape.circle,
-          )
-        : const BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFF2E77BE), Color(0xFF154A80)],
-            ),
-            border: Border.fromBorderSide(BorderSide(color: Color(0x80EAF8FF))),
-          );
-  }
-
   @override
   Widget build(BuildContext context) {
     final performance = AeroLook.of(context).isPerformance;
-    final ink = selected ? AeroColors.abyss : AeroColors.foam;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Semantics(
         label: label,
         button: true,
@@ -342,33 +418,82 @@ class _NavItem extends StatelessWidget {
         child: Focusable(
           focusNode: focusNode,
           onSelect: onSelect,
-          scale: 1.08,
+          scale: 1.06,
           halo: HaloShape.pill,
-          builder: (context, focused) => DecoratedBox(
-            decoration: _decoration(performance: performance),
-            child: SizedBox(
-              height: 48,
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: selected ? 16 : 12),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(icon, size: 24, color: ink),
-                    if (selected) ...[
-                      const SizedBox(width: 8),
-                      Text(
-                        label,
-                        style: AeroText.body.copyWith(
-                          color: ink,
-                          fontWeight: FontWeight.w600,
-                        ),
+          builder: (context, focused) {
+            final ink = focused
+                ? AeroColors.abyss
+                : selected
+                ? AeroColors.foam
+                : AeroColors.mist;
+            return DecoratedBox(
+              decoration: focused
+                  ? BoxDecoration(
+                      borderRadius: const BorderRadius.all(Radius.circular(24)),
+                      color: performance ? AeroColors.foam : null,
+                      gradient: performance
+                          ? null
+                          : const LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [Color(0xFFFFFFFF), Color(0xFFDCF1FF)],
+                            ),
+                    )
+                  : const BoxDecoration(),
+              child: SizedBox(
+                height: 44,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    clipBehavior: Clip.none,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(icon, size: 20, color: ink),
+                          const SizedBox(width: 8),
+                          Text(
+                            label,
+                            style: AeroText.label.copyWith(
+                              color: ink,
+                              fontWeight: selected || focused
+                                  ? FontWeight.w600
+                                  : FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
+                      if (selected && !focused)
+                        Positioned(
+                          bottom: 2,
+                          child: SizedBox(
+                            width: 22,
+                            height: 3,
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: AeroColors.leaf,
+                                borderRadius: const BorderRadius.all(
+                                  Radius.circular(2),
+                                ),
+                                boxShadow: performance
+                                    ? null
+                                    : const [
+                                        BoxShadow(
+                                          color: Color(0x999BEA7C),
+                                          blurRadius: 8,
+                                        ),
+                                      ],
+                              ),
+                            ),
+                          ),
+                        ),
                     ],
-                  ],
+                  ),
                 ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
     );

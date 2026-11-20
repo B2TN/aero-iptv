@@ -13,6 +13,8 @@ Aero IPTV relies on these components. Their full licenses are also included in t
 | [SQLite](https://sqlite.org) | Local database | Public domain |
 | [ANGLE](https://chromium.googlesource.com/angle/angle) | Video display on Windows | BSD 3-Clause |
 | [qr](https://pub.dev/packages/qr) | QR code for keys | BSD 3-Clause |
+| [Inter](https://github.com/rsms/inter) 4.1 | Interface typeface | [SIL Open Font License 1.1](../app/assets/fonts/Inter-OFL.txt) |
+| [Noto Sans Arabic](https://github.com/notofonts/arabic) | Arabic text | [SIL Open Font License 1.1](../app/assets/fonts/NotoSansArabic-OFL.txt) |
 
 ## Intro and credits data
 

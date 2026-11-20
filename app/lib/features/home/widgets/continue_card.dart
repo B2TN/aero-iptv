@@ -14,7 +14,7 @@ import '../../../l10n/generated/app_localizations.dart';
 import '../../../l10n/version_names.dart';
 import '../../player/playback_time.dart';
 
-const BorderRadius _radius = BorderRadius.all(Radius.circular(10));
+const BorderRadius _radius = BorderRadius.all(Radius.circular(12));
 
 /// Ce que le catalogue ajoute à une reprise : le titre de l'épisode et la
 /// version regardée, telle que le fournisseur la nomme (`FR`, `4K-DE`).
@@ -137,12 +137,12 @@ class ContinueCard extends ConsumerWidget {
     final caption = AeroText.caption.copyWith(shadows: const []);
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: performance ? PerformanceColors.panel : const Color(0x990A2443),
+        color: performance ? PerformanceColors.panel : const Color(0xB3071E3A),
         borderRadius: _radius,
         border: Border.all(
           color: performance
               ? PerformanceColors.panelBorder
-              : const Color(0x4DBFE6FA),
+              : const Color(0x40EAF8FF),
         ),
       ),
       child: ClipRRect(
@@ -154,8 +154,8 @@ class ContinueCard extends ConsumerWidget {
               width: AeroMetrics.cardWidth,
               child: PosterImage(
                 url: item.posterUrl,
-                decodeWidth: 240,
-                placeholder: const ColoredBox(color: Color(0x66174470)),
+                decodeWidth: 280,
+                placeholder: const ColoredBox(color: Color(0x8C123E6E)),
               ),
             ),
             Expanded(
@@ -170,7 +170,7 @@ class ContinueCard extends ConsumerWidget {
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                         height: 1.2,
-                        color: focused ? AeroColors.leaf : AeroColors.foam,
+                        color: AeroColors.foam,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,

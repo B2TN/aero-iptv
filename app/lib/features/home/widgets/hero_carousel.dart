@@ -6,24 +6,23 @@ import 'package:iptv_domain/iptv_domain.dart';
 import '../../../app/app_state.dart';
 import '../../../design_system/components/aero_button.dart';
 import '../../../design_system/components/aero_menu.dart';
-import '../../../design_system/components/poster_image.dart';
+import '../../../design_system/components/art_backdrop.dart';
+import '../../../design_system/components/meta_tag.dart';
 import '../../../design_system/glass/glass_panel.dart';
 import '../../../design_system/tokens/aero_tokens.dart';
 
-const double _heroHeight = 226;
+/// Hauteur du grand visuel, barre de navigation comprise : la première rangée
+/// tient en entier dessous.
+const double heroHeight = 428;
+
 const double _playWidth = 168;
 const double _infoWidth = 132;
-const double _frameRadius = 14;
-const Rect _frameSlice = Rect.fromLTRB(20, 20, 44, 44);
 
-/// Une affiche se décode à la hauteur du cadre, une image large à sa largeur.
-const int _posterDecodeWidth = 320;
-const int _backdropDecodeWidth = 960;
+/// Largeur du texte : l'image occupe le reste.
+const double _textWidth = 540;
 
-/// Décodée si petite, l'image agrandie devient un fond flou, sans aucun filtre.
-const int _ambientDecodeWidth = 32;
-
-/// Grand visuel de l'accueil, présenté derrière une vitre.
+/// Grand visuel de l'accueil, en plein cadre : l'image du titre se fond dans le
+/// ciel, le texte et les boutons se posent à côté.
 ///
 /// Le carrousel n'avance pas seul, pour ne pas décoder d'image tant que personne
 /// ne regarde. Gauche sur Lecture et droite sur Informations changent de titre.
@@ -96,88 +95,143 @@ class _HeroCarouselState extends State<HeroCarousel> {
     final l10n = context.l10n;
     final item = _item;
     final overview = item.overview;
+    final poster = item.movie?.posterUrl ?? item.series?.posterUrl;
+    final url = item.imageUrl;
+    // Sans image large, le visuel retombe sur l'affiche de la playlist.
+    final wide = url != null && url != poster ? url : null;
+    final year = item.movie?.year ?? item.series?.year;
     return SizedBox(
-      height: _heroHeight,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AeroMetrics.rowGutter),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              flex: 11,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.title,
-                    style: AeroText.display,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (overview != null) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      overview,
-                      style: AeroText.caption,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Focus(
-                        canRequestFocus: false,
-                        skipTraversal: true,
-                        onKeyEvent: _onPlayKey,
-                        child: AeroButton(
-                          label: item.movie != null
-                              ? l10n.homePlay
-                              : l10n.homeOpen,
-                          icon: item.movie != null
-                              ? Icons.play_arrow_rounded
-                              : Icons.video_library_rounded,
-                          tone: AeroTone.green,
-                          minWidth: _playWidth,
-                          focusNode: _actionNode,
-                          onSelect: () => widget.onOpen(item),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Focus(
-                        canRequestFocus: false,
-                        skipTraversal: true,
-                        onKeyEvent: _onInfoKey,
-                        child: AeroButton(
-                          label: l10n.homeInfo,
-                          icon: Icons.info_outline_rounded,
-                          minWidth: _infoWidth,
-                          onSelect: () => _showInfo(item),
-                        ),
-                      ),
+      height: heroHeight,
+      child: Stack(
+        fit: StackFit.expand,
+        // Le voile du texte déborde un peu sous le visuel, où il s'éteint.
+        clipBehavior: Clip.none,
+        children: [
+          ArtBackdrop(
+            key: ValueKey(_index),
+            imageUrl: wide,
+            posterUrl: poster,
+            posterHeight: 290,
+          ),
+          // Le texte reste lisible même devant le ciel clair : un voile en
+          // ellipse autour de lui, qui s'éteint avant ses bords, sans trait.
+          const PositionedDirectional(
+            start: -120,
+            top: 40,
+            width: 900,
+            height: heroHeight + 40,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    colors: [
+                      Color(0x8C021229),
+                      Color(0x59021229),
+                      Color(0x00021229),
                     ],
+                    stops: [0, 0.55, 1],
+                    transform: _Stretch(),
                   ),
-                  const SizedBox(height: 4),
-                ],
-              ),
-            ),
-            const SizedBox(width: 36),
-            Expanded(
-              flex: 13,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 10, bottom: 4),
-                child: _Visual(
-                  item: item,
-                  index: _index,
-                  count: widget.items.length,
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+          PositionedDirectional(
+            start: AeroMetrics.rowGutter,
+            bottom: 18,
+            width: _textWidth,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.title,
+                  style: AeroText.display,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (year != null) ...[
+                  const SizedBox(height: 10),
+                  MetaTag(text: '$year'),
+                ],
+                if (overview != null) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    overview,
+                    style: AeroText.body.copyWith(
+                      color: AeroColors.mist,
+                      fontSize: 15,
+                      shadows: const [
+                        Shadow(color: Color(0x99020D1C), blurRadius: 6),
+                      ],
+                    ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Focus(
+                      canRequestFocus: false,
+                      skipTraversal: true,
+                      onKeyEvent: _onPlayKey,
+                      child: AeroButton(
+                        label: item.movie != null
+                            ? l10n.homePlay
+                            : l10n.homeOpen,
+                        icon: item.movie != null
+                            ? Icons.play_arrow_rounded
+                            : Icons.video_library_rounded,
+                        tone: AeroTone.green,
+                        minWidth: _playWidth,
+                        focusNode: _actionNode,
+                        onSelect: () => widget.onOpen(item),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Focus(
+                      canRequestFocus: false,
+                      skipTraversal: true,
+                      onKeyEvent: _onInfoKey,
+                      child: AeroButton(
+                        label: l10n.homeInfo,
+                        icon: Icons.info_outline_rounded,
+                        minWidth: _infoWidth,
+                        onSelect: () => _showInfo(item),
+                      ),
+                    ),
+                    if (widget.items.length > 1) ...[
+                      const SizedBox(width: 24),
+                      _PageDots(count: widget.items.length, index: _index),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
+  }
+}
+
+/// Étire un dégradé circulaire en ellipse, à la taille de sa boîte.
+class _Stretch extends GradientTransform {
+  const _Stretch();
+
+  @override
+  Matrix4 transform(Rect bounds, {TextDirection? textDirection}) {
+    final center = bounds.center;
+    return Matrix4.identity()
+      ..translateByDouble(center.dx, center.dy, 0, 1)
+      ..scaleByDouble(
+        bounds.width / bounds.shortestSide,
+        bounds.height / bounds.shortestSide,
+        1,
+        1,
+      )
+      ..translateByDouble(-center.dx, -center.dy, 0, 1);
   }
 }
 
@@ -221,102 +275,7 @@ class _InfoSheet extends StatelessWidget {
   }
 }
 
-class _Visual extends StatelessWidget {
-  const _Visual({required this.item, required this.index, required this.count});
-
-  final HeroItem item;
-  final int index;
-  final int count;
-
-  /// Sans image large, le visuel retombe sur l'affiche de la playlist.
-  bool get _isPoster {
-    final url = item.imageUrl;
-    return url == item.movie?.posterUrl || url == item.series?.posterUrl;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final url = item.imageUrl;
-    final poster = _isPoster;
-    // Couche isolée : changer le focus ne redessine pas le visuel.
-    return RepaintBoundary(
-      child: Stack(
-        fit: StackFit.expand,
-        clipBehavior: Clip.none,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.all(Radius.circular(_frameRadius)),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                const ColoredBox(color: Color(0xFF0A2C4E)),
-                if (poster) ...[
-                  PosterImage(
-                    url: url,
-                    decodeWidth: _ambientDecodeWidth,
-                    placeholder: const SizedBox.shrink(),
-                  ),
-                  const ColoredBox(color: Color(0x7304142B)),
-                ],
-                PosterImage(
-                  url: url,
-                  decodeWidth: poster
-                      ? _posterDecodeWidth
-                      : _backdropDecodeWidth,
-                  fit: poster ? BoxFit.contain : BoxFit.cover,
-                  placeholder: const SizedBox.shrink(),
-                ),
-                const Image(
-                  image: AssetImage(AeroAssets.heroGloss),
-                  fit: BoxFit.fill,
-                ),
-              ],
-            ),
-          ),
-          Image.asset(
-            AeroAssets.heroFrame,
-            centerSlice: _frameSlice,
-            scale: AeroAssets.scale,
-            fit: BoxFit.fill,
-          ),
-          const _Flare(alignment: Alignment.topCenter),
-          const _Flare(alignment: Alignment.bottomCenter),
-          if (count > 1)
-            Positioned(
-              bottom: 10,
-              left: 0,
-              right: 0,
-              child: _PageDots(count: count, index: index),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Trait de lumière sur l'arête de la vitre.
-class _Flare extends StatelessWidget {
-  const _Flare({required this.alignment});
-
-  final Alignment alignment;
-
-  @override
-  Widget build(BuildContext context) => Align(
-    alignment: alignment,
-    child: FractionalTranslation(
-      translation: Offset(0, alignment.y / 2),
-      child: const FractionallySizedBox(
-        widthFactor: 0.62,
-        child: Image(
-          image: AssetImage(AeroAssets.edgeFlare),
-          height: 12,
-          fit: BoxFit.fill,
-        ),
-      ),
-    ),
-  );
-}
-
+/// Position dans le carrousel : le titre affiché est un trait allongé.
 class _PageDots extends StatelessWidget {
   const _PageDots({required this.count, required this.index});
 
@@ -325,19 +284,18 @@ class _PageDots extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(
-    mainAxisAlignment: MainAxisAlignment.center,
+    mainAxisSize: MainAxisSize.min,
     children: [
       for (var i = 0; i < count; i++)
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 3),
-          child: SizedBox(
-            width: 7,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            width: i == index ? 20 : 7,
             height: 7,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: i == index ? AeroColors.aqua : AeroColors.mist,
-              ),
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.all(Radius.circular(4)),
+              color: i == index ? AeroColors.foam : const Color(0x66D3E6F6),
             ),
           ),
         ),

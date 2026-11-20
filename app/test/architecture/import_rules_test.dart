@@ -47,8 +47,9 @@ void main() {
     expect(violations('lib/focus', const ['../features']), isEmpty);
   });
 
-  // Le flou en temps réel coûte cher sur un stick : seul le verre du mode Aero
-  // y a droit, et le mode Performance s'en passe.
+  // Le flou et les masques en temps réel coûtent cher sur un stick : seuls le
+  // verre et les grandes images du mode Aero y ont droit, et le mode
+  // Performance s'en passe.
   test('le flou en temps réel reste réservé au verre du mode Aero', () {
     final blurs = [
       for (final file in dartFiles('lib'))
@@ -57,11 +58,13 @@ void main() {
         ).hasMatch(file.readAsStringSync().replaceAll(RegExp(r'///.*'), '')))
           file.path.replaceAll(r'\', '/'),
     ];
-    expect(blurs, ['lib/design_system/glass/glass_panel.dart']);
-    expect(
-      File('lib/design_system/glass/glass_panel.dart').readAsStringSync(),
-      contains('isPerformance'),
-    );
+    expect(blurs..sort(), [
+      'lib/design_system/components/art_backdrop.dart',
+      'lib/design_system/glass/glass_panel.dart',
+    ]);
+    for (final path in blurs) {
+      expect(File(path).readAsStringSync(), contains('isPerformance'));
+    }
   });
 
   test('un seul onglet reste monté', () {

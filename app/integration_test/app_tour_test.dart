@@ -228,10 +228,22 @@ void main() {
     ]) {
       await press(tester, key);
     }
-    // Le bouton Version, sous l'affiche, change de version sans quitter la
-    // fiche.
-    await press(tester, LogicalKeyboardKey.arrowLeft, times: 3);
+    // Le bouton Version, au-dessus des épisodes, change de version sans
+    // quitter la fiche. Haut mène au bouton Retour, tout en haut, puis Bas au
+    // bouton Version, juste dessous.
+    for (var i = 0; i < 8; i++) {
+      if (FocusManager.instance.primaryFocus?.debugLabel == 'DetailBack') {
+        break;
+      }
+      await press(tester, LogicalKeyboardKey.arrowUp);
+    }
+    expect(FocusManager.instance.primaryFocus?.debugLabel, 'DetailBack');
+    // Sans ce pas de côté, Bas reviendrait sur le chemin des Haut.
+    await press(tester, LogicalKeyboardKey.arrowLeft);
+    await press(tester, LogicalKeyboardKey.arrowDown);
+    await shot(tester, '06a_bouton_version');
     final versionButton = FocusManager.instance.primaryFocus;
+    expect(versionButton?.debugLabel, 'DetailVersion');
     await press(tester, LogicalKeyboardKey.enter);
     await wait(tester, 500);
     expectFocus('versions de la fiche');

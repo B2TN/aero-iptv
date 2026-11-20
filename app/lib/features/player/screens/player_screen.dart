@@ -1003,17 +1003,17 @@ class _SliderTrack extends StatelessWidget {
     children: [
       SizedBox(
         width: width,
-        height: 6,
+        height: 5,
         child: const DecoratedBox(
           decoration: BoxDecoration(
-            color: Color(0x33E8FBFF),
+            color: Color(0x40FFFFFF),
             borderRadius: BorderRadius.all(Radius.circular(3)),
           ),
         ),
       ),
       SizedBox(
         width: width * fraction,
-        height: 6,
+        height: 5,
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: color,
@@ -1022,15 +1022,15 @@ class _SliderTrack extends StatelessWidget {
         ),
       ),
       PositionedDirectional(
-        start: width * fraction - 9,
+        start: width * fraction - 8,
         child: SizedBox(
-          width: 18,
-          height: 18,
+          width: 16,
+          height: 16,
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: color,
+              color: AeroColors.foam,
               shape: BoxShape.circle,
-              border: Border.all(color: AeroColors.foam),
+              border: Border.all(color: color, width: 3),
             ),
           ),
         ),
@@ -1038,6 +1038,16 @@ class _SliderTrack extends StatelessWidget {
     ],
   );
 }
+
+/// Temps de la barre : des chiffres de largeur égale, qui ne dansent pas.
+const TextStyle _timeStyle = TextStyle(
+  color: AeroColors.foam,
+  fontFamily: AeroText.family,
+  fontFamilyFallback: AeroText.fallback,
+  fontSize: 15,
+  fontWeight: FontWeight.w500,
+  fontFeatures: [FontFeature.tabularFigures()],
+);
 
 /// Barre de temps : un clic y place la lecture, les flèches sautent de 30 s.
 class _SeekBar extends StatefulWidget {
@@ -1149,7 +1159,7 @@ class _SeekBarState extends State<_SeekBar> {
             ? 0.0
             : (widget.position.inMilliseconds / total).clamp(0.0, 1.0));
     final shown = dragged == null ? widget.position : widget.duration * dragged;
-    final color = _focused ? AeroColors.leaf : AeroColors.aqua;
+    final color = _focused ? AeroColors.leaf : AeroColors.foam;
     return Focus(
       focusNode: widget.focusNode,
       canRequestFocus: _enabled,
@@ -1170,7 +1180,7 @@ class _SeekBarState extends State<_SeekBar> {
                 children: [
                   Text(
                     widget.waitingLabel ?? formatPlaybackTime(shown),
-                    style: AeroText.body,
+                    style: _timeStyle,
                   ),
                   const SizedBox(width: 18),
                   Expanded(
@@ -1182,7 +1192,7 @@ class _SeekBarState extends State<_SeekBar> {
                   const SizedBox(width: 18),
                   Text(
                     formatPlaybackTime(widget.duration),
-                    style: AeroText.body,
+                    style: _timeStyle.copyWith(color: AeroColors.mist),
                   ),
                 ],
               ),
@@ -1232,7 +1242,7 @@ class _VolumeSliderState extends State<_VolumeSlider> {
 
   @override
   Widget build(BuildContext context) {
-    final color = _focused ? AeroColors.leaf : AeroColors.aqua;
+    final color = _focused ? AeroColors.leaf : AeroColors.foam;
     return Focus(
       onKeyEvent: _onKeyEvent,
       onFocusChange: (focused) => setState(() => _focused = focused),
@@ -1322,16 +1332,23 @@ class _ClockState extends State<_Clock> {
   @override
   Widget build(BuildContext context) {
     final endsAt = widget.endsAt;
-    return GlassPanel(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Text(_timeOfDay(DateTime.now()), style: AeroText.heading),
-          if (endsAt != null) Text(endsAt, style: AeroText.caption),
-        ],
-      ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          _timeOfDay(DateTime.now()),
+          style: AeroText.title.copyWith(fontSize: 26),
+        ),
+        if (endsAt != null)
+          Text(
+            endsAt,
+            style: AeroText.caption.copyWith(
+              color: AeroColors.foam,
+              shadows: const [Shadow(color: Color(0x99020D1C), blurRadius: 6)],
+            ),
+          ),
+      ],
     );
   }
 }
@@ -1441,118 +1458,173 @@ class _Overlay extends StatelessWidget {
     final actions = _buildActions(l10n, paused: paused);
     final inFullscreen = fullscreen;
     final message = notice;
-    return Padding(
-      padding: const EdgeInsets.all(AeroMetrics.pagePadding),
-      child: Stack(
-        children: [
-          Align(
-            alignment: AlignmentDirectional.topStart,
-            child: Semantics(
-              label: l10n.playerClose,
-              child: AeroButton(
-                label: '',
-                icon: Icons.close,
-                onSelect: onClose,
-              ),
-            ),
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        const IgnorePointer(child: _Scrims()),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AeroMetrics.rowGutter,
+            32,
+            AeroMetrics.rowGutter,
+            36,
           ),
-          Align(
-            alignment: AlignmentDirectional.topEnd,
-            child: _Clock(
-              endsAt: !isLive && !waiting && remaining > Duration.zero
-                  ? l10n.playerEndsAt(_timeOfDay(DateTime.now().add(remaining)))
-                  : null,
-            ),
-          ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (message != null) ...[
-                  Center(
-                    child: GlassPanel(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 10,
-                      ),
-                      child: Text(message, style: AeroText.body),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                GlassPanel(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (!isLive) ...[
-                        Text(
-                          title,
-                          style: AeroText.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 8),
-                        _SeekBar(
-                          position: position,
-                          duration: state.duration,
-                          waitingLabel: waiting ? l10n.loading : null,
-                          focusNode: seekNode,
-                          autofocus: focusSeekBar,
-                          onStep: onSeekStep,
-                          onSeek: onSeek,
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-                      Row(
-                        children: [
-                          // Une seule ligne, toujours : si les libellés ne
-                          // tiennent pas, les commandes rétrécissent ensemble.
-                          Expanded(
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: AlignmentDirectional.centerStart,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  for (final (index, action) in actions.indexed)
-                                    Padding(
-                                      padding: EdgeInsetsDirectional.only(
-                                        start: index == 0 ? 0 : 12,
-                                      ),
-                                      child: action,
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          if (inFullscreen != null) ...[
-                            const SizedBox(width: 12),
-                            Semantics(
-                              label: inFullscreen
-                                  ? l10n.playerExitFullscreen
-                                  : l10n.playerFullscreen,
-                              child: AeroButton(
-                                label: '',
-                                icon: inFullscreen
-                                    ? Icons.fullscreen_exit
-                                    : Icons.fullscreen,
-                                onSelect: onFullscreen,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ],
+          child: Stack(
+            children: [
+              Align(
+                alignment: AlignmentDirectional.topStart,
+                child: Semantics(
+                  label: l10n.playerClose,
+                  child: AeroButton(
+                    label: '',
+                    icon: Icons.close,
+                    onSelect: onClose,
                   ),
                 ),
-              ],
-            ),
+              ),
+              Align(
+                alignment: AlignmentDirectional.topEnd,
+                child: _Clock(
+                  endsAt: !isLive && !waiting && remaining > Duration.zero
+                      ? l10n.playerEndsAt(
+                          _timeOfDay(DateTime.now().add(remaining)),
+                        )
+                      : null,
+                ),
+              ),
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (message != null) ...[
+                      Center(
+                        child: GlassPanel(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 10,
+                          ),
+                          child: Text(message, style: AeroText.body),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (!isLive) ...[
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                            child: Text(
+                              title,
+                              style: AeroText.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          _SeekBar(
+                            position: position,
+                            duration: state.duration,
+                            waitingLabel: waiting ? l10n.loading : null,
+                            focusNode: seekNode,
+                            autofocus: focusSeekBar,
+                            onStep: onSeekStep,
+                            onSeek: onSeek,
+                          ),
+                          const SizedBox(height: 14),
+                        ],
+                        Row(
+                          children: [
+                            // Une seule ligne, toujours : si les libellés ne
+                            // tiennent pas, les commandes rétrécissent ensemble.
+                            Expanded(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: AlignmentDirectional.centerStart,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    for (final (index, action)
+                                        in actions.indexed)
+                                      Padding(
+                                        padding: EdgeInsetsDirectional.only(
+                                          start: index == 0 ? 0 : 12,
+                                        ),
+                                        child: action,
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            if (inFullscreen != null) ...[
+                              const SizedBox(width: 12),
+                              Semantics(
+                                label: inFullscreen
+                                    ? l10n.playerExitFullscreen
+                                    : l10n.playerFullscreen,
+                                child: AeroButton(
+                                  label: '',
+                                  icon: inFullscreen
+                                      ? Icons.fullscreen_exit
+                                      : Icons.fullscreen,
+                                  onSelect: onFullscreen,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
+}
+
+/// Voiles du haut et du bas : l'heure et les commandes se lisent sur
+/// n'importe quelle image, sans panneau qui la cache.
+class _Scrims extends StatelessWidget {
+  const _Scrims();
+
+  @override
+  Widget build(BuildContext context) => const Column(
+    children: [
+      SizedBox(
+        height: 150,
+        width: double.infinity,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xB3020D1C), Color(0x00020D1C)],
+            ),
+          ),
+        ),
+      ),
+      Spacer(),
+      SizedBox(
+        height: 330,
+        width: double.infinity,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0x00020D1C), Color(0xA6020D1C), Color(0xE6020D1C)],
+              stops: [0, 0.5, 1],
+            ),
+          ),
+        ),
+      ),
+    ],
+  );
 }

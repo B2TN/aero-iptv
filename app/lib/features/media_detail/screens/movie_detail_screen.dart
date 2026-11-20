@@ -8,7 +8,6 @@ import '../../../app/di/repository_providers.dart';
 import '../../../design_system/components/aero_button.dart';
 import '../../../design_system/components/aero_canvas.dart';
 import '../../../design_system/components/aero_menu.dart';
-import '../../../design_system/components/poster_image.dart';
 import '../../../design_system/components/progress_track.dart';
 import '../../../design_system/tokens/aero_tokens.dart';
 import '../../../focus/focus_guard.dart';
@@ -140,114 +139,101 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
     return FocusGuard(
       fallback: () => _firstNode,
       child: AeroCanvas(
-        child: Padding(
-          padding: const EdgeInsets.all(AeroMetrics.pagePadding),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: 240,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AeroButton(
-                      label: l10n.actionBack,
-                      onSelect: () => Navigator.of(context).maybePop(),
-                    ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: 240,
-                      height: 360,
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          ClipRRect(
-                            borderRadius: const BorderRadius.all(
-                              Radius.circular(14),
-                            ),
-                            child: PosterImage(
-                              url: _movie.posterUrl,
-                              decodeWidth: 480,
-                            ),
-                          ),
-                          Image.asset(
-                            AeroAssets.heroFrame,
-                            centerSlice: const Rect.fromLTRB(20, 20, 44, 44),
-                            scale: AeroAssets.scale,
-                            fit: BoxFit.fill,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            DetailBackdrop(
+              imageUrl: details.backdropUrl,
+              posterUrl: _movie.posterUrl,
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AeroMetrics.rowGutter,
+                AeroMetrics.pagePadding,
+                AeroMetrics.rowGutter,
+                64,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AeroButton(
+                    label: l10n.actionBack,
+                    icon: Icons.arrow_back_rounded,
+                    onSelect: () => Navigator.of(context).maybePop(),
+                  ),
+                  const Spacer(),
+                  SizedBox(
+                    width: detailTextWidth,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        DetailHeader(
+                          title: _movie.title,
+                          tags: [
+                            ?year?.toString(),
+                            ?details.genre,
+                            if (runtime != null) runtimeLabel(l10n, runtime),
+                            movieVersionNames(
+                              [_movie],
+                              l10n,
+                              ref.read(settingsProvider).languageCode,
+                            ).single,
+                          ],
+                          highlight: latest != null && latest.finished
+                              ? l10n.detailWatched
+                              : null,
+                          overview: details.overview,
+                          overviewLines: 5,
+                        ),
+                        if (latest != null && latest.inProgress) ...[
+                          const SizedBox(height: 18),
+                          SizedBox(
+                            width: 360,
+                            child: ProgressTrack(fraction: latest.fraction),
                           ),
                         ],
-                      ),
-                    ),
-                    if (latest != null && latest.inProgress) ...[
-                      const SizedBox(height: 10),
-                      ProgressTrack(fraction: latest.fraction),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(width: 32),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    DetailHeader(
-                      title: _movie.title,
-                      tags: [
-                        ?year?.toString(),
-                        ?details.genre,
-                        if (runtime != null) runtimeLabel(l10n, runtime),
-                        movieVersionNames(
-                          [_movie],
-                          l10n,
-                          ref.read(settingsProvider).languageCode,
-                        ).single,
-                      ],
-                      highlight: latest != null && latest.finished
-                          ? l10n.detailWatched
-                          : null,
-                      overview: details.overview,
-                    ),
-                    const SizedBox(height: 28),
-                    Wrap(
-                      spacing: 16,
-                      runSpacing: 12,
-                      children: [
-                        if (resumeAt != null)
-                          AeroButton(
-                            label: l10n.detailResume,
-                            icon: Icons.play_arrow,
-                            tone: AeroTone.green,
-                            focusNode: _firstNode,
-                            autofocus: true,
-                            onSelect: () => _play(at: resumeAt),
-                          ),
-                        AeroButton(
-                          label: resumeAt == null
-                              ? l10n.detailPlay
-                              : l10n.detailPlayFromStart,
-                          icon: resumeAt == null ? Icons.play_arrow : null,
-                          tone: resumeAt == null
-                              ? AeroTone.green
-                              : AeroTone.blue,
-                          focusNode: resumeAt == null ? _firstNode : null,
-                          autofocus: resumeAt == null,
-                          onSelect: () => _play(
-                            at: resumeAt == null ? null : Duration.zero,
-                          ),
+                        const SizedBox(height: 26),
+                        Wrap(
+                          spacing: 16,
+                          runSpacing: 12,
+                          children: [
+                            if (resumeAt != null)
+                              AeroButton(
+                                label: l10n.detailResume,
+                                icon: Icons.play_arrow,
+                                tone: AeroTone.green,
+                                focusNode: _firstNode,
+                                autofocus: true,
+                                onSelect: () => _play(at: resumeAt),
+                              ),
+                            AeroButton(
+                              label: resumeAt == null
+                                  ? l10n.detailPlay
+                                  : l10n.detailPlayFromStart,
+                              icon: resumeAt == null ? Icons.play_arrow : null,
+                              tone: resumeAt == null
+                                  ? AeroTone.green
+                                  : AeroTone.blue,
+                              focusNode: resumeAt == null ? _firstNode : null,
+                              autofocus: resumeAt == null,
+                              onSelect: () => _play(
+                                at: resumeAt == null ? null : Duration.zero,
+                              ),
+                            ),
+                            if (_versions.length > 1)
+                              AeroButton(
+                                label: l10n.playerVersion,
+                                onSelect: _chooseVersion,
+                              ),
+                          ],
                         ),
-                        if (_versions.length > 1)
-                          AeroButton(
-                            label: l10n.playerVersion,
-                            onSelect: _chooseVersion,
-                          ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

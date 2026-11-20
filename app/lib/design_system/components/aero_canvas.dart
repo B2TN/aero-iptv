@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
@@ -42,7 +43,7 @@ class AeroScale extends StatelessWidget {
   );
 }
 
-/// Écran complet : fond sous-marin et canevas.
+/// Écran complet : le paysage du fond, puis le canevas.
 class AeroCanvas extends StatelessWidget {
   const AeroCanvas({required this.child, super.key});
 
@@ -53,31 +54,200 @@ class AeroCanvas extends StatelessWidget {
     fit: StackFit.expand,
     children: [
       // Couche isolée : le fond n'est jamais redessiné quand le focus bouge.
-      RepaintBoundary(
-        child: AeroLook.of(context).isPerformance
-            // Un dégradé, sans image à décoder ni à garder en mémoire.
-            ? const DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      PerformanceColors.backgroundTop,
-                      PerformanceColors.backgroundMiddle,
-                      PerformanceColors.backgroundBottom,
-                    ],
-                    stops: [0, 0.6, 1],
-                  ),
-                ),
-              )
-            : const Image(
-                image: AssetImage(AeroAssets.background),
-                fit: BoxFit.cover,
-                gaplessPlayback: true,
-                filterQuality: FilterQuality.low,
-              ),
-      ),
+      const RepaintBoundary(child: AeroSky()),
       AeroScale(child: child),
     ],
+  );
+}
+
+/// Paysage du fond : un ciel, un soleil bas et des collines qui s'assombrissent
+/// vers le bas. En mode Aero, des nuages passent lentement et la lumière du
+/// soleil respire ; en mode Performance, l'image reste immobile, décodée en
+/// plus petit.
+class AeroSky extends StatelessWidget {
+  const AeroSky({super.key});
+
+  /// Largeur de décodage du mode Performance : le paysage est flou, il
+  /// supporte d'être agrandi, et pèse quatre fois moins en mémoire.
+  static const int _performanceWidth = 960;
+
+  @override
+  Widget build(BuildContext context) {
+    final performance = AeroLook.of(context).isPerformance;
+    final sky = Image(
+      image: ResizeImage.resizeIfNeeded(
+        performance ? _performanceWidth : null,
+        null,
+        const AssetImage(AeroAssets.sky),
+      ),
+      fit: BoxFit.cover,
+      gaplessPlayback: true,
+      filterQuality: FilterQuality.medium,
+    );
+    if (performance) return sky;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        sky,
+        _Motion(still: MediaQuery.disableAnimationsOf(context)),
+      ],
+    );
+  }
+}
+
+/// Part de la hauteur de l'écran occupée par la bande de nuages.
+const double _bandShare = 460 / 1080;
+
+/// Une boucle complète de la bande de nuages, en secondes : un défilement que
+/// l'on remarque à peine.
+const double _loopSeconds = 420;
+
+/// Respiration de la lumière du soleil, en secondes.
+const double _breathSeconds = 14;
+
+/// Cadence des mouvements : bien plus lente que l'écran. Chaque pas redessine
+/// l'écran, et les nuages vont si lentement que l'œil n'y voit pas de saccade.
+const Duration _step = Duration(milliseconds: 66);
+
+/// Nuages qui défilent et lueur du soleil. Ils s'arrêtent quand l'écran est
+/// caché, par exemple sous le lecteur, ou quand l'application passe en
+/// arrière-plan.
+class _Motion extends StatefulWidget {
+  const _Motion({required this.still});
+
+  /// Vrai quand le système demande moins d'animations.
+  final bool still;
+
+  @override
+  State<_Motion> createState() => _MotionState();
+}
+
+class _MotionState extends State<_Motion> {
+  /// Horloge commune à tous les écrans : une fiche ouverte montre les nuages
+  /// là où l'accueil les laissait.
+  static final Stopwatch _clock = Stopwatch()..start();
+
+  /// Temps de l'horloge, en secondes, partagé par les deux mouvements.
+  final ValueNotifier<double> _time = ValueNotifier(_seconds);
+  late final AppLifecycleListener _lifecycle;
+  Timer? _timer;
+  bool _visible = true;
+  bool _foreground = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _lifecycle = AppLifecycleListener(
+      onStateChange: (state) {
+        _foreground = state == AppLifecycleState.resumed;
+        _update();
+      },
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _visible = TickerMode.valuesOf(context).enabled;
+    _update();
+  }
+
+  @override
+  void didUpdateWidget(_Motion oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _update();
+  }
+
+  void _update() {
+    final moving = _visible && _foreground && !widget.still;
+    if (moving && _timer == null) {
+      _timer = Timer.periodic(_step, (_) => _time.value = _seconds);
+    } else if (!moving && _timer != null) {
+      _timer?.cancel();
+      _timer = null;
+    }
+  }
+
+  static double get _seconds => _clock.elapsedMilliseconds / 1000;
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _lifecycle.dispose();
+    _time.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => IgnorePointer(
+    child: LayoutBuilder(
+      builder: (context, constraints) {
+        final height = constraints.maxHeight * _bandShare;
+        final width = height * AeroAssets.cloudBand.aspectRatio;
+        final tiles = (constraints.maxWidth / width).ceil() + 1;
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            // La lueur ne change que d'opacité : l'écran ne fait que la
+            // mélanger à nouveau, sans la redessiner.
+            ValueListenableBuilder<double>(
+              valueListenable: _time,
+              builder: (context, time, glow) => Opacity(
+                opacity:
+                    0.55 + 0.45 * math.sin(time / _breathSeconds * 2 * math.pi),
+                child: glow,
+              ),
+              child: const RepaintBoundary(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      center: Alignment(0.54, 0.18),
+                      radius: 0.62,
+                      colors: [Color(0x47FFF6DC), Color(0x00FFF6DC)],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              left: 0,
+              right: 0,
+              top: constraints.maxHeight * 0.02,
+              height: height,
+              child: ClipRect(
+                child: OverflowBox(
+                  alignment: Alignment.centerLeft,
+                  minWidth: 0,
+                  maxWidth: double.infinity,
+                  child: ValueListenableBuilder<double>(
+                    valueListenable: _time,
+                    builder: (context, time, band) => Transform.translate(
+                      offset: Offset(-(time / _loopSeconds % 1) * width, 0),
+                      child: band,
+                    ),
+                    child: RepaintBoundary(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (var i = 0; i < tiles; i++)
+                            Image(
+                              image: const AssetImage(AeroAssets.clouds),
+                              width: width,
+                              height: height,
+                              fit: BoxFit.fill,
+                              gaplessPlayback: true,
+                              filterQuality: FilterQuality.low,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    ),
   );
 }

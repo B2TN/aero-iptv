@@ -4,10 +4,29 @@ import 'package:flutter/widgets.dart';
 
 import '../tokens/aero_look.dart';
 
-const BorderRadius _radius = BorderRadius.all(Radius.circular(20));
+const BorderRadius _radius = BorderRadius.all(Radius.circular(18));
 
 /// Flou du verre dépoli, en mode Aero seulement.
-const double _blurSigma = 18;
+const double _blurSigma = 16;
+
+/// Verre teinté de bleu nuit : le texte blanc s'y lit aussi bien devant le ciel
+/// clair que devant les collines sombres. Le haut s'éclaire d'un liseré, comme
+/// la lumière sur l'arête du verre.
+const BoxDecoration _aeroGlass = BoxDecoration(
+  borderRadius: _radius,
+  border: Border.fromBorderSide(BorderSide(color: Color(0x40EAF8FF))),
+  gradient: LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      Color(0x80C6E6FF),
+      Color(0x8C2A5F9C),
+      Color(0x8C0B2C55),
+      Color(0x9E061C38),
+    ],
+    stops: [0, 0.02, 0.5, 1],
+  ),
+);
 
 /// Panneau de verre.
 ///
@@ -43,20 +62,7 @@ class GlassPanel extends StatelessWidget {
       borderRadius: _radius,
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: _blurSigma, sigmaY: _blurSigma),
-        child: DecoratedBox(
-          decoration: const BoxDecoration(
-            borderRadius: _radius,
-            border: Border.fromBorderSide(BorderSide(color: Color(0x42EAF8FF))),
-            // Un liseré clair en haut, comme la lumière sur l'arête du verre.
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0x4DFFFFFF), Color(0x24EAF8FF), Color(0x0DEAF8FF)],
-              stops: [0, 0.03, 1],
-            ),
-          ),
-          child: content,
-        ),
+        child: DecoratedBox(decoration: _aeroGlass, child: content),
       ),
     );
   }

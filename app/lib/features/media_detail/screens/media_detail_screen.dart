@@ -9,7 +9,6 @@ import '../../../design_system/components/aero_button.dart';
 import '../../../design_system/components/aero_canvas.dart';
 import '../../../design_system/components/aero_menu.dart';
 import '../../../design_system/components/aero_states.dart';
-import '../../../design_system/components/poster_image.dart';
 import '../../../design_system/glass/glass_panel.dart';
 import '../../../design_system/tokens/aero_tokens.dart';
 import '../../../focus/dpad_collection.dart';
@@ -240,88 +239,34 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
     return FocusGuard(
       fallback: () => _backNode,
       child: AeroCanvas(
-        child: Padding(
-          padding: const EdgeInsets.all(AeroMetrics.pagePadding),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: 240,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AeroButton(
-                      label: l10n.actionBack,
-                      focusNode: _backNode,
-                      onSelect: () => Navigator.of(context).maybePop(),
-                    ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: 240,
-                      height: 360,
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          ClipRRect(
-                            borderRadius: const BorderRadius.all(
-                              Radius.circular(14),
-                            ),
-                            child: PosterImage(
-                              url: widget.series.posterUrl,
-                              decodeWidth: 480,
-                            ),
-                          ),
-                          Image.asset(
-                            AeroAssets.heroFrame,
-                            centerSlice: const Rect.fromLTRB(20, 20, 44, 44),
-                            scale: AeroAssets.scale,
-                            fit: BoxFit.fill,
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (resume != null) ...[
-                      const SizedBox(height: 16),
-                      Text(
-                        l10n.detailResumeEpisode(
-                          resume.episode.season,
-                          resume.episode.number,
-                        ),
-                        style: AeroText.caption,
-                      ),
-                      const SizedBox(height: 8),
-                      AeroButton(
-                        label: l10n.detailResume,
-                        icon: Icons.play_arrow,
-                        tone: AeroTone.green,
-                        autofocus: widget.resume != null,
-                        onSelect: () => openPlayer(
-                          context,
-                          PlayerTarget.episode(
-                            widget.sourceId,
-                            widget.series,
-                            resume.episode,
-                          ).resumingAt(resume.position),
-                        ),
-                      ),
-                    ],
-                    if (_versions.length > 1) ...[
-                      const SizedBox(height: 16),
-                      AeroButton(
-                        label: l10n.playerVersion,
-                        focusNode: _versionNode,
-                        onSelect: _chooseVersion,
-                      ),
-                    ],
-                  ],
-                ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            DetailBackdrop(
+              imageUrl: details.backdropUrl,
+              posterUrl: widget.series.posterUrl,
+              compactPoster: true,
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AeroMetrics.rowGutter,
+                AeroMetrics.pagePadding,
+                AeroMetrics.rowGutter,
+                28,
               ),
-              const SizedBox(width: 32),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    DetailHeader(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AeroButton(
+                    label: l10n.actionBack,
+                    icon: Icons.arrow_back_rounded,
+                    focusNode: _backNode,
+                    onSelect: () => Navigator.of(context).maybePop(),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: detailTextWidth,
+                    child: DetailHeader(
                       title: widget.series.title,
                       tags: [
                         if (widget.series.year case final year?) '$year',
@@ -335,32 +280,73 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                           ? l10n.detailRunning
                           : null,
                       overview: details.overview,
+                      overviewLines: 3,
                     ),
+                  ),
+                  if (resume != null || _versions.length > 1) ...[
                     const SizedBox(height: 18),
-                    Expanded(
-                      child: seasons.when(
-                        loading: () => AeroLoading(label: l10n.loading),
-                        error: (error, _) => AeroMessage(
-                          title: l10n.loadErrorTitle,
-                          actionLabel: l10n.actionBack,
-                          onAction: () => Navigator.of(context).maybePop(),
-                        ),
-                        data: (seasons) => seen == null
-                            ? AeroLoading(label: l10n.loading)
-                            : _buildSeasons(
-                                seasons,
-                                seen,
-                                resume,
-                                schedule?.upcoming ?? const [],
-                                schedule?.lateAfter(seasons) ?? const [],
-                              ),
-                      ),
+                    Row(
+                      children: [
+                        if (resume != null) ...[
+                          AeroButton(
+                            label: l10n.detailResume,
+                            icon: Icons.play_arrow_rounded,
+                            tone: AeroTone.green,
+                            autofocus: widget.resume != null,
+                            onSelect: () => openPlayer(
+                              context,
+                              PlayerTarget.episode(
+                                widget.sourceId,
+                                widget.series,
+                                resume.episode,
+                              ).resumingAt(resume.position),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            l10n.detailResumeEpisode(
+                              resume.episode.season,
+                              resume.episode.number,
+                            ),
+                            style: AeroText.label.copyWith(
+                              color: AeroColors.mist,
+                            ),
+                          ),
+                          const SizedBox(width: 20),
+                        ],
+                        if (_versions.length > 1)
+                          AeroButton(
+                            label: l10n.playerVersion,
+                            focusNode: _versionNode,
+                            onSelect: _chooseVersion,
+                          ),
+                      ],
                     ),
                   ],
-                ),
+                  const SizedBox(height: 18),
+                  Expanded(
+                    child: seasons.when(
+                      loading: () => AeroLoading(label: l10n.loading),
+                      error: (error, _) => AeroMessage(
+                        title: l10n.loadErrorTitle,
+                        actionLabel: l10n.actionBack,
+                        onAction: () => Navigator.of(context).maybePop(),
+                      ),
+                      data: (seasons) => seen == null
+                          ? AeroLoading(label: l10n.loading)
+                          : _buildSeasons(
+                              seasons,
+                              seen,
+                              resume,
+                              schedule?.upcoming ?? const [],
+                              schedule?.lateAfter(seasons) ?? const [],
+                            ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

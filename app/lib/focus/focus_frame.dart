@@ -8,7 +8,7 @@ const Rect _haloSlice = Rect.fromLTRB(32, 32, 64, 64);
 
 /// Taille minimale du halo : ses quatre coins doivent y tenir, avec un centre.
 const double _haloMinimum = 66;
-const Duration _scaleDuration = Duration(milliseconds: 110);
+const Duration _scaleDuration = Duration(milliseconds: 140);
 
 /// Forme du halo : celle de l'élément qu'il entoure.
 enum HaloShape {
@@ -28,7 +28,7 @@ class FocusFrame extends StatelessWidget {
   const FocusFrame({
     required this.focused,
     required this.child,
-    this.scale = 1.05,
+    this.scale = 1.06,
     this.halo = HaloShape.card,
     super.key,
   });
@@ -46,7 +46,7 @@ class FocusFrame extends StatelessWidget {
     return AnimatedScale(
       scale: focused ? scale : 1,
       duration: animate ? _scaleDuration : Duration.zero,
-      curve: Curves.easeOut,
+      curve: Curves.easeOutCubic,
       child: Stack(
         clipBehavior: Clip.none,
         fit: StackFit.passthrough,
@@ -74,13 +74,13 @@ class _Halo extends StatelessWidget {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
-      // Mode Performance : un trait net, sans lueur à mélanger à l'image.
+      // Mode Performance : un trait blanc net, sans lueur à mélanger à l'image.
       if (AeroLook.of(context).isPerformance) {
         return Padding(
           padding: const EdgeInsets.all(_haloOutset - 5),
           child: DecoratedBox(
             decoration: BoxDecoration(
-              border: Border.all(color: AeroColors.leaf, width: 3),
+              border: Border.all(color: AeroColors.foam, width: 3),
               borderRadius: BorderRadius.all(
                 Radius.circular(shape == HaloShape.pill ? 32 : 16),
               ),

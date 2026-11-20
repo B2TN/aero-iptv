@@ -11,55 +11,70 @@ const double _minHeight = 46;
 /// Couleur du bouton : le vert est réservé à l'action de lecture.
 enum AeroTone { blue, green }
 
-/// Relief doux du mode Aero : un dégradé, un liseré clair et une ombre portée.
-BoxDecoration _aeroPill(AeroTone tone, {required bool focused}) =>
-    switch (tone) {
-      AeroTone.green => BoxDecoration(
-        borderRadius: const BorderRadius.all(Radius.circular(28)),
-        gradient: const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFFDFFFE9), Color(0xFF7FEAA6), Color(0xFF3FBF78)],
-        ),
-        border: Border.all(color: const Color(0xCCFFFFFF)),
-        boxShadow: [
-          BoxShadow(
-            color: focused ? const Color(0x998CF5B4) : const Color(0x66010A18),
-            blurRadius: focused ? 22 : 12,
-            offset: focused ? Offset.zero : const Offset(0, 5),
-          ),
-        ],
-      ),
-      AeroTone.blue => BoxDecoration(
-        borderRadius: const BorderRadius.all(Radius.circular(28)),
+const BorderRadius _pill = BorderRadius.all(Radius.circular(28));
+
+/// Gel vert de la lecture : un dégradé d'herbe, un reflet en haut, et une
+/// lueur quand il a le focus.
+BoxDecoration _gel({required bool focused}) => BoxDecoration(
+  borderRadius: _pill,
+  gradient: const LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      Color(0xFFF2FFE6),
+      Color(0xFFB4F296),
+      Color(0xFF7ED65C),
+      Color(0xFF4FB33B),
+    ],
+    stops: [0, 0.45, 0.55, 1],
+  ),
+  border: Border.all(color: const Color(0xD9FFFFFF)),
+  boxShadow: [
+    BoxShadow(
+      color: focused ? const Color(0xA69BEA7C) : const Color(0x59010A18),
+      blurRadius: focused ? 26 : 12,
+      offset: focused ? Offset.zero : const Offset(0, 5),
+    ),
+  ],
+);
+
+/// Verre clair des autres boutons. Avec le focus, il devient blanc, avec un
+/// texte sombre : il se repère de loin, comme la carte active.
+BoxDecoration _glass({required bool focused}) => focused
+    ? const BoxDecoration(
+        borderRadius: _pill,
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: focused
-              ? const [Color(0xCC5AA6E6), Color(0xCC1E5C99)]
-              : const [Color(0x99408CD2), Color(0x9914467D)],
+          colors: [Color(0xFFFFFFFF), Color(0xFFDCF1FF)],
         ),
-        border: Border.all(color: const Color(0x66EAF8FF)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x59010A18),
-            blurRadius: 12,
-            offset: Offset(0, 5),
-          ),
-        ],
-      ),
-    };
+        boxShadow: [BoxShadow(color: Color(0x808ADCFF), blurRadius: 22)],
+      )
+    : const BoxDecoration(
+        borderRadius: _pill,
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0x47FFFFFF), Color(0x1FFFFFFF)],
+        ),
+        border: Border.fromBorderSide(BorderSide(color: Color(0x59FFFFFF))),
+      );
 
 /// Aplat du mode Performance : aucune ombre ni dégradé à calculer.
-BoxDecoration _flatPill(AeroTone tone) => BoxDecoration(
-  borderRadius: const BorderRadius.all(Radius.circular(28)),
-  color: tone == AeroTone.green
-      ? PerformanceColors.play
-      : PerformanceColors.button,
-  border: tone == AeroTone.green
-      ? null
-      : Border.all(color: PerformanceColors.buttonBorder),
-);
+BoxDecoration _flatPill(AeroTone tone, {required bool focused}) =>
+    switch (tone) {
+      AeroTone.green => const BoxDecoration(
+        borderRadius: _pill,
+        color: PerformanceColors.play,
+      ),
+      AeroTone.blue => BoxDecoration(
+        borderRadius: _pill,
+        color: focused ? AeroColors.foam : PerformanceColors.button,
+        border: focused
+            ? null
+            : Border.all(color: PerformanceColors.buttonBorder),
+      ),
+    };
 
 /// Bouton en relief doux, qui s'illumine quand il a le focus.
 class AeroButton extends StatelessWidget {
@@ -92,48 +107,56 @@ class AeroButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final asset = image;
     final performance = AeroLook.of(context).isPerformance;
-    // Le vert est clair : le texte y passe en bleu nuit pour rester lisible.
-    final ink = tone == AeroTone.green ? AeroColors.abyss : AeroColors.foam;
     return Focusable(
       onSelect: onSelect,
       focusNode: focusNode,
       autofocus: autofocus,
       onFocusChange: onFocusChange,
       halo: HaloShape.pill,
-      builder: (context, focused) => ConstrainedBox(
-        constraints: BoxConstraints(minWidth: minWidth, minHeight: _minHeight),
-        child: DecoratedBox(
-          decoration: performance
-              ? _flatPill(tone)
-              : _aeroPill(tone, focused: focused),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (asset != null)
-                  Image.asset(asset, width: 28, height: 28)
-                else if (icon != null)
-                  Icon(icon, color: ink, size: 20),
-                if ((asset != null || icon != null) && label.isNotEmpty)
-                  const SizedBox(width: 10),
-                if (label.isNotEmpty)
-                  Text(
-                    label,
-                    style: AeroText.body.copyWith(
-                      color: ink,
-                      fontWeight: tone == AeroTone.green
-                          ? FontWeight.w600
-                          : null,
-                      shadows: const [],
+      builder: (context, focused) {
+        // Sur le vert et sur le blanc du focus, le texte passe en bleu nuit.
+        final ink = tone == AeroTone.green || focused
+            ? AeroColors.abyss
+            : AeroColors.foam;
+        return ConstrainedBox(
+          constraints: BoxConstraints(
+            minWidth: minWidth,
+            minHeight: _minHeight,
+          ),
+          child: DecoratedBox(
+            decoration: performance
+                ? _flatPill(tone, focused: focused)
+                : tone == AeroTone.green
+                ? _gel(focused: focused)
+                : _glass(focused: focused),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (asset != null)
+                    Image.asset(asset, width: 28, height: 28)
+                  else if (icon != null)
+                    Icon(icon, color: ink, size: 20),
+                  if ((asset != null || icon != null) && label.isNotEmpty)
+                    const SizedBox(width: 10),
+                  if (label.isNotEmpty)
+                    Text(
+                      label,
+                      style: AeroText.label.copyWith(
+                        color: ink,
+                        fontWeight: tone == AeroTone.green
+                            ? FontWeight.w600
+                            : null,
+                      ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

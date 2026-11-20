@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:iptv_domain/iptv_domain.dart';
 
 import '../../../app/app_state.dart';
+import '../../../design_system/components/art_backdrop.dart';
+import '../../../design_system/components/meta_tag.dart';
 import '../../../design_system/glass/glass_panel.dart';
 import '../../../design_system/tokens/aero_look.dart';
 import '../../../design_system/tokens/aero_tokens.dart';
@@ -26,6 +28,63 @@ String airDateLabel(AppLocalizations l10n, DateTime day) {
   return text.isEmpty ? text : text[0].toUpperCase() + text.substring(1);
 }
 
+/// Largeur du texte d'une fiche : l'image occupe le reste.
+const double detailTextWidth = 640;
+
+/// Fond d'une fiche : son image large fondue dans le ciel, en haut, du côté de
+/// la fin de la ligne, et un voile qui garde le texte lisible.
+class DetailBackdrop extends StatelessWidget {
+  const DetailBackdrop({
+    required this.imageUrl,
+    required this.posterUrl,
+    this.compactPoster = false,
+    super.key,
+  });
+
+  final String? imageUrl;
+  final String? posterUrl;
+
+  /// Affiche plus petite, en haut : la fiche d'une série garde la place de
+  /// ses épisodes.
+  final bool compactPoster;
+
+  @override
+  Widget build(BuildContext context) => Stack(
+    fit: StackFit.expand,
+    children: [
+      Positioned(
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 470,
+        child: ArtBackdrop(
+          imageUrl: imageUrl,
+          posterUrl: posterUrl,
+          artShare: 0.72,
+          textShare: 0.3,
+          fadeFrom: 0.5,
+          posterHeight: compactPoster ? 200 : 300,
+          posterAlignment: compactPoster
+              ? const AlignmentDirectional(0.7, -0.75)
+              : const AlignmentDirectional(0.62, -0.05),
+        ),
+      ),
+      const IgnorePointer(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: AlignmentDirectional.centerStart,
+              end: AlignmentDirectional.centerEnd,
+              colors: [Color(0x8C021229), Color(0x00021229)],
+              stops: [0, 0.6],
+            ),
+          ),
+        ),
+      ),
+    ],
+  );
+}
+
 /// Titre d'une fiche, ses étiquettes et son résumé.
 class DetailHeader extends StatelessWidget {
   const DetailHeader({
@@ -33,6 +92,7 @@ class DetailHeader extends StatelessWidget {
     required this.tags,
     this.highlight,
     this.overview,
+    this.overviewLines = 4,
     super.key,
   });
 
@@ -44,6 +104,7 @@ class DetailHeader extends StatelessWidget {
   /// Étiquette mise en avant, comme « En cours de diffusion ».
   final String? highlight;
   final String? overview;
+  final int overviewLines;
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +116,7 @@ class DetailHeader extends StatelessWidget {
       children: [
         Text(
           title,
-          style: AeroText.display.copyWith(fontSize: 40),
+          style: AeroText.display,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
@@ -65,73 +126,25 @@ class DetailHeader extends StatelessWidget {
             spacing: 8,
             runSpacing: 6,
             children: [
-              for (final tag in tags) _Tag(text: tag),
-              if (accent != null) _Tag(text: accent, accent: true),
+              for (final tag in tags) MetaTag(text: tag),
+              if (accent != null) MetaTag(text: accent, accent: true),
             ],
           ),
         ],
         if (summary != null) ...[
-          const SizedBox(height: 10),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 760),
-            child: Text(
-              summary,
-              style: AeroText.body.copyWith(
-                color: AeroColors.mist,
-                height: 1.45,
-                shadows: const [],
-              ),
-              maxLines: 4,
-              overflow: TextOverflow.ellipsis,
+          const SizedBox(height: 12),
+          Text(
+            summary,
+            style: AeroText.body.copyWith(
+              color: AeroColors.mist,
+              fontSize: 15,
+              shadows: const [Shadow(color: Color(0x99020D1C), blurRadius: 6)],
             ),
+            maxLines: overviewLines,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ],
-    );
-  }
-}
-
-class _Tag extends StatelessWidget {
-  const _Tag({required this.text, this.accent = false});
-
-  final String text;
-  final bool accent;
-
-  @override
-  Widget build(BuildContext context) {
-    final performance = AeroLook.of(context).isPerformance;
-    final Color fill;
-    final Color edge;
-    if (accent) {
-      fill = performance ? const Color(0xFF1C5A45) : const Color(0x298CF5B4);
-      edge = performance ? const Color(0xFF3E9C70) : const Color(0x668CF5B4);
-    } else {
-      fill = performance ? PerformanceColors.button : const Color(0x1FEAF8FF);
-      edge = performance
-          ? PerformanceColors.buttonBorder
-          : const Color(0x38EAF8FF);
-    }
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 360),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: fill,
-          borderRadius: const BorderRadius.all(Radius.circular(12)),
-          border: Border.all(color: edge),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-          child: Text(
-            text,
-            style: AeroText.caption.copyWith(
-              color: accent ? const Color(0xFFCFFFE0) : AeroColors.foam,
-              shadows: const [],
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ),
     );
   }
 }

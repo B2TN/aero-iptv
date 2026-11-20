@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iptv_domain/iptv_domain.dart';
@@ -108,9 +107,6 @@ final _favoriteTitlesProvider =
 const double _rowInset = 12;
 const double _chevronHeight = 40;
 
-/// Étoile des favoris, d'un or chaud sur le bleu.
-const Color _favoriteGold = Color(0xFFFFD86B);
-
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -213,7 +209,10 @@ class _HomeContent extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (feed.hero.isNotEmpty)
+          // Sans grand visuel, les rangées commencent sous la barre.
+          if (feed.hero.isEmpty)
+            const SizedBox(height: AeroMetrics.topBarHeight)
+          else
             HeroCarousel(
               items: feed.hero,
               onOpen: (item) {
@@ -229,7 +228,6 @@ class _HomeContent extends ConsumerWidget {
           if (continued.isNotEmpty)
             _MediaRow(
               title: l10n.homeContinue,
-              icon: AeroAssets.rowContinue,
               memoryKey: 'home.continue',
               itemCount: continued.length,
               itemKeys: [for (final item in continued) item.groupKey],
@@ -260,7 +258,6 @@ class _HomeContent extends ConsumerWidget {
           if (favorites.isNotEmpty)
             _MediaRow(
               title: l10n.homeFavorites,
-              glyph: Icons.star_rounded,
               memoryKey: 'home.favorites',
               itemCount: favorites.length,
               itemKeys: [
@@ -305,7 +302,6 @@ class _HomeContent extends ConsumerWidget {
           if (feed.series.isNotEmpty)
             _MediaRow(
               title: l10n.homeSeries,
-              icon: AeroAssets.rowSeries,
               memoryKey: 'home.series',
               itemCount: feed.series.length,
               itemKeys: [for (final item in feed.series) item.groupingKey],
@@ -321,7 +317,6 @@ class _HomeContent extends ConsumerWidget {
           if (feed.movies.isNotEmpty)
             _MediaRow(
               title: l10n.homeMovies,
-              icon: AeroAssets.rowMovies,
               memoryKey: 'home.movies',
               itemCount: feed.movies.length,
               itemKeys: [for (final item in feed.movies) item.groupingKey],
@@ -341,8 +336,7 @@ class _HomeContent extends ConsumerWidget {
   }
 }
 
-/// Rangée de l'accueil : son icône, ses cartes et des chevrons indicatifs. Les
-/// emplacements vides restent visibles, comme des vitres sans image.
+/// Rangée de l'accueil : son titre, ses cartes et des chevrons indicatifs.
 ///
 /// Sa clé est celle de sa mémoire : une rangée qui apparaît au-dessus, comme
 /// « Continuer à regarder » après une première lecture, ne lui prend ni son
@@ -351,8 +345,6 @@ class _MediaRow extends ConsumerStatefulWidget {
   _MediaRow({
     required this.title,
     required this.memoryKey,
-    this.icon,
-    this.glyph,
     required this.itemCount,
     required this.itemKeys,
     required this.itemBuilder,
@@ -362,10 +354,6 @@ class _MediaRow extends ConsumerStatefulWidget {
   }) : super(key: ValueKey(memoryKey));
 
   final String title;
-
-  /// Image de la rangée, ou à défaut [glyph].
-  final String? icon;
-  final IconData? glyph;
   final String memoryKey;
   final int itemCount;
 
@@ -413,16 +401,7 @@ class _MediaRowState extends ConsumerState<_MediaRow> {
             AeroMetrics.rowGutter,
             0,
           ),
-          child: Row(
-            children: [
-              if (widget.icon case final icon?)
-                Image.asset(icon, width: 30, height: 30)
-              else
-                Icon(widget.glyph, size: 30, color: _favoriteGold),
-              const SizedBox(width: 10),
-              Text(widget.title, style: AeroText.heading),
-            ],
-          ),
+          child: Text(widget.title, style: AeroText.heading),
         ),
         SizedBox(
           height: height,
@@ -437,21 +416,9 @@ class _MediaRowState extends ConsumerState<_MediaRow> {
               // Les cartes occupent toute la largeur, quelle que soit la fenêtre.
               final spacing =
                   (room - slots * AeroMetrics.cardWidth) / (slots - 1);
-              final pitch = AeroMetrics.cardWidth + spacing;
               return Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  for (var slot = widget.itemCount * span; slot < slots; slot++)
-                    PositionedDirectional(
-                      start: AeroMetrics.rowGutter + slot * pitch,
-                      top: _rowInset,
-                      width: AeroMetrics.cardWidth,
-                      height: AeroMetrics.cardHeight,
-                      child: const Image(
-                        image: AssetImage(AeroAssets.cardGhost),
-                        fit: BoxFit.fill,
-                      ),
-                    ),
                   DpadCollection.horizontal(
                     memoryKey: widget.memoryKey,
                     itemCount: widget.itemCount,

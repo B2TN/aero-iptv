@@ -5,9 +5,10 @@ import '../tokens/aero_tokens.dart';
 import 'poster_image.dart';
 import 'progress_track.dart';
 
-const BorderRadius _radius = BorderRadius.all(Radius.circular(10));
+const BorderRadius _radius = BorderRadius.all(Radius.circular(12));
 
-/// Affiche de film ou de série, sous un cadre de verre pré-rendu.
+/// Affiche de film ou de série, sous un liseré de verre pré-rendu, et son
+/// titre, qui s'éclaire avec le focus.
 class PosterCard extends StatelessWidget {
   const PosterCard({
     required this.title,
@@ -41,7 +42,7 @@ class PosterCard extends StatelessWidget {
               children: [
                 PosterImage(
                   url: imageUrl,
-                  decodeWidth: 240,
+                  decodeWidth: 280,
                   placeholder: _Placeholder(title: title),
                 ),
                 IgnorePointer(
@@ -68,13 +69,14 @@ class PosterCard extends StatelessWidget {
           const SizedBox(height: 5),
           ProgressTrack(fraction: fraction, color: progressColor),
         ],
-        const SizedBox(height: 5),
+        const SizedBox(height: 7),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Text(
             title,
             style: AeroText.caption.copyWith(
-              color: focused ? AeroColors.leaf : AeroColors.foam,
+              color: focused ? AeroColors.foam : AeroColors.mist,
+              fontWeight: focused ? FontWeight.w600 : FontWeight.w500,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -92,7 +94,7 @@ class _Placeholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ColoredBox(
-    color: const Color(0x66174470),
+    color: const Color(0x8C123E6E),
     child: Center(
       child: Padding(
         padding: const EdgeInsets.all(10),

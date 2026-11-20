@@ -160,7 +160,11 @@ void main() {
         return (box.decoration as BoxDecoration).boxShadow;
       }
 
-      final button = AeroButton(label: 'Lire', onSelect: () {});
+      final button = AeroButton(
+        label: 'Lire',
+        tone: AeroTone.green,
+        onSelect: () {},
+      );
       await tester.pumpWidget(_app(button));
       expect(shadowsOf(AeroLook.aero), isNotEmpty);
 
