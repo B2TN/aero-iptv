@@ -153,7 +153,7 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
           fit: StackFit.expand,
           children: [
             DetailBackdrop(
-              imageUrls: [?details.backdropUrl, ?artwork],
+              imageUrls: [?artwork, ?details.backdropUrl],
               posterUrl: _movie.posterUrl,
             ),
             Padding(

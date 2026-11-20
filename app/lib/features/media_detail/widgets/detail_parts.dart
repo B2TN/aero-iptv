@@ -30,8 +30,9 @@ String airDateLabel(AppLocalizations l10n, DateTime day) {
   return text.isEmpty ? text : text[0].toUpperCase() + text.substring(1);
 }
 
-/// Image large d'un titre sur TMDB, quand le fournisseur n'en donne pas ou que
-/// la sienne ne s'affiche pas. Cherchée une fois par session.
+/// Image large d'un titre sur TMDB, préférée à celle du fournisseur : les
+/// serveurs d'images des panneaux sont souvent lents ou cassés. Cherchée une
+/// fois par session.
 final titleArtworkProvider = FutureProvider.autoDispose
     .family<String?, ({ContentKind kind, String title, int? year})>(
       (ref, key) => ref
@@ -59,8 +60,8 @@ class DetailBackdrop extends StatelessWidget {
     super.key,
   });
 
-  /// Images larges, de la préférée à la dernière : celle du fournisseur,
-  /// puis celle de TMDB.
+  /// Images larges, de la préférée à la dernière : celle de TMDB, rapide et
+  /// sûre, puis celle du fournisseur.
   final List<String> imageUrls;
   final String? posterUrl;
 

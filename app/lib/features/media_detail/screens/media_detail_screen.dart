@@ -253,7 +253,7 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
           fit: StackFit.expand,
           children: [
             DetailBackdrop(
-              imageUrls: [?details.backdropUrl, ?artwork],
+              imageUrls: [?artwork, ?details.backdropUrl],
               posterUrl: widget.series.posterUrl,
               compactPoster: true,
             ),

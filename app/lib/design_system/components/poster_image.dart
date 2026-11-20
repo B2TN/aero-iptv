@@ -113,6 +113,7 @@ class PosterImage extends ConsumerWidget {
     this.placeholder,
     this.onError,
     this.fadeIn = false,
+    this.onShown,
     super.key,
   });
 
@@ -128,6 +129,9 @@ class PosterImage extends ConsumerWidget {
 
   /// L'image apparaît en fondu, plutôt que d'un coup, une fois chargée.
   final bool fadeIn;
+
+  /// Appelé quand l'image est affichée : l'appelant cesse d'attendre.
+  final VoidCallback? onShown;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -145,6 +149,10 @@ class PosterImage extends ConsumerWidget {
       gaplessPlayback: true,
       filterQuality: FilterQuality.low,
       frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+        final shown = onShown;
+        if (shown != null && (frame != null || wasSynchronouslyLoaded)) {
+          WidgetsBinding.instance.addPostFrameCallback((_) => shown());
+        }
         if (wasSynchronouslyLoaded) return child;
         if (fadeIn) {
           return AnimatedOpacity(

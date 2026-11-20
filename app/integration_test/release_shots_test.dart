@@ -83,12 +83,30 @@ void main() {
     return false;
   }
 
-  /// Choisit la première version si le choix s'ouvre au lieu de [screen] : un
-  /// titre en plusieurs versions le demande d'abord.
+  /// Attend [screen], en choisissant la première version si le choix s'ouvre
+  /// d'abord : un titre en plusieurs versions le demande. OK n'est pressé que
+  /// sur ce choix, jamais à l'aveugle.
   Future<bool> openPast(WidgetTester tester, Type screen) async {
-    if (await waitFor(tester, screen, 3)) return true;
-    await press(tester, LogicalKeyboardKey.enter);
-    return waitFor(tester, screen, 10);
+    final picker = find.text('Choose a version');
+    for (var i = 0; i < 100; i++) {
+      if (find.byType(screen).evaluate().isNotEmpty) return true;
+      if (picker.evaluate().isNotEmpty) {
+        await press(tester, LogicalKeyboardKey.enter);
+        await wait(tester, 600);
+      } else {
+        await wait(tester, 200);
+      }
+    }
+    debugPrint('Écran $screen pas ouvert');
+    return false;
+  }
+
+  /// Attend la fin des chargements visibles, au plus [seconds].
+  Future<void> settle(WidgetTester tester, int seconds) async {
+    final loading = find.text('Loading');
+    for (var i = 0; i < seconds * 2 && loading.evaluate().isNotEmpty; i++) {
+      await wait(tester, 500);
+    }
   }
 
   /// Ferme tout ce qui est ouvert au-dessus des onglets : fiches, lecteur ou
@@ -222,6 +240,7 @@ void main() {
       )).items;
     });
     final seriesHit = pick(seriesHits, ContentKind.series, seriesTitle);
+    debugPrint('Série : ${seriesHit?.title ?? 'introuvable'}');
     if (seriesHit != null) {
       Series? series;
       await tester.runAsync(() async {
@@ -230,7 +249,7 @@ void main() {
       if (series != null) {
         openSeries(home, ref, series!).ignore();
         if (await openPast(tester, MediaDetailScreen)) {
-          await wait(tester, 8000);
+          await wait(tester, 10000);
           await shot(tester, '02_series');
         }
         await backToTabs(tester, home);
@@ -252,6 +271,7 @@ void main() {
       movieHit = pick(hits, ContentKind.movie, title);
       if (movieHit != null) break;
     }
+    debugPrint('Film : ${movieHit?.title ?? 'introuvable'}');
     if (movieHit != null) {
       Movie? movie;
       await tester.runAsync(() async {
@@ -260,7 +280,7 @@ void main() {
       if (movie != null) {
         openMovie(home, ref, movie!).ignore();
         if (await openPast(tester, MovieDetailScreen)) {
-          await wait(tester, 8000);
+          await wait(tester, 10000);
           await shot(tester, '03_movie');
           // Lecture : le bouton Lire a le focus.
           await press(tester, LogicalKeyboardKey.enter);
@@ -347,7 +367,9 @@ void main() {
     // Mode Performance : les mêmes écrans, sans flou ni animation.
     await settings((current) => current.copyWith(performanceMode: true));
     container.read(currentTabProvider.notifier).show(AppTab.home);
-    await wait(tester, 15000);
+    await wait(tester, 3000);
+    await settle(tester, 120);
+    await wait(tester, 12000);
     await shot(tester, '07_performance');
   });
 }

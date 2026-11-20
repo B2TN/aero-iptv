@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 
 import '../tokens/aero_look.dart';
@@ -64,9 +66,37 @@ class ArtBackdrop extends StatefulWidget {
   State<ArtBackdrop> createState() => _ArtBackdropState();
 }
 
+/// Une image large qui n'est pas affichée après ce délai laisse sa place à la
+/// suivante : un serveur d'images lent ne laisse pas la fiche vide.
+const Duration _patience = Duration(seconds: 5);
+
 class _ArtBackdropState extends State<ArtBackdrop> {
   /// Images qui n'ont pas pu s'afficher : la suivante les remplace.
   final Set<String> _failed = {};
+
+  /// Image attendue, et le délai qui la remplacera si elle tarde.
+  String? _awaited;
+  Timer? _patienceTimer;
+
+  @override
+  void dispose() {
+    _patienceTimer?.cancel();
+    super.dispose();
+  }
+
+  /// Lance l'attente de [url], si ce n'est pas déjà elle qu'on attend.
+  void _await(String url) {
+    if (_awaited == url) return;
+    _awaited = url;
+    _patienceTimer?.cancel();
+    _patienceTimer = Timer(_patience, () {
+      if (mounted && _awaited == url) setState(() => _failed.add(url));
+    });
+  }
+
+  void _shown(String url) {
+    if (_awaited == url) _patienceTimer?.cancel();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,6 +112,7 @@ class _ArtBackdropState extends State<ArtBackdrop> {
     final wide = widget.imageUrls
         .where((url) => !_failed.contains(url))
         .firstOrNull;
+    if (wide != null) _await(wide);
     final poster = posterUrl;
     if (wide == null && poster == null) return const SizedBox.shrink();
     final performance = AeroLook.of(context).isPerformance;
@@ -103,6 +134,7 @@ class _ArtBackdropState extends State<ArtBackdrop> {
               alignment: Alignment.topCenter,
               placeholder: const SizedBox.shrink(),
               fadeIn: true,
+              onShown: () => _shown(wide),
               onError: () {
                 if (mounted) setState(() => _failed.add(wide));
               },
