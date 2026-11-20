@@ -1,9 +1,15 @@
-/// Ce que la playlist dit d'un film ou d'une série : résumé, genre et durée.
+/// Ce que la playlist dit d'un film ou d'une série : résumé, genre, durée et
+/// image large.
 ///
 /// Tous les champs sont facultatifs : beaucoup de playlists n'en donnent aucun,
 /// et une playlist M3U jamais.
 final class TitleDetails {
-  const TitleDetails({this.overview, this.genre, this.runtime});
+  const TitleDetails({
+    this.overview,
+    this.genre,
+    this.runtime,
+    this.backdropUrl,
+  });
 
   /// Aucune information connue.
   static const TitleDetails none = TitleDetails();
@@ -16,5 +22,12 @@ final class TitleDetails {
   /// Durée d'un film, ou d'un épisode type pour une série.
   final Duration? runtime;
 
-  bool get isEmpty => overview == null && genre == null && runtime == null;
+  /// Image large du titre, au format 16:9, fond de sa fiche.
+  final String? backdropUrl;
+
+  bool get isEmpty =>
+      overview == null &&
+      genre == null &&
+      runtime == null &&
+      backdropUrl == null;
 }

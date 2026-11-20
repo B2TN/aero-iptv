@@ -276,6 +276,25 @@ void main() {
       }
     });
 
+    test('garde la première image large qui soit une adresse web', () {
+      expect(
+        XtreamTitleInfo.fromJson({
+          'backdrop_path': ['', 'ftp://x/a.jpg', 'https://img.example/b.jpg'],
+        }).backdropUrl,
+        'https://img.example/b.jpg',
+      );
+      expect(
+        XtreamTitleInfo.fromJson({
+          'backdrop_path': 'http://img.example/c.jpg',
+        }).backdropUrl,
+        'http://img.example/c.jpg',
+      );
+      expect(
+        XtreamTitleInfo.fromJson({'backdrop_path': []}).backdropUrl,
+        isNull,
+      );
+    });
+
     test('accepte un bloc vide ou absent', () {
       expect(XtreamTitleInfo.fromJson(<Object?>[]).overview, isNull);
       expect(XtreamTitleInfo.fromJson(null).genre, isNull);

@@ -24,6 +24,13 @@ const List<String> _progressColumns = [
 /// Ramène une base neuve au schéma de [version] : sans les favoris avant la
 /// version 5, sans les colonnes de résumés avant la version 4.
 Future<void> _downgrade(AppDatabase database, int version) async {
+  if (version < 14) {
+    for (final table in ['movies', 'series_entries']) {
+      await database.customStatement(
+        'ALTER TABLE $table DROP COLUMN backdrop_url',
+      );
+    }
+  }
   if (version < 13) {
     await database.customStatement(
       'ALTER TABLE sources DROP COLUMN last_sync_report',
@@ -139,6 +146,36 @@ void main() {
     expect(tables, isEmpty);
     expect(version.read<int>('user_version'), after.schemaVersion);
   });
+
+  test(
+    'la version 14 ajoute les images larges et redemande les fiches ouvertes',
+    () async {
+      final before = AppDatabase(NativeDatabase(file));
+      await before.customSelect('SELECT 1').get();
+      await _downgrade(before, 13);
+      await before.customStatement(
+        "INSERT INTO movies (catalog_id, raw_title, display_title, title_key, "
+        "content_key, sort_order, overview, details_loaded) "
+        "VALUES (1, 'Dune', 'Dune', 'dune', 'x:m:1', 0, 'Arrakis.', TRUE)",
+      );
+      await before.close();
+
+      final after = AppDatabase(NativeDatabase(file));
+      expect(await _columnsOf(after, 'movies'), contains('backdrop_url'));
+      expect(
+        await _columnsOf(after, 'series_entries'),
+        contains('backdrop_url'),
+      );
+      final movie = await after
+          .customSelect('SELECT overview, details_loaded FROM movies')
+          .getSingle();
+      await after.close();
+
+      // Le résumé reste affiché en attendant que la fiche soit redemandée.
+      expect(movie.read<String>('overview'), 'Arrakis.');
+      expect(movie.read<bool>('details_loaded'), isFalse);
+    },
+  );
 
   test('la version 4 ajoute les résumés sans toucher au catalogue', () async {
     final before = AppDatabase(NativeDatabase(file));

@@ -99,7 +99,9 @@ CREATE TABLE movies (
   tmdb_id TEXT,
   -- Qualité annoncée par le titre (`StreamQuality`) : elle distingue deux
   -- versions d'une même langue.
-  quality INTEGER NOT NULL DEFAULT 0
+  quality INTEGER NOT NULL DEFAULT 0,
+  -- Image large de la fiche, demandée avec le résumé.
+  backdrop_url TEXT
 ) AS MovieRow;
 
 CREATE INDEX movies_browse ON movies (catalog_id, sort_order);
@@ -135,7 +137,9 @@ CREATE TABLE series_entries (
   -- nouvelle valeur signale de nouveaux épisodes.
   last_modified INTEGER,
   -- Empreinte de l'objet du fournisseur, comme pour un film.
-  source_hash INTEGER
+  source_hash INTEGER,
+  -- Image large de la fiche, demandée avec le résumé.
+  backdrop_url TEXT
 ) AS SeriesEntryRow;
 
 CREATE INDEX series_browse ON series_entries (catalog_id, grouping_key);
@@ -374,13 +378,13 @@ episodesForEntry:
 saveMovieDetails:
   UPDATE movies
   SET overview = :overview, genre = :genre, runtime_minutes = :runtime_minutes,
-      details_loaded = TRUE
+      backdrop_url = :backdrop_url, details_loaded = TRUE
   WHERE id = :id;
 
 saveSeriesDetails:
   UPDATE series_entries
   SET overview = :overview, genre = :genre, runtime_minutes = :runtime_minutes,
-      details_loaded = TRUE
+      backdrop_url = :backdrop_url, details_loaded = TRUE
   WHERE id = :id;
 
 saveEpisodeOverview:

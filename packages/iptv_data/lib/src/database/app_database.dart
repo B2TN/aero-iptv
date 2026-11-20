@@ -18,7 +18,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   /// Retrouve, dans le catalogue actif, l'identité commune aux versions des
   /// reprises enregistrées avant qu'elle n'existe. Une reprise dont le
@@ -234,6 +234,19 @@ class AppDatabase extends _$AppDatabase {
       if (from < 13) {
         // Relevé de la dernière synchronisation.
         await migrator.addColumn(sources, sources.lastSyncReport);
+      }
+      if (from < 14) {
+        // Images larges des fiches : les fiches déjà ouvertes les demandent
+        // à leur prochaine ouverture, avec leur résumé.
+        await migrator.addColumn(movies, movies.backdropUrl);
+        await migrator.addColumn(seriesEntries, seriesEntries.backdropUrl);
+        await customStatement(
+          'UPDATE movies SET details_loaded = FALSE WHERE details_loaded',
+        );
+        await customStatement(
+          'UPDATE series_entries SET details_loaded = FALSE '
+          'WHERE details_loaded',
+        );
       }
     },
   );

@@ -259,7 +259,12 @@ final class CatalogRepositoryImpl implements CatalogRepository {
     if (row == null) return TitleDetails.none;
     final streamId = row.xtreamStreamId;
     if (row.detailsLoaded || streamId == null) {
-      return _details(row.overview, row.genre, row.runtimeMinutes);
+      return _details(
+        row.overview,
+        row.genre,
+        row.runtimeMinutes,
+        row.backdropUrl,
+      );
     }
     final info = await (await _api(sourceId)).movieInfo(streamId);
     await _db.saveMovieDetails(
@@ -267,8 +272,14 @@ final class CatalogRepositoryImpl implements CatalogRepository {
       overview: info.overview,
       genre: info.genre,
       runtimeMinutes: info.runtimeMinutes,
+      backdropUrl: info.backdropUrl,
     );
-    return _details(info.overview, info.genre, info.runtimeMinutes);
+    return _details(
+      info.overview,
+      info.genre,
+      info.runtimeMinutes,
+      info.backdropUrl,
+    );
   }
 
   @override
@@ -280,7 +291,12 @@ final class CatalogRepositoryImpl implements CatalogRepository {
         .seriesEntryById(id: seriesEntryId)
         .getSingleOrNull();
     if (entry == null) return TitleDetails.none;
-    return _details(entry.overview, entry.genre, entry.runtimeMinutes);
+    return _details(
+      entry.overview,
+      entry.genre,
+      entry.runtimeMinutes,
+      entry.backdropUrl,
+    );
   }
 
   /// Vrai pour une série Xtream dont le résumé n'a pas encore été demandé.
@@ -365,6 +381,7 @@ final class CatalogRepositoryImpl implements CatalogRepository {
         overview: series.info.overview,
         genre: series.info.genre,
         runtimeMinutes: series.info.runtimeMinutes,
+        backdropUrl: series.info.backdropUrl,
       );
     });
   }
@@ -381,10 +398,12 @@ final class CatalogRepositoryImpl implements CatalogRepository {
     String? overview,
     String? genre,
     int? runtimeMinutes,
+    String? backdropUrl,
   ) => TitleDetails(
     overview: overview,
     genre: genre,
     runtime: runtimeMinutes == null ? null : Duration(minutes: runtimeMinutes),
+    backdropUrl: backdropUrl,
   );
 
   @override

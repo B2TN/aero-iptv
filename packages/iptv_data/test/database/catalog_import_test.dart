@@ -908,7 +908,11 @@ void main() {
           asked.add(request.url.queryParameters['vod_id']);
           return http.Response(
             jsonEncode({
-              'info': {'plot': 'Paul rejoint Arrakis.', 'duration_secs': 9300},
+              'info': {
+                'plot': 'Paul rejoint Arrakis.',
+                'duration_secs': 9300,
+                'backdrop_path': ['https://img.example/dune.jpg'],
+              },
             }),
             200,
           );
@@ -925,6 +929,8 @@ void main() {
       expect(first.overview, 'Paul rejoint Arrakis.');
       expect(first.runtime, const Duration(minutes: 155));
       expect(second.overview, first.overview);
+      // L'image large est gardée avec le résumé.
+      expect(second.backdropUrl, 'https://img.example/dune.jpg');
       expect(asked, ['31']);
     });
   });

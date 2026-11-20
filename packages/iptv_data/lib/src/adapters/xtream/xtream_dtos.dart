@@ -28,7 +28,12 @@ final class XtreamCategory {
 /// Résumé, genre et durée d'un film ou d'une série, lus dans le bloc `info`
 /// de `get_vod_info` ou de `get_series_info`.
 final class XtreamTitleInfo {
-  const XtreamTitleInfo({this.overview, this.genre, this.runtimeMinutes});
+  const XtreamTitleInfo({
+    this.overview,
+    this.genre,
+    this.runtimeMinutes,
+    this.backdropUrl,
+  });
 
   /// Lit le bloc `info`. Certains panneaux envoient une liste vide à la place
   /// d'un objet quand ils ne savent rien.
@@ -41,12 +46,30 @@ final class XtreamTitleInfo {
       runtimeMinutes: seconds != null && seconds > 0
           ? (seconds / 60).round()
           : _positive(readInt(json['episode_run_time'])),
+      backdropUrl: _backdrop(json['backdrop_path']),
     );
   }
 
   final String? overview;
   final String? genre;
   final int? runtimeMinutes;
+
+  /// Première image large annoncée, adresse web seulement.
+  final String? backdropUrl;
+
+  /// `backdrop_path` est une liste d'adresses, ou parfois une seule adresse.
+  static String? _backdrop(Object? value) {
+    final candidates = value is List ? value : [value];
+    for (final candidate in candidates) {
+      final text = readString(candidate);
+      if (text == null) continue;
+      final uri = Uri.tryParse(text);
+      if (uri != null && (uri.isScheme('http') || uri.isScheme('https'))) {
+        return text;
+      }
+    }
+    return null;
+  }
 
   static int? _positive(int? value) =>
       value != null && value > 0 ? value : null;
