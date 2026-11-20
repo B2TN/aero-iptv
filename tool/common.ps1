@@ -63,14 +63,20 @@ function Get-AppVersion {
     return $line.Matches[0].Groups[1].Value
 }
 
-# Injecte les clés de services si elles sont renseignées, et la version, que
-# l'application compare à celles publiées sur GitHub.
+# Injecte la version, que l'application compare à celles publiées sur GitHub,
+# et le jeton de lecture TMDB s'il est renseigné. Seul ce jeton part dans les
+# binaires : config\secrets.json peut contenir d'autres clés, comme celle de
+# DeepL, qui ne doivent jamais être publiées avec l'application.
 function Get-SecretArguments {
     $arguments = @("--dart-define=AERO_VERSION=$(Get-AppVersion)")
+    $token = $null
     if (Test-Path $SecretsFile) {
-        $arguments += "--dart-define-from-file=$SecretsFile"
+        $token = (Get-Content $SecretsFile -Raw | ConvertFrom-Json).TMDB_READ_TOKEN
+    }
+    if ($token) {
+        $arguments += "--dart-define=TMDB_READ_TOKEN=$token"
     } else {
-        Write-Warning 'config\secrets.json absent : tendances TMDb et clé DeepL de compilation désactivées.'
+        Write-Warning 'Jeton TMDB absent de config\secrets.json : tendances par les classements Apple.'
     }
     # La virgule garde le tableau : PowerShell déroulerait une liste d'un seul
     # élément en simple texte, que @secrets étalerait lettre par lettre.

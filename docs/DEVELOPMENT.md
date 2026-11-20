@@ -173,7 +173,7 @@ The DeepL key is easier to enter in **Settings**: it's encrypted there by the sy
 
 Subtitles only come from the stream: the app downloads none. A stream track already in the requested language comes first. Otherwise, the stream's track is translated line by line, preferably from English, because a track's full text is only known by playing the movie. Tracks drawn as images (PGS, VobSub, DVB) contain no text to translate.
 
-Copy `config/secrets.example.json` to `config/secrets.json` and fill in your keys: the scripts in `tool/` include them at build time. For a development run, from `app`:
+Copy `config/secrets.example.json` to `config/secrets.json` and fill in your keys. The scripts in `tool/` only include `TMDB_READ_TOKEN` in release builds: a DeepL key in that file stays on your machine and is never shipped. For a development run, from `app`:
 
 ```bash
 flutter run -d windows --dart-define-from-file=../config/secrets.json
