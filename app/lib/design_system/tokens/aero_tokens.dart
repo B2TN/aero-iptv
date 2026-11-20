@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 
-/// Palette Frutiger Aero : un ciel de jour qui s'assombrit vers le bas, du verre
-/// clair, et un vert d'herbe réservé à l'action principale.
+/// Palette Frutiger Aero : un bleu profond traversé de lumière, du verre clair,
+/// et un vert d'herbe réservé à l'action principale.
 abstract final class AeroColors {
   /// Bleu du ciel, couleur de la marque.
   static const Color lagoon = Color(0xFF1F6FC5);
@@ -26,7 +26,7 @@ abstract final class AeroColors {
   static const Color progressStart = Color(0xFF7ADF5A);
   static const Color progressEnd = Color(0xFF3AA2F2);
 
-  /// Fond des surfaces sombres, sous le texte : bas du paysage.
+  /// Fond des surfaces sombres, sous le texte : bas de l'aurore.
   static const Color night = Color(0xFF020D1C);
 }
 
@@ -35,11 +35,12 @@ abstract final class AeroAssets {
   /// Échelle des textures de l'interface.
   static const double scale = 2;
 
-  static const String sky = 'assets/aero/backgrounds/sky.jpg';
+  /// Aurore du fond : rubans de lumière sur un bleu profond.
+  static const String background = 'assets/aero/backgrounds/aurora.jpg';
 
-  /// Bande de nuages qui défile, à demi-résolution.
-  static const String clouds = 'assets/aero/backgrounds/clouds.png';
-  static const Size cloudBand = Size(2400, 460);
+  /// Points de lumière qui dérivent devant l'aurore, à demi-résolution.
+  static const String motes = 'assets/aero/backgrounds/motes.png';
+  static const Size motesBand = Size(2400, 1080);
   static const String focusHalo = 'assets/aero/focus/focus_halo.png';
   static const String focusPill = 'assets/aero/focus/focus_pill.png';
   static const String cardFrame = 'assets/aero/chrome/card_frame.png';

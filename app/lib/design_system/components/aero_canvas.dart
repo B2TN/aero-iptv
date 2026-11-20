@@ -43,7 +43,7 @@ class AeroScale extends StatelessWidget {
   );
 }
 
-/// Écran complet : le paysage du fond, puis le canevas.
+/// Écran complet : l'aurore du fond, puis le canevas.
 class AeroCanvas extends StatelessWidget {
   const AeroCanvas({required this.child, super.key});
 
@@ -60,15 +60,15 @@ class AeroCanvas extends StatelessWidget {
   );
 }
 
-/// Paysage du fond : un ciel, un soleil bas et des collines qui s'assombrissent
-/// vers le bas. En mode Aero, des nuages passent lentement et la lumière du
-/// soleil respire ; en mode Performance, l'image reste immobile, décodée en
-/// plus petit.
+/// Aurore du fond : un bleu profond, une grande lumière en haut à droite et des
+/// rubans de lumière, plus sombre vers le bas. En mode Aero, des points de
+/// lumière dérivent lentement et la grande lumière respire ; en mode
+/// Performance, l'image reste immobile, décodée en plus petit.
 class AeroSky extends StatelessWidget {
   const AeroSky({super.key});
 
-  /// Largeur de décodage du mode Performance : le paysage est flou, il
-  /// supporte d'être agrandi, et pèse quatre fois moins en mémoire.
+  /// Largeur de décodage du mode Performance : l'aurore est douce, elle
+  /// supporte d'être agrandie, et pèse quatre fois moins en mémoire.
   static const int _performanceWidth = 960;
 
   @override
@@ -78,7 +78,7 @@ class AeroSky extends StatelessWidget {
       image: ResizeImage.resizeIfNeeded(
         performance ? _performanceWidth : null,
         null,
-        const AssetImage(AeroAssets.sky),
+        const AssetImage(AeroAssets.background),
       ),
       fit: BoxFit.cover,
       gaplessPlayback: true,
@@ -95,23 +95,20 @@ class AeroSky extends StatelessWidget {
   }
 }
 
-/// Part de la hauteur de l'écran occupée par la bande de nuages.
-const double _bandShare = 460 / 1080;
-
-/// Une boucle complète de la bande de nuages, en secondes : un défilement que
+/// Une boucle complète des points de lumière, en secondes : un défilement que
 /// l'on remarque à peine.
 const double _loopSeconds = 420;
 
-/// Respiration de la lumière du soleil, en secondes.
+/// Respiration de la grande lumière, en secondes.
 const double _breathSeconds = 14;
 
 /// Cadence des mouvements : bien plus lente que l'écran. Chaque pas redessine
-/// l'écran, et les nuages vont si lentement que l'œil n'y voit pas de saccade.
+/// l'écran, et les points vont si lentement que l'œil n'y voit pas de saccade.
 const Duration _step = Duration(milliseconds: 66);
 
-/// Nuages qui défilent et lueur du soleil. Ils s'arrêtent quand l'écran est
-/// caché, par exemple sous le lecteur, ou quand l'application passe en
-/// arrière-plan.
+/// Points de lumière qui dérivent et grande lumière qui respire. Ils
+/// s'arrêtent quand l'écran est caché, par exemple sous le lecteur, ou quand
+/// l'application passe en arrière-plan.
 class _Motion extends StatefulWidget {
   const _Motion({required this.still});
 
@@ -123,8 +120,8 @@ class _Motion extends StatefulWidget {
 }
 
 class _MotionState extends State<_Motion> {
-  /// Horloge commune à tous les écrans : une fiche ouverte montre les nuages
-  /// là où l'accueil les laissait.
+  /// Horloge commune à tous les écrans : une fiche ouverte montre les points
+  /// de lumière là où l'accueil les laissait.
   static final Stopwatch _clock = Stopwatch()..start();
 
   /// Temps de l'horloge, en secondes, partagé par les deux mouvements.
@@ -182,8 +179,8 @@ class _MotionState extends State<_Motion> {
   Widget build(BuildContext context) => IgnorePointer(
     child: LayoutBuilder(
       builder: (context, constraints) {
-        final height = constraints.maxHeight * _bandShare;
-        final width = height * AeroAssets.cloudBand.aspectRatio;
+        final height = constraints.maxHeight;
+        final width = height * AeroAssets.motesBand.aspectRatio;
         final tiles = (constraints.maxWidth / width).ceil() + 1;
         return Stack(
           fit: StackFit.expand,
@@ -201,19 +198,15 @@ class _MotionState extends State<_Motion> {
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: RadialGradient(
-                      center: Alignment(0.54, 0.18),
-                      radius: 0.62,
-                      colors: [Color(0x47FFF6DC), Color(0x00FFF6DC)],
+                      center: Alignment(0.5, -0.69),
+                      radius: 0.7,
+                      colors: [Color(0x4DBFEFFF), Color(0x00BFEFFF)],
                     ),
                   ),
                 ),
               ),
             ),
-            Positioned(
-              left: 0,
-              right: 0,
-              top: constraints.maxHeight * 0.02,
-              height: height,
+            Positioned.fill(
               child: ClipRect(
                 child: OverflowBox(
                   alignment: Alignment.centerLeft,
@@ -231,7 +224,7 @@ class _MotionState extends State<_Motion> {
                         children: [
                           for (var i = 0; i < tiles; i++)
                             Image(
-                              image: const AssetImage(AeroAssets.clouds),
+                              image: const AssetImage(AeroAssets.motes),
                               width: width,
                               height: height,
                               fit: BoxFit.fill,
