@@ -45,6 +45,10 @@ const int _addedPerDay = 400;
 /// sert pas, mais le texte de chaque objet change.
 var _volatile = 0;
 
+/// Jour où une série sur mille reçoit un épisode : sa date de modification
+/// change.
+var _seriesDay = 0;
+
 const XtreamCredentials _credentials = XtreamCredentials(
   serverUrl: 'http://panel.example:8080',
   username: 'essai',
@@ -96,6 +100,7 @@ Map<String, Object?> _show(int i) {
     'genre': 'Drame',
     'releaseDate': '${1990 + title % 35}-01-01',
     'tmdb': '$title',
+    'last_modified': '${1700000000 + (i % 1000 == 0 ? _seriesDay : 0)}',
     'rating': '${7 + _volatile / 10}',
     'backdrop_path': ['http://image.example/b$title.jpg'],
     'category_id': '${i % _categories}',
@@ -203,6 +208,20 @@ void main() {
               .read<int>('n');
       final importedSheets = await sheetCount();
 
+      /// Étapes de la dernière synchronisation, d'après son relevé.
+      Future<String> steps() async {
+        final source = (await PlaylistRepositoryImpl(
+          db,
+          vault,
+        ).watchSources().first).single;
+        return [
+          for (final step in source.lastSyncReport!.steps)
+            '  ${step.phase.name.padRight(12)} '
+                '${step.duration.inMilliseconds} ms '
+                '(${step.received} reçus, ${step.changed} modifiés)',
+        ].join('\n');
+      }
+
       Future<Duration> sync() async {
         final clock = Stopwatch()..start();
         await CatalogImportPipeline(
@@ -248,6 +267,11 @@ void main() {
       ]);
       await db.customStatement('UPDATE sources SET hash_version = 1');
       final transitionSync = await sync();
+      final transitionSteps = await steps();
+      // Un jour ordinaire où quelques séries reçoivent des épisodes.
+      _seriesDay = 1;
+      final seriesSync = await sync();
+      final seriesSteps = await steps();
       // Un catalogue laissé par une version d'avant les empreintes.
       await db.customStatement('UPDATE movies SET source_hash = NULL');
       await db.customStatement('UPDATE series_entries SET source_hash = NULL');
@@ -315,6 +339,10 @@ void main() {
         '${volatileSync.inMilliseconds / 1000} s\n'
         'Synchronisation de passage aux nouvelles empreintes : '
         '${transitionSync.inMilliseconds / 1000} s\n'
+        '$transitionSteps\n'
+        'Synchronisation avec ${_series ~/ 1000} séries modifiées : '
+        '${seriesSync.inMilliseconds / 1000} s\n'
+        '$seriesSteps\n'
         'Fiches de films : $importedSheets, puis $sheets\n'
         'Synchronisation après mise à jour : ${upgradeSync.inSeconds} s\n'
         'Pic RSS : ${peak ~/ _mebibyte} Mio\n'
