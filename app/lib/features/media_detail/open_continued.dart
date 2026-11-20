@@ -39,7 +39,11 @@ Future<void> openContinued(
               sourceId: item.sourceId,
               series: found.$1,
               seriesEntryId: found.$2.seriesEntryId,
-              resume: (episode: found.$2, position: item.position),
+              // Vu jusqu'au bout : rien à reprendre, la saison suffit.
+              resume: item.finished
+                  ? null
+                  : (episode: found.$2, position: item.position),
+              season: found.$2.season,
             ),
     ),
     ContentKind.live => null,

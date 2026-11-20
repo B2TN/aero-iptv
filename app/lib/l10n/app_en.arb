@@ -259,5 +259,8 @@
   "tutorialAddKey": "Add a DeepL key",
   "tutorialSyncTitle": "Sync and updates",
   "tutorialSyncBody": "Your playlist updates every day, never during playback.\nWhen a new version of Aero IPTV comes out, a banner tells you.\nAll these settings, and this tutorial, are in Settings.",
-  "settingsTutorial": "Show the tutorial again"
+  "settingsTutorial": "Show the tutorial again",
+  "homeNextEpisodeIn": "{days, plural, =0{Next episode today} =1{Next episode tomorrow} other{Next episode in {days} days}}",
+  "homeNextEpisodeOn": "Next episode on {date}",
+  "homeNextEpisodeAired": "Episode aired, coming to the playlist soon"
 }

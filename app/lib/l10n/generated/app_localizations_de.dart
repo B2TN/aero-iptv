@@ -910,4 +910,24 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsTutorial => 'Anleitung erneut ansehen';
+
+  @override
+  String homeNextEpisodeIn(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Nächste Folge in $days Tagen',
+      one: 'Nächste Folge morgen',
+      zero: 'Nächste Folge heute',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String homeNextEpisodeOn(String date) {
+    return 'Nächste Folge am $date';
+  }
+
+  @override
+  String get homeNextEpisodeAired => 'Folge ausgestrahlt, bald in der Playlist';
 }

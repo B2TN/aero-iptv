@@ -158,11 +158,13 @@ Future<void> showSeriesMenu(
 }
 
 /// Menu d'un élément de « Continuer à regarder ». [onRemoved] suit son retrait.
+/// Une série à jour ([caughtUp]) n'a rien à reprendre.
 Future<void> showContinueMenu(
   BuildContext context,
   WidgetRef ref,
   WatchProgress item, {
   required VoidCallback onRemoved,
+  bool caughtUp = false,
 }) async {
   final l10n = context.l10n;
   final catalog = ref.read(catalogRepositoryProvider);
@@ -200,11 +202,13 @@ Future<void> showContinueMenu(
   if (!context.mounted) return;
   final target = PlayerTarget.resume(item);
   await _run(context, item.title, [
-    (label: l10n.homeResume, run: () => openPlayer(context, target)),
-    (
-      label: l10n.homeRestart,
-      run: () => openPlayer(context, target.resumingAt(Duration.zero)),
-    ),
+    if (!caughtUp) ...[
+      (label: l10n.homeResume, run: () => openPlayer(context, target)),
+      (
+        label: l10n.homeRestart,
+        run: () => openPlayer(context, target.resumingAt(Duration.zero)),
+      ),
+    ],
     (label: l10n.menuOpenPage, run: () => openContinued(context, ref, item)),
     if (owner != null)
       (

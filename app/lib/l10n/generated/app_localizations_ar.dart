@@ -905,4 +905,26 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get settingsTutorial => 'إعادة عرض الدليل';
+
+  @override
+  String homeNextEpisodeIn(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'الحلقة التالية بعد $days يومًا',
+      few: 'الحلقة التالية بعد $days أيام',
+      two: 'الحلقة التالية بعد يومين',
+      one: 'الحلقة التالية غدًا',
+      zero: 'الحلقة التالية اليوم',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String homeNextEpisodeOn(String date) {
+    return 'الحلقة التالية في $date';
+  }
+
+  @override
+  String get homeNextEpisodeAired => 'حلقة بُثّت، تصل قريبًا إلى القائمة';
 }

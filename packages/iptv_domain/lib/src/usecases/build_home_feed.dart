@@ -80,7 +80,8 @@ final class BuildHomeFeed {
       hero: hero.isNotEmpty
           ? hero.take(_heroSize).toList(growable: false)
           : _heroFromCatalog(seriesRow, movieRow),
-      continueWatching: continueWatching,
+      continueWatching: continueWatching.items,
+      caughtUp: continueWatching.caughtUp,
       series: seriesRow,
       movies: movieRow,
     );

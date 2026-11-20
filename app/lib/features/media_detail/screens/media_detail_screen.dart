@@ -82,6 +82,7 @@ class MediaDetailScreen extends ConsumerStatefulWidget {
     required this.series,
     required this.seriesEntryId,
     this.resume,
+    this.season,
     super.key,
   });
 
@@ -94,6 +95,9 @@ class MediaDetailScreen extends ConsumerStatefulWidget {
   /// Ouverte depuis « Continuer à regarder » : la fiche propose de reprendre
   /// dès la première image, le bouton a le focus.
   final EpisodeResume? resume;
+
+  /// Saison montrée à l'ouverture, à défaut de reprise.
+  final int? season;
 
   @override
   ConsumerState<MediaDetailScreen> createState() => _MediaDetailScreenState();
@@ -118,7 +122,7 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
   int? _season;
 
   /// Saison à rouvrir après un changement de version.
-  int? _wantedSeason;
+  late int? _wantedSeason = widget.season;
 
   /// Les épisodes ne prennent le focus qu'à l'ouverture. Quand l'utilisateur
   /// change de saison, le focus reste sur elle : il va lui-même vers ses

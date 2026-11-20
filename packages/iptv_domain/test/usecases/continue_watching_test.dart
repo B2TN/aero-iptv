@@ -106,8 +106,8 @@ WatchProgress _movie(
 );
 
 /// L'historique arrive du plus récent au plus ancien.
-Future<List<WatchProgress>> _row(List<WatchProgress> history) =>
-    ContinueWatching(_History(history), _Catalog())(1);
+Future<List<WatchProgress>> _row(List<WatchProgress> history) async =>
+    (await ContinueWatching(_History(history), _Catalog())(1)).items;
 
 void main() {
   test('une seule entrée par série, sur l épisode le plus avancé', () async {
@@ -144,10 +144,29 @@ void main() {
     expect(entry.finished, isFalse);
   });
 
-  test('après le dernier épisode disponible, la série disparaît', () async {
-    final row = await _row([_watched(1, 3, minute: 5, finished: true)]);
+  test('après le dernier épisode disponible, la série est à jour', () async {
+    final row = await ContinueWatching(
+      _History([
+        _watched(1, 2, minute: 4, finished: true),
+        _watched(1, 3, minute: 5, finished: true),
+      ]),
+      _Catalog(),
+    )(1);
 
-    expect(row, isEmpty);
+    expect(row.items, isEmpty);
+    final caughtUp = row.caughtUp.single;
+    expect(caughtUp.progress.episode, 3);
+    expect(caughtUp.series.title, 'Abysses');
+  });
+
+  test('un épisode en cours n est pas une série à jour', () async {
+    final row = await ContinueWatching(
+      _History([_watched(1, 3, minute: 5)]),
+      _Catalog(),
+    )(1);
+
+    expect(row.items.single.episode, 3);
+    expect(row.caughtUp, isEmpty);
   });
 
   test('les versions d un film ne font qu une entrée', () async {

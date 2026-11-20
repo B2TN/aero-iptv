@@ -1,13 +1,16 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:iptv_domain/iptv_domain.dart';
 
 import '../../../app/app_state.dart';
+import '../../../app/daily_sync.dart';
 import '../../../app/di/repository_providers.dart';
 import '../../../design_system/components/poster_image.dart';
 import '../../../design_system/components/progress_track.dart';
 import '../../../design_system/tokens/aero_look.dart';
 import '../../../design_system/tokens/aero_tokens.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../../l10n/version_names.dart';
 import '../../player/playback_time.dart';
 
@@ -63,6 +66,24 @@ final continueInfoProvider = FutureProvider.autoDispose
       }
     });
 
+/// Quand arrive le prochain épisode : dans un mois au plus, en jours, sinon à
+/// sa date. Déjà diffusé, il est attendu dans la playlist.
+String nextEpisodeLabel(AppLocalizations l10n, DateTime airDate, DateTime now) {
+  final days =
+      (DateTime(
+                airDate.year,
+                airDate.month,
+                airDate.day,
+              ).difference(DateTime(now.year, now.month, now.day)).inHours /
+              24)
+          .round();
+  if (days < 0) return l10n.homeNextEpisodeAired;
+  if (days <= 30) return l10n.homeNextEpisodeIn(days);
+  return l10n.homeNextEpisodeOn(
+    DateFormat.MMMMd(l10n.localeName).format(airDate),
+  );
+}
+
 /// Carte de « Continuer à regarder », sur deux emplacements : l'affiche à
 /// gauche ; à droite le titre, l'épisode, la version regardée, le temps vu
 /// sur la durée et sa barre.
@@ -70,12 +91,17 @@ class ContinueCard extends ConsumerWidget {
   const ContinueCard({
     required this.item,
     required this.focused,
+    this.next,
     this.progressColor = AeroColors.progressStart,
     super.key,
   });
 
   final WatchProgress item;
   final bool focused;
+
+  /// Série à jour : son prochain épisode annoncé, montré à la place de la
+  /// reprise.
+  final UpcomingEpisode? next;
   final Color progressColor;
 
   @override
@@ -91,8 +117,11 @@ class ContinueCard extends ConsumerWidget {
           )),
         )
         .value;
-    final season = item.season;
-    final number = item.episode;
+    final next = this.next;
+    final season = next?.season ?? item.season;
+    final number = next?.number ?? item.episode;
+    // Le titre de l'épisode vu ne vaut pas pour celui qui l'attend.
+    final episodeTitle = next == null ? info?.episodeTitle : next.title;
     final version = info?.version;
     // Un libellé sans langue reconnue serait le titre brut du fournisseur.
     final versionLabel = version != null && isProviderLabel(version)
@@ -104,7 +133,7 @@ class ContinueCard extends ConsumerWidget {
           )
         : null;
     // Un épisode suivant pas encore commencé n'a ni position ni durée.
-    final started = item.duration > Duration.zero;
+    final started = next == null && item.duration > Duration.zero;
     final caption = AeroText.caption.copyWith(shadows: const []);
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -155,7 +184,7 @@ class ContinueCard extends ConsumerWidget {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      if (info?.episodeTitle case final title?)
+                      if (episodeTitle case final title?)
                         Text(
                           title,
                           style: caption.copyWith(color: AeroColors.foam),
@@ -173,14 +202,29 @@ class ContinueCard extends ConsumerWidget {
                       ),
                     ],
                     const Spacer(),
-                    Text(
-                      started
-                          ? '${formatPlaybackTime(item.position)} / '
-                                '${formatPlaybackTime(item.duration)}'
-                          : l10n.homeUpNext,
-                      style: caption.copyWith(color: AeroColors.foam),
-                      maxLines: 1,
-                    ),
+                    if (next != null)
+                      Text(
+                        nextEpisodeLabel(
+                          l10n,
+                          next.airDate,
+                          ref.read(clockProvider)(),
+                        ),
+                        style: caption.copyWith(
+                          color: AeroColors.aqua,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      )
+                    else
+                      Text(
+                        started
+                            ? '${formatPlaybackTime(item.position)} / '
+                                  '${formatPlaybackTime(item.duration)}'
+                            : l10n.homeUpNext,
+                        style: caption.copyWith(color: AeroColors.foam),
+                        maxLines: 1,
+                      ),
                     if (started) ...[
                       const SizedBox(height: 5),
                       ProgressTrack(

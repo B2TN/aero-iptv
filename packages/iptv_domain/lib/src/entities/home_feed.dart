@@ -1,3 +1,4 @@
+import 'continue_row.dart';
 import 'movie.dart';
 import 'series.dart';
 import 'watch_progress.dart';
@@ -30,10 +31,15 @@ final class HomeFeed {
     required this.continueWatching,
     required this.series,
     required this.movies,
+    this.caughtUp = const [],
   });
 
   final List<HeroItem> hero;
   final List<WatchProgress> continueWatching;
+
+  /// Séries à jour : elles suivent « Continuer à regarder » si leur suite
+  /// est annoncée.
+  final List<CaughtUpSeries> caughtUp;
   final List<Series> series;
   final List<Movie> movies;
 

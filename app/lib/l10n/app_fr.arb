@@ -386,5 +386,10 @@
   "tutorialAddKey": "Ajouter une clé DeepL",
   "tutorialSyncTitle": "Synchronisation et mises à jour",
   "tutorialSyncBody": "Votre playlist se met à jour chaque jour, jamais pendant une lecture.\nQuand une nouvelle version d'Aero IPTV sort, un bandeau le signale.\nTous ces réglages, et ce tutoriel, se retrouvent dans les Paramètres.",
-  "settingsTutorial": "Revoir le tutoriel"
+  "settingsTutorial": "Revoir le tutoriel",
+  "homeNextEpisodeIn": "{days, plural, =0{Prochain épisode aujourd'hui} =1{Prochain épisode demain} other{Prochain épisode dans {days} jours}}",
+  "@homeNextEpisodeIn": {"placeholders": {"days": {"type": "int"}}},
+  "homeNextEpisodeOn": "Prochain épisode le {date}",
+  "@homeNextEpisodeOn": {"placeholders": {"date": {"type": "String"}}},
+  "homeNextEpisodeAired": "Épisode diffusé, bientôt dans la playlist"
 }

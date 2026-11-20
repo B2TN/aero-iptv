@@ -1663,6 +1663,24 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Revoir le tutoriel'**
   String get settingsTutorial;
+
+  /// No description provided for @homeNextEpisodeIn.
+  ///
+  /// In fr, this message translates to:
+  /// **'{days, plural, =0{Prochain épisode aujourd\'hui} =1{Prochain épisode demain} other{Prochain épisode dans {days} jours}}'**
+  String homeNextEpisodeIn(int days);
+
+  /// No description provided for @homeNextEpisodeOn.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prochain épisode le {date}'**
+  String homeNextEpisodeOn(String date);
+
+  /// No description provided for @homeNextEpisodeAired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Épisode diffusé, bientôt dans la playlist'**
+  String get homeNextEpisodeAired;
 }
 
 class _AppLocalizationsDelegate

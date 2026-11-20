@@ -259,5 +259,8 @@
   "tutorialAddKey": "Añadir una clave de DeepL",
   "tutorialSyncTitle": "Sincronización y actualizaciones",
   "tutorialSyncBody": "Tu lista se actualiza cada día, nunca durante la reproducción.\nCuando sale una nueva versión de Aero IPTV, un aviso te lo indica.\nTodos estos ajustes, y este tutorial, están en Ajustes.",
-  "settingsTutorial": "Volver a ver el tutorial"
+  "settingsTutorial": "Volver a ver el tutorial",
+  "homeNextEpisodeIn": "{days, plural, =0{Próximo episodio hoy} =1{Próximo episodio mañana} other{Próximo episodio en {days} días}}",
+  "homeNextEpisodeOn": "Próximo episodio el {date}",
+  "homeNextEpisodeAired": "Episodio emitido, pronto en la lista"
 }

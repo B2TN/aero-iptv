@@ -120,6 +120,10 @@ final scheduleRepositoryProvider = Provider<ScheduleRepository>(
   (ref) => ScheduleRepositoryImpl(TvMazeClient(ref.watch(httpClientProvider))),
 );
 
+final announcedEpisodesProvider = Provider<AnnouncedEpisodes>(
+  (ref) => AnnouncedEpisodes(ref.watch(scheduleRepositoryProvider)),
+);
+
 final findMediaSegmentsProvider = Provider<FindMediaSegments>(
   (ref) => FindMediaSegments(ref.watch(segmentRepositoryProvider)),
 );

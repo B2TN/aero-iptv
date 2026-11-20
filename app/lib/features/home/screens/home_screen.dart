@@ -44,6 +44,15 @@ final homeFeedProvider = FutureProvider.autoDispose<HomeFeed?>((ref) async {
   );
 });
 
+/// Prochain épisode des séries à jour, demandé au calendrier une fois
+/// l'accueil affiché : il ne l'attend pas.
+final _announcedProvider =
+    FutureProvider.autoDispose<Map<String, UpcomingEpisode>>((ref) async {
+      final feed = await ref.watch(homeFeedProvider.future);
+      if (feed == null || feed.caughtUp.isEmpty) return const {};
+      return ref.watch(announcedEpisodesProvider)(feed.caughtUp);
+    });
+
 /// Film ou série de la rangée « Favoris », retrouvé dans le catalogue.
 typedef _FavoriteTitle = ({Movie? movie, Series? series});
 
@@ -190,6 +199,16 @@ class _HomeContent extends ConsumerWidget {
     final l10n = context.l10n;
     final favorites =
         ref.watch(_favoriteTitlesProvider).value ?? const <_FavoriteTitle>[];
+    final announced =
+        ref.watch(_announcedProvider).value ??
+        const <String, UpcomingEpisode>{};
+    // En dernier : les séries à jour dont la suite est annoncée.
+    final continued = [
+      ...feed.continueWatching,
+      for (final caughtUp in feed.caughtUp)
+        if (announced.containsKey(caughtUp.progress.groupKey))
+          caughtUp.progress,
+    ];
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -207,33 +226,33 @@ class _HomeContent extends ConsumerWidget {
                 }
               },
             ),
-          if (feed.continueWatching.isNotEmpty)
+          if (continued.isNotEmpty)
             _MediaRow(
               title: l10n.homeContinue,
               icon: AeroAssets.rowContinue,
               memoryKey: 'home.continue',
-              itemCount: feed.continueWatching.length,
-              itemKeys: [
-                for (final item in feed.continueWatching) item.groupKey,
-              ],
+              itemCount: continued.length,
+              itemKeys: [for (final item in continued) item.groupKey],
               wide: true,
               onSelect: (index) =>
-                  openContinued(context, ref, feed.continueWatching[index]),
+                  openContinued(context, ref, continued[index]),
               onLongSelect: (index) => showContinueMenu(
                 context,
                 ref,
-                feed.continueWatching[index],
+                continued[index],
+                caughtUp: announced.containsKey(continued[index].groupKey),
                 onRemoved: () => ref.invalidate(homeFeedProvider),
               ),
               itemBuilder: (context, index, focused) {
-                final item = feed.continueWatching[index];
+                final item = continued[index];
                 return ContinueCard(
                   item: item,
+                  next: announced[item.groupKey],
                   focused: focused,
                   progressColor: Color.lerp(
                     AeroColors.progressStart,
                     AeroColors.progressEnd,
-                    index / (feed.continueWatching.length - 1).clamp(1, 20),
+                    index / (continued.length - 1).clamp(1, 20),
                   )!,
                 );
               },
