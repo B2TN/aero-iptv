@@ -26,3 +26,6 @@ config/secrets.json
 **/key.properties
 *.jks
 *.keystore
+
+# Image d inspiration de la refonte : oeuvre d un tiers, jamais publiee.
+docs/inspiration.png
