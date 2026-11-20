@@ -1068,4 +1068,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get actionClose => 'Cerrar';
+
+  @override
+  String detailEpisodeTitled(int number, String title) {
+    return 'Episodio $number: $title';
+  }
 }

@@ -1903,6 +1903,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Fermer'**
   String get actionClose;
+
+  /// No description provided for @detailEpisodeTitled.
+  ///
+  /// In fr, this message translates to:
+  /// **'Épisode {number} : {title}'**
+  String detailEpisodeTitled(int number, String title);
 }
 
 class _AppLocalizationsDelegate

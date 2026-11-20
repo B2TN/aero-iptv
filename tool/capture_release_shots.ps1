@@ -8,16 +8,16 @@
 #
 # Usage, depuis la racine du projet :
 #   powershell -ExecutionPolicy Bypass -File tool\capture_release_shots.ps1
-#   powershell -ExecutionPolicy Bypass -File tool\capture_release_shots.ps1 -Version 0.2.5
+#   powershell -ExecutionPolicy Bypass -File tool\capture_release_shots.ps1 -Version 0.2.0
 #
-# Sans -Version, le code actuel ; avec -Version 0.2.5, l'étiquette v0.2.5, pour
-# les captures « avant ». Les images arrivent dans docs\captures\<version>\.
+# Sans -Version, le code actuel ; avec -Version 0.2.0, l'étiquette v0.2.0, la
+# dernière version officielle, pour les captures « avant ». Les images arrivent dans docs\captures\<version>\.
 # Titres recherchés : variables AERO_SERIES, AERO_MOVIE (plusieurs titres
 # séparés par |) et AERO_CHANNEL (expression régulière), si vous voulez
 # d'autres titres que Dexter, Dune et A&E.
 
 param(
-    [ValidateSet('current', '0.2.5')] [string] $Version = 'current'
+    [ValidateSet('current', '0.2.0')] [string] $Version = 'current'
 )
 
 . "$PSScriptRoot\common.ps1"

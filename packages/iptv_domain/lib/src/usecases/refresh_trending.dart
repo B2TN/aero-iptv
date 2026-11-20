@@ -13,13 +13,20 @@ final class RefreshTrending {
   final TrendingRepository _trending;
   final DateTime Function() _clock;
 
-  /// Actualise les tendances de [region] si elles ont plus de [maxAge], ou si
-  /// elles n'ont jamais été chargées. Vrai si elles l'ont été. Lève une
-  /// `Failure` si aucun service n'a répondu.
-  Future<bool> call(String region, {required String language}) async {
+  /// Actualise les tendances de [region] si elles ont plus de [maxAge], si
+  /// elles n'ont jamais été chargées, ou toujours avec [force], par exemple
+  /// quand la langue change : les résumés sont dans la langue demandée. Vrai si
+  /// elles l'ont été. Lève une `Failure` si aucun service n'a répondu.
+  Future<bool> call(
+    String region, {
+    required String language,
+    bool force = false,
+  }) async {
     if (!_trending.isAvailable) return false;
     final last = await _trending.refreshedAt(region);
-    if (last != null && _clock().difference(last) < maxAge) return false;
+    if (!force && last != null && _clock().difference(last) < maxAge) {
+      return false;
+    }
     await _trending.refresh(region, language: language);
     return true;
   }

@@ -7,8 +7,9 @@
 // est supprimé à la fin. Aucune capture ne montre l'éditeur de playlist, seul
 // écran où figurent l'adresse et le compte.
 //
-// Le même fichier sert à la 0.2.5 et à la 0.3 : il ne passe que par des
-// fonctions communes aux deux versions.
+// Le même fichier sert à la 0.2.0 et à la 0.3 : il ne passe que par des
+// fonctions communes aux deux versions. Le tutoriel, apparu après la 0.2.0,
+// est reconnu à son nom.
 
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -24,7 +25,6 @@ import 'package:aero_iptv/features/media_detail/open_series.dart';
 import 'package:aero_iptv/features/media_detail/screens/media_detail_screen.dart';
 import 'package:aero_iptv/features/media_detail/screens/movie_detail_screen.dart';
 import 'package:aero_iptv/features/player/screens/player_screen.dart';
-import 'package:aero_iptv/features/tutorial/tutorial_screen.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -81,6 +81,21 @@ void main() {
       await wait(tester, 200);
     }
     return false;
+  }
+
+  /// Choisit la première version si le choix s'ouvre au lieu de [screen] : un
+  /// titre en plusieurs versions le demande d'abord.
+  Future<bool> openPast(WidgetTester tester, Type screen) async {
+    if (await waitFor(tester, screen, 3)) return true;
+    await press(tester, LogicalKeyboardKey.enter);
+    return waitFor(tester, screen, 10);
+  }
+
+  /// Ferme tout ce qui est ouvert au-dessus des onglets : fiches, lecteur ou
+  /// choix restés ouverts.
+  Future<void> backToTabs(WidgetTester tester, BuildContext tabs) async {
+    Navigator.of(tabs).popUntil((route) => route.isFirst);
+    await wait(tester, 800);
   }
 
   /// Le titre le plus proche de [wanted] parmi les résultats de [kind] : le
@@ -153,12 +168,16 @@ void main() {
         );
 
     // Pas de tutoriel : l'application en anglais, directement.
-    if (await waitFor(tester, TutorialScreen, 4)) {
-      Navigator.of(tester.element(find.byType(TutorialScreen))).pop();
-    }
-    await settings(
-      (current) => current.copyWith(languageCode: 'en', tutorialDone: true),
+    final tutorial = find.byWidgetPredicate(
+      (widget) => widget.runtimeType.toString() == 'TutorialScreen',
     );
+    for (var i = 0; i < 20 && tutorial.evaluate().isEmpty; i++) {
+      await wait(tester, 200);
+    }
+    if (tutorial.evaluate().isNotEmpty) {
+      Navigator.of(tester.element(tutorial)).pop();
+    }
+    await settings((current) => current.copyWith(languageCode: 'en'));
     await wait(tester, 600);
 
     late PlaylistSource source;
@@ -210,15 +229,11 @@ void main() {
       });
       if (series != null) {
         openSeries(home, ref, series!).ignore();
-        // Plusieurs versions : le choix s'ouvre, la première convient.
-        if (!await waitFor(tester, MediaDetailScreen, 3)) {
-          await press(tester, LogicalKeyboardKey.enter);
+        if (await openPast(tester, MediaDetailScreen)) {
+          await wait(tester, 8000);
+          await shot(tester, '02_series');
         }
-        await waitFor(tester, MediaDetailScreen, 10);
-        await wait(tester, 8000);
-        await shot(tester, '02_series');
-        await press(tester, LogicalKeyboardKey.escape);
-        await wait(tester, 800);
+        await backToTabs(tester, home);
       }
     }
 
@@ -244,7 +259,7 @@ void main() {
       });
       if (movie != null) {
         openMovie(home, ref, movie!).ignore();
-        if (await waitFor(tester, MovieDetailScreen, 10)) {
+        if (await openPast(tester, MovieDetailScreen)) {
           await wait(tester, 8000);
           await shot(tester, '03_movie');
           // Lecture : le bouton Lire a le focus.
@@ -265,10 +280,7 @@ void main() {
             await wait(tester, 800);
           }
         }
-        if (find.byType(MovieDetailScreen).evaluate().isNotEmpty) {
-          await press(tester, LogicalKeyboardKey.escape);
-          await wait(tester, 800);
-        }
+        await backToTabs(tester, home);
       }
     }
 

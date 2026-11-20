@@ -83,6 +83,15 @@ class _AppShellState extends ConsumerState<AppShell> {
     ref.listenManual(settingsReadyProvider, (_, ready) {
       if (ready) unawaited(trends.check());
     }, fireImmediately: true);
+    // Nouvelle langue : les tendances sont redemandées dans cette langue.
+    ref.listenManual(
+      settingsProvider.select((settings) => settings.languageCode),
+      (previous, language) {
+        if (ref.read(settingsReadyProvider) && previous != language) {
+          unawaited(trends.check());
+        }
+      },
+    );
     ref.listenManual(
       tutorialDueProvider,
       (_, due) => _checkTutorial(due),

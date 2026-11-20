@@ -299,5 +299,6 @@
   "licensesTvMaze": "الحلقات القادمة: TVmaze (CC BY-SA 4.0).",
   "licensesSegments": "المقدمات والخاتمات: TheIntroDB وIntroDB (ODbL).",
   "licensesCharts": "الرائج دون مفتاح TMDB: قوائم Apple العامة.",
-  "actionClose": "إغلاق"
+  "actionClose": "إغلاق",
+  "detailEpisodeTitled": "الحلقة {number}: {title}"
 }

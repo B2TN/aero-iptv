@@ -299,5 +299,6 @@
   "licensesTvMaze": "Kommende Folgen: TVmaze (CC BY-SA 4.0).",
   "licensesSegments": "Intros und Abspann: TheIntroDB und IntroDB (ODbL).",
   "licensesCharts": "Trends ohne TMDB-Schlüssel: öffentliche Apple-Charts.",
-  "actionClose": "Schließen"
+  "actionClose": "Schließen",
+  "detailEpisodeTitled": "Folge {number}: {title}"
 }

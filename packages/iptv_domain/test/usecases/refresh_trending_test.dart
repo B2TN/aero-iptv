@@ -51,6 +51,20 @@ void main() {
     expect(trending.refreshed, isEmpty);
   });
 
+  test('actualise tout de suite quand la langue change', () async {
+    final trending = _Trending(last: now.subtract(const Duration(hours: 5)));
+
+    expect(
+      await RefreshTrending(trending, clock: () => now)(
+        'FR',
+        language: 'en',
+        force: true,
+      ),
+      isTrue,
+    );
+    expect(trending.refreshed, ['FR']);
+  });
+
   test('actualise les tendances de la veille', () async {
     final trending = _Trending(last: now.subtract(const Duration(hours: 21)));
 

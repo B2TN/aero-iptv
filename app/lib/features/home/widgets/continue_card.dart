@@ -56,8 +56,8 @@ final continueInfoProvider = FutureProvider.autoDispose
             series.groupingKey,
           )).where((v) => v.seriesEntryId == episode.seriesEntryId).firstOrNull;
           return (
-            // Sans titre propre, le fournisseur répète celui de la série.
-            episodeTitle: episode.title == series.title ? null : episode.title,
+            // Sans ce que le fournisseur ajoute : langue, série, numéro.
+            episodeTitle: episodeTitleOf(episode.title, series.title),
             version: version?.label,
             variant: version?.variant,
           );

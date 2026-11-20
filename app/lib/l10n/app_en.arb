@@ -299,5 +299,6 @@
   "licensesTvMaze": "Upcoming episodes: TVmaze (CC BY-SA 4.0).",
   "licensesSegments": "Intros and end credits: TheIntroDB and IntroDB (ODbL).",
   "licensesCharts": "Trends without a TMDB key: Apple's public charts.",
-  "actionClose": "Close"
+  "actionClose": "Close",
+  "detailEpisodeTitled": "Episode {number}: {title}"
 }

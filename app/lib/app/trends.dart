@@ -64,15 +64,20 @@ class Trends extends Notifier<int> {
   /// qu'il reste inconnu, par exemple hors ligne.
   bool _mayLocate = true;
 
+  /// Langue de la dernière actualisation : les titres et les résumés des
+  /// tendances sont dans cette langue.
+  String? _language;
+
   @override
   int build() {
     ref.listen(trendRegionProvider, (_, _) => unawaited(check()));
     return 0;
   }
 
-  /// Actualise les tendances si elles datent de la veille, ou si le pays a
-  /// changé. Sans réseau, rien ne change : l'accueil garde les précédentes,
-  /// ou l'ordre de la playlist.
+  /// Actualise les tendances si elles datent de la veille, si le pays a
+  /// changé, ou si la langue a changé depuis la dernière fois : leurs titres
+  /// et leurs résumés sont dans la langue demandée. Sans réseau, rien ne
+  /// change : l'accueil garde les précédentes, ou l'ordre de la playlist.
   Future<void> check() async {
     if (_running) {
       _again = true;
@@ -132,10 +137,14 @@ class Trends extends Notifier<int> {
     final settings = await ref.read(settingsRepositoryProvider).watch().first;
     if (!ref.mounted) return;
     final region = trendRegion(settings, ref.read(systemRegionProvider));
+    final language = settings.languageCode;
+    final force = _language != null && _language != language;
+    _language = language;
     try {
       final refreshed = await ref.read(refreshTrendingProvider)(
         region,
-        language: settings.languageCode,
+        language: language,
+        force: force,
       );
       if (refreshed && ref.mounted) state++;
     } on Failure {

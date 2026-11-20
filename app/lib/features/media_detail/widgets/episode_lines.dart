@@ -8,11 +8,13 @@ import '../../../design_system/components/progress_track.dart';
 import '../../../design_system/tokens/aero_tokens.dart';
 import '../../../l10n/generated/app_localizations.dart';
 
-/// Libellé d'un épisode : « Épisode 2 », suivi de son titre s'il en a un
-/// autre que celui de la série.
+/// Libellé d'un épisode : « Épisode 2 », suivi de son titre propre s'il en a
+/// un, sans ce que le fournisseur y ajoute (langue, série, année, numéro).
 String episodeLabel(AppLocalizations l10n, Series series, Episode episode) {
-  final label = l10n.detailEpisode(episode.number);
-  return episode.title == series.title ? label : '$label : ${episode.title}';
+  final title = episodeTitleOf(episode.title, series.title);
+  return title == null
+      ? l10n.detailEpisode(episode.number)
+      : l10n.detailEpisodeTitled(episode.number, title);
 }
 
 /// Un épisode : son titre, et dessous son résumé quand il est connu. À
