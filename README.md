@@ -124,7 +124,7 @@ Subtitles drawn as images (PGS, VobSub) contain no text and can't be translated.
 - Your login details stay on your device, encrypted by the system vault (DPAPI on Windows, Keystore on Android), and are only sent to your provider.
 - No account, no ads, no analytics.
 - The app only contacts your provider, the services listed here, and DeepL if you've entered a key.
-- Once a day, the home screen trends come from [TVmaze](https://www.tvmaze.com) (series aired this week) and Apple's public charts (movies and series). They only receive a country code.
+- Once a day, the home screen trends come from [TMDB](https://www.themoviedb.org) (what's popular right now among the titles you can watch in your country), or from Apple's public charts in builds without a TMDB key. They only receive a country code.
 - To know that country, the app asks [country.is](https://country.is) once which country your IP address is in, and keeps only the country code. You can also pick the country in **Settings**.
 - To find the intro and the end credits of an episode, it asks [TheIntroDB](https://theintrodb.org), [IntroDB](https://introdb.app) and [TVmaze](https://www.tvmaze.com). They only receive the series title, its public IDs, and the season and episode numbers.
 - To list the upcoming episodes of a series, it asks TVmaze with the series title only.

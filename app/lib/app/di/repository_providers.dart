@@ -131,7 +131,6 @@ final trendingRepositoryProvider = Provider<TrendingRepository>(
         ? null
         : TmdbClient(ref.watch(httpClientProvider), readToken: _tmdbToken),
     charts: AppleChartsClient(ref.watch(httpClientProvider)),
-    tvMaze: TvMazeClient(ref.watch(httpClientProvider)),
   ),
 );
 

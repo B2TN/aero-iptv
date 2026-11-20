@@ -22,7 +22,7 @@ The skip intro and next episode buttons use these community databases. The app o
 |---|---|---|
 | [TheIntroDB](https://theintrodb.org) | Intro and end credits times | Not stated by the service |
 | [IntroDB](https://introdb.app) | Intro and end credits times | [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/) |
-| [TVmaze](https://www.tvmaze.com/api) | Finds the IDs of a series from its title; also lists upcoming episodes and the series aired this week | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |
+| [TVmaze](https://www.tvmaze.com/api) | Finds the IDs of a series from its title, and lists its upcoming episodes | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |
 
 Contains data from IntroDB (introdb.app), available under the ODbL. Series IDs are provided by TVmaze.
 

@@ -6,65 +6,88 @@ import 'package:iptv_data/iptv_data.dart';
 import 'package:iptv_domain/iptv_domain.dart';
 import 'package:test/test.dart';
 
+Map<String, Object?> _movie(int id, String title, {String? original}) => {
+  'id': id,
+  'title': title,
+  'original_title': original ?? title,
+  'overview': 'Résumé de $title',
+  'poster_path': '/p$id.jpg',
+  'backdrop_path': '/b$id.jpg',
+};
+
+http.Response _page(List<Map<String, Object?>> results) =>
+    http.Response.bytes(utf8.encode(jsonEncode({'results': results})), 200);
+
+final DateTime _now = DateTime(2026, 11, 20, 9);
+
 void main() {
-  test('lit les films populaires d une région', () async {
-    late http.Request sent;
+  test('la semaine d abord, si on peut la regarder dans le pays', () async {
+    final asked = <Uri>[];
     final client = MockClient((request) async {
-      sent = request;
-      return http.Response.bytes(
-        utf8.encode(
-          jsonEncode({
-            'results': [
-              {
-                'title': 'Le Titre',
-                'original_title': 'The Title',
-                'overview': 'Résumé',
-                'poster_path': '/p.jpg',
-                'backdrop_path': '/b.jpg',
-              },
-              {'title': ''},
-            ],
-          }),
-        ),
-        200,
-      );
+      asked.add(request.url);
+      final page = request.url.queryParameters['page'];
+      if (page != '1') return _page(const []);
+      return request.url.path.startsWith('/3/trending/')
+          // Mondial : 3 n'est pas proposé dans le pays.
+          ? _page([
+              _movie(2, 'Beta', original: 'Beta Original'),
+              _movie(3, 'Gamma'),
+            ])
+          : _page([
+              _movie(1, 'Alpha'),
+              _movie(2, 'Beta', original: 'Beta Original'),
+            ]);
     });
+
     final items = await TmdbClient(
       client,
       readToken: 'jeton',
-    ).popular(ContentKind.movie, language: 'fr', region: 'FR');
+    ).trending(ContentKind.movie, language: 'fr', region: 'FR', now: _now);
 
-    expect(sent.url.path, '/3/movie/popular');
-    expect(sent.url.queryParameters, {'language': 'fr', 'region': 'FR'});
-    expect(sent.headers['Authorization'], 'Bearer jeton');
-    final item = items.single;
-    expect(item.title, 'Le Titre');
-    expect(item.originalTitle, 'The Title');
-    expect(item.posterUrl, 'https://image.tmdb.org/t/p/w342/p.jpg');
-    expect(item.backdropUrl, 'https://image.tmdb.org/t/p/w780/b.jpg');
+    expect(items.map((item) => item.title), ['Beta', 'Alpha']);
+    final first = items.first;
+    expect(first.kind, ContentKind.movie);
+    expect(first.originalTitle, 'Beta Original');
+    expect(first.posterUrl, 'https://image.tmdb.org/t/p/w342/p2.jpg');
+    expect(first.backdropUrl, 'https://image.tmdb.org/t/p/w1280/b2.jpg');
+    expect(first.overview, 'Résumé de Beta');
+
+    final discover = asked.firstWhere((url) => url.path == '/3/discover/movie');
+    expect(discover.queryParameters, {
+      'language': 'fr',
+      'watch_region': 'FR',
+      'with_watch_monetization_types': 'flatrate|free|ads|rent|buy',
+      'sort_by': 'popularity.desc',
+      'primary_release_date.gte': '2024-11-20',
+      'page': '1',
+    });
+    expect(asked.map((url) => url.path).toSet(), {
+      '/3/discover/movie',
+      '/3/trending/movie/week',
+    });
   });
 
-  test('lit les noms des séries, sans région', () async {
-    late Uri url;
+  test('une série doit avoir eu un épisode depuis deux mois', () async {
+    late Uri discover;
+    late http.BaseRequest sent;
     final client = MockClient((request) async {
-      url = request.url;
-      return http.Response(
-        jsonEncode({
-          'results': [
-            {'name': 'Dark', 'original_name': 'Dark'},
-          ],
-        }),
-        200,
-      );
+      sent = request;
+      if (request.url.path == '/3/discover/tv') discover = request.url;
+      return _page([
+        {'id': 7, 'name': 'Dark', 'original_name': 'Dark'},
+      ]);
     });
+
     final items = await TmdbClient(
       client,
       readToken: 'jeton',
-    ).popular(ContentKind.series, language: 'fr', region: 'FR');
+    ).trending(ContentKind.series, language: 'en', region: 'GB', now: _now);
 
-    expect(url.path, '/3/tv/popular');
-    expect(url.queryParameters.containsKey('region'), isFalse);
+    expect(items.single.title, 'Dark');
     expect(items.single.kind, ContentKind.series);
+    expect(discover.queryParameters['air_date.gte'], '2026-09-21');
+    expect(discover.queryParameters['watch_region'], 'GB');
+    expect(sent.headers['Authorization'], 'Bearer jeton');
   });
 
   test('rejette une réponse illisible', () {
@@ -73,7 +96,7 @@ void main() {
       TmdbClient(
         client,
         readToken: 'x',
-      ).popular(ContentKind.movie, language: 'fr'),
+      ).trending(ContentKind.movie, language: 'fr', region: 'FR', now: _now),
       throwsA(isA<ParseFailure>()),
     );
   });

@@ -31,18 +31,17 @@ final class _Services {
   http.Client get client => MockClient((request) async {
     if (down) return http.Response('', 503);
     final path = request.url.path;
-    if (request.url.host == 'api.tvmaze.com') {
-      return _json(
-        path == '/schedule/web'
+    if (request.url.host == 'api.themoviedb.org') {
+      final isMovie = path.contains('movie');
+      return _json({
+        'results': request.url.queryParameters['page'] == '1'
             ? [
-                {
-                  '_embedded': {
-                    'show': {'id': 1, 'name': 'Andor', 'weight': 99},
-                  },
-                },
+                isMovie
+                    ? {'id': 1, 'title': 'Dune', 'original_title': 'Dune'}
+                    : {'id': 2, 'name': 'Andor', 'original_name': 'Andor'},
               ]
-            : [],
-      );
+            : <Map<String, Object?>>[],
+      });
     }
     if (path.contains('/topmovies/')) return _chart(movies);
     // Le classement du pays, puis celui des États-Unis.
@@ -59,12 +58,13 @@ void main() {
   late _Services services;
   var now = DateTime(2026, 11, 19, 20);
 
-  TrendingRepositoryImpl repository() => TrendingRepositoryImpl(
-    db,
-    charts: AppleChartsClient(services.client, clock: () => now),
-    tvMaze: TvMazeClient(services.client, pause: Duration.zero),
-    clock: () => now,
-  );
+  TrendingRepositoryImpl repository({bool tmdb = false}) =>
+      TrendingRepositoryImpl(
+        db,
+        tmdb: tmdb ? TmdbClient(services.client, readToken: 'jeton') : null,
+        charts: AppleChartsClient(services.client, clock: () => now),
+        clock: () => now,
+      );
 
   setUp(() {
     db = AppDatabase(
@@ -87,13 +87,13 @@ void main() {
     expect(await none.refreshedAt('FR'), isNull);
   });
 
-  test('garde les séries de la semaine, puis le classement du pays', () async {
+  test('sans jeton TMDB, garde les classements Apple du pays', () async {
     final trending = repository();
     expect(await trending.popular(ContentKind.series, region: 'FR'), isEmpty);
 
     await trending.refresh('FR', language: 'fr');
 
-    // Une fois chacune, TVmaze d'abord.
+    // Le pays, puis les États-Unis, une fois chacune.
     expect(
       (await trending.popular(
         ContentKind.series,
@@ -112,6 +112,30 @@ void main() {
     // Un autre pays n'a rien de chargé.
     expect(await trending.popular(ContentKind.movie, region: 'BE'), isEmpty);
     expect(await trending.refreshedAt('BE'), isNull);
+  });
+
+  test('avec un jeton, les tendances viennent de TMDB, rechargées', () async {
+    await repository().refresh('FR', language: 'fr');
+    final trending = repository(tmdb: true);
+    // Les classements d'Apple ne valent pas pour TMDB.
+    expect(await trending.refreshedAt('FR'), isNull);
+
+    await trending.refresh('FR', language: 'fr');
+
+    expect(
+      (await trending.popular(
+        ContentKind.movie,
+        region: 'FR',
+      )).map((item) => item.title),
+      ['Dune'],
+    );
+    expect(
+      (await trending.popular(
+        ContentKind.series,
+        region: 'FR',
+      )).map((item) => item.title),
+      ['Andor'],
+    );
   });
 
   test('un nouveau pays remplace l ancien', () async {
