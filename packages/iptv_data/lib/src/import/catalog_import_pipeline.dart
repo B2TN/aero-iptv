@@ -12,6 +12,7 @@ import '../database/daos/catalog_merge_dao.dart';
 import '../epg/epg_source_adapter.dart';
 import 'catalog_session.dart';
 import 'import_failure.dart';
+import 'sync_report_codec.dart';
 
 /// Fenêtre de guide conservée autour de l'instant de synchronisation.
 const Duration _epgHistory = Duration(hours: 2);
@@ -67,6 +68,7 @@ final class CatalogImportPipeline {
     bool full = false,
   }) async* {
     yield const ImportProgress(ImportStage.connecting);
+    final report = _Report();
     await _maintenance.purgeOrphans();
     // Un accès refusé s'arrête ici, avant d'avoir réservé quoi que ce soit.
     final sections = await _catalogAdapter.open(credentials);
@@ -83,9 +85,13 @@ final class CatalogImportPipeline {
         ? await _SyncGates.load(_merge, sourceId, shown)
         : null;
     final catalogId = await _maintenance.create(sourceId, _clock());
+    report.close(SyncPhase.connection);
     final session = CatalogSession(_db, catalogId);
     final failed = <ContentKind, Failure>{};
     var processed = 0;
+
+    /// Entrées décodées et écrites : celles qui ont changé.
+    var written = 0;
     String? discoveredEpgUrl;
 
     /// Télécharge [section] par [fetch], en la reprenant après une panne
@@ -97,10 +103,12 @@ final class CatalogImportPipeline {
       final kind = section.kind;
       for (var attempt = 1; ; attempt++) {
         var received = 0;
+        var entries = 0;
         try {
           await for (final batch in fetch()) {
             await session.write(batch);
             received += batch.received;
+            entries += batch.entries.length;
             discoveredEpgUrl ??= batch.discoveredEpgUrl;
             yield ImportProgress(
               ImportStage.catalog,
@@ -110,6 +118,7 @@ final class CatalogImportPipeline {
             );
           }
           processed += received;
+          written += entries;
           return;
         } on Object catch (error, stack) {
           // Même imprévue, l'erreur d'une section ne coûte pas les autres.
@@ -134,12 +143,25 @@ final class CatalogImportPipeline {
       for (final section in sections) {
         final kind = section.kind;
         final gate = kind == null ? null : gates?.gateFor(kind);
+        final receivedBefore = processed;
+        final writtenBefore = written;
+        void closeSection() => report.close(
+          switch (kind) {
+            ContentKind.live => SyncPhase.live,
+            ContentKind.movie => SyncPhase.movies,
+            ContentKind.series => SyncPhase.series,
+            null => SyncPhase.catalog,
+          },
+          received: processed - receivedBefore,
+          changed: written - writtenBefore,
+        );
         // Pas de `yield*` : il transmettrait les erreurs de la section sans
         // passer par le `catch` ci-dessous, qui efface le catalogue en cours.
         if (gate == null) {
           await for (final progress in download(section, section.fetch)) {
             yield progress;
           }
+          closeSection();
           continue;
         }
         final before = processed;
@@ -160,6 +182,7 @@ final class CatalogImportPipeline {
             }
           }
         }
+        closeSection();
       }
       if (processed == 0) {
         throw failed.values.firstOrNull ??
@@ -204,6 +227,7 @@ final class CatalogImportPipeline {
         failedRefinements[step] = importFailureOf(error);
       }
     }
+    report.close(SyncPhase.refinement);
 
     final int shownNow;
     if (merging) {
@@ -249,6 +273,7 @@ final class CatalogImportPipeline {
       // Un favori ou une reprise qui n'a pas suivi sa fiche s'y rattachera à
       // la prochaine synchronisation : le catalogue reste à afficher.
     }
+    report.close(SyncPhase.update, changed: written);
 
     // Le catalogue est déjà consultable : le guide se télécharge ensuite.
     yield ImportProgress(
@@ -258,12 +283,24 @@ final class CatalogImportPipeline {
       failedRefinements: failedRefinements,
       merged: merging,
     );
-    final epgFailed = !await _importEpg(
+    final programmes = await _importEpg(
       sourceId,
       shownNow,
       credentials,
       discoveredEpgUrl,
-    ).catchError((Object error) => error is Failure ? false : throw error);
+    ).catchError((Object error) => error is Failure ? -1 : throw error);
+    final epgFailed = programmes < 0;
+    report.close(SyncPhase.guide, received: programmes < 0 ? 0 : programmes);
+    try {
+      await _maintenance.saveSyncReport(
+        sourceId,
+        SyncReportCodec.encode(
+          SyncReport(finishedAt: _clock(), full: !merging, steps: report.steps),
+        ),
+      );
+    } on Object {
+      // Le relevé aide à comprendre une lenteur : son absence ne gêne rien.
+    }
     yield ImportProgress(
       ImportStage.done,
       processed: processed,
@@ -330,7 +367,8 @@ final class CatalogImportPipeline {
   };
 
   /// Le guide est facultatif : son échec n'annule pas le catalogue déjà activé.
-  Future<bool> _importEpg(
+  /// Retourne le nombre de programmes reçus.
+  Future<int> _importEpg(
     int sourceId,
     int catalogId,
     PlaylistCredentials credentials,
@@ -346,7 +384,9 @@ final class CatalogImportPipeline {
       discoveredUrl: discoveredUrl,
     );
 
+    var received = 0;
     await for (final programmes in _epgAdapter.fetch(request)) {
+      received += programmes.length;
       await _db.batch((batch) {
         batch.insertAllOnConflictUpdate(_db.epgProgrammes, [
           for (final programme in programmes)
@@ -365,11 +405,27 @@ final class CatalogImportPipeline {
       sourceId: sourceId,
       before: _seconds(request.from),
     );
-    return true;
+    return received;
   }
 
   int _seconds(DateTime instant) =>
       instant.millisecondsSinceEpoch ~/ Duration.millisecondsPerSecond;
+}
+
+/// Chronomètre les étapes d'une synchronisation.
+final class _Report {
+  final Stopwatch _watch = Stopwatch()..start();
+  Duration _since = Duration.zero;
+  final List<SyncStep> steps = [];
+
+  /// Termine l'étape [phase], commencée à la fin de la précédente.
+  void close(SyncPhase phase, {int received = 0, int changed = 0}) {
+    final now = _watch.elapsed;
+    steps.add(
+      SyncStep(phase, now - _since, received: received, changed: changed),
+    );
+    _since = now;
+  }
 }
 
 /// Graine et multiplicateur de l'empreinte de la liste des chaînes.

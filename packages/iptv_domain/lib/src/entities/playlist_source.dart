@@ -1,3 +1,5 @@
+import 'sync_report.dart';
+
 /// Format d'une source. L'index est stocké en base.
 enum SourceKind { m3u, xtream }
 
@@ -9,6 +11,7 @@ final class PlaylistSource {
     required this.kind,
     this.defaultCountryCode,
     this.lastSyncedAt,
+    this.lastSyncReport,
   });
 
   final int id;
@@ -18,6 +21,10 @@ final class PlaylistSource {
   /// Pays ouvert directement dans Live TV, sans passer par les drapeaux.
   final String? defaultCountryCode;
   final DateTime? lastSyncedAt;
+
+  /// Durées de la dernière synchronisation, étape par étape. Elle n'entre pas
+  /// dans l'égalité : elle arrive après la synchronisation elle-même.
+  final SyncReport? lastSyncReport;
 
   // Égalité de valeur : relire la même source ne doit pas faire croire aux
   // écrans qui en dépendent qu'elle a changé, et les recharger.

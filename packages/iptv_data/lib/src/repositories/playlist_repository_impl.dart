@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:iptv_domain/iptv_domain.dart';
 
 import '../database/app_database.dart';
+import '../import/sync_report_codec.dart';
 import '../database/daos/catalog_maintenance_dao.dart';
 
 /// Gestionnaire des sources. Les identifiants restent dans le coffre.
@@ -99,6 +100,7 @@ final class PlaylistRepositoryImpl implements PlaylistRepository {
       lastSyncedAt: syncedAt == null
           ? null
           : DateTime.fromMillisecondsSinceEpoch(syncedAt),
+      lastSyncReport: SyncReportCodec.decode(row.lastSyncReport),
     );
   }
 }

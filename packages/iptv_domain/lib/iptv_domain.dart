@@ -27,6 +27,7 @@ export 'src/entities/search_hit.dart';
 export 'src/entities/season.dart';
 export 'src/entities/series.dart';
 export 'src/entities/show_schedule.dart';
+export 'src/entities/sync_report.dart';
 export 'src/entities/app_release.dart';
 export 'src/entities/stream_locator.dart';
 export 'src/entities/stream_quality.dart';

@@ -327,6 +327,37 @@ void main() {
                 .getSingle())
             .read<String>('display_title');
 
+    test('le relevé dit où le temps est passé', () async {
+      panel.movies[10] = 'FR - Dune, deuxième partie';
+
+      await sync();
+
+      final source = (await PlaylistRepositoryImpl(
+        db,
+        MemoryCredentialStore(),
+      ).watchSources().first).single;
+      final report = source.lastSyncReport!;
+      expect(report.full, isFalse);
+      expect(
+        [for (final step in report.steps) step.phase],
+        [
+          SyncPhase.connection,
+          SyncPhase.live,
+          SyncPhase.movies,
+          SyncPhase.series,
+          SyncPhase.refinement,
+          SyncPhase.update,
+          SyncPhase.guide,
+        ],
+      );
+      final movies = report.steps.firstWhere(
+        (step) => step.phase == SyncPhase.movies,
+      );
+      // Deux films reçus, un seul traité.
+      expect((movies.received, movies.changed), (2, 1));
+      expect(report.total, greaterThan(Duration.zero));
+    });
+
     test('une note recalculée partout ne fait rien retraiter', () async {
       await mark('x:m:10');
       panel.rating = '8.4';

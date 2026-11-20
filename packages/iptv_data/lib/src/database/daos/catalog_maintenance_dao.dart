@@ -207,6 +207,12 @@ final class CatalogMaintenanceDao {
       });
 
   /// Note la synchronisation de [sourceId], dont le catalogue reste le même.
+  /// Garde le relevé de la synchronisation qui vient de finir.
+  Future<void> saveSyncReport(int sourceId, String report) =>
+      (_db.update(_db.sources)..where((row) => row.id.equals(sourceId))).write(
+        SourcesCompanion(lastSyncReport: Value(report)),
+      );
+
   Future<void> markSynced(int sourceId, DateTime now) =>
       (_db.update(_db.sources)..where((row) => row.id.equals(sourceId))).write(
         SourcesCompanion(lastSyncedAt: Value(now.millisecondsSinceEpoch)),

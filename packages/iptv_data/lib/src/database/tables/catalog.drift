@@ -18,7 +18,9 @@ CREATE TABLE sources (
   live_hash INTEGER,
   -- Version des empreintes enregistrées (`entryHashVersion`) : la
   -- synchronisation qui en change compare encore les anciennes.
-  hash_version INTEGER NOT NULL DEFAULT 1
+  hash_version INTEGER NOT NULL DEFAULT 1,
+  -- Durées de la dernière synchronisation, en JSON (`SyncReportCodec`).
+  last_sync_report TEXT
 ) AS SourceRow;
 
 CREATE TABLE catalogs (
