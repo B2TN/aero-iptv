@@ -21,6 +21,7 @@ typedef _List = ({
   String list,
   String idField,
   String identity,
+  Set<String> hashed,
   CatalogEntry? Function(Map<String, dynamic>, Map<String, String>, int?, int?)
   map,
 });
@@ -49,6 +50,13 @@ final class XtreamSourceAdapter implements PlaylistSourceAdapter {
         list: 'get_live_streams',
         idField: 'stream_id',
         identity: 'x:l:',
+        hashed: const {
+          'name',
+          'stream_id',
+          'stream_icon',
+          'epg_channel_id',
+          'category_id',
+        },
         map: _mapper.live,
       ),
       (
@@ -57,6 +65,15 @@ final class XtreamSourceAdapter implements PlaylistSourceAdapter {
         list: 'get_vod_streams',
         idField: 'stream_id',
         identity: 'x:m:',
+        hashed: const {
+          'name',
+          'stream_id',
+          'stream_icon',
+          'tmdb',
+          'tmdb_id',
+          'container_extension',
+          'category_id',
+        },
         map: _mapper.movie,
       ),
       (
@@ -65,6 +82,15 @@ final class XtreamSourceAdapter implements PlaylistSourceAdapter {
         list: 'get_series',
         idField: 'series_id',
         identity: 'x:s:',
+        hashed: const {
+          'name',
+          'series_id',
+          'cover',
+          'tmdb',
+          'tmdb_id',
+          'last_modified',
+          'category_id',
+        },
         map: _mapper.series,
       ),
     ];
@@ -81,8 +107,8 @@ final class XtreamSourceAdapter implements PlaylistSourceAdapter {
   /// Les catégories font partie de la section : sans elles, ses entrées
   /// n'auraient pas de groupe.
   ///
-  /// Chaque objet garde l'empreinte de son texte brut. Avec une [gate], un
-  /// objet qu'elle refuse n'est même pas décodé.
+  /// Chaque objet garde l'empreinte des champs que l'application en lit. Avec
+  /// une [gate], un objet qu'elle refuse n'est même pas décodé.
   Stream<CatalogBatch> _section(
     XtreamApiClient api,
     _List list,
@@ -96,9 +122,11 @@ final class XtreamSourceAdapter implements PlaylistSourceAdapter {
     await for (final raw in api.rawObjects(list.list)) {
       received++;
       position++;
-      final hash = rawEntryHash(raw, groups);
+      final hash = rawFieldsHash(raw, list.hashed, groups);
       final id = rawEntryId(raw, list.idField);
-      if (gate == null || id == null || gate('${list.identity}$id', hash)) {
+      if (gate == null ||
+          id == null ||
+          gate('${list.identity}$id', hash, () => rawEntryHash(raw, groups))) {
         final Object? json;
         try {
           json = jsonDecode(raw);

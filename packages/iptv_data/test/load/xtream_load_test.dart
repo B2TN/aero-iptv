@@ -8,7 +8,9 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:iptv_data/iptv_data.dart';
+import 'package:iptv_data/src/adapters/xtream/raw_entry.dart';
 import 'package:iptv_data/src/adapters/xtream/xtream_source_adapter.dart';
+import 'package:iptv_data/src/database/daos/catalog_merge_dao.dart';
 import 'package:iptv_data/src/import/catalog_import_pipeline.dart';
 import 'package:iptv_domain/iptv_domain.dart';
 import 'package:test/test.dart';
@@ -31,13 +33,17 @@ const String _plot =
     'voisin a disparu des cartes. Chacun cherche une explication, puis une '
     'issue, alors que le phare se remet à tourner sans gardien.';
 
-/// Jour du panneau : à partir du deuxième, des films changent de note et
+/// Jour du panneau : à partir du deuxième, des films changent de format et
 /// d'autres arrivent, comme d'un jour à l'autre chez un fournisseur.
 var _day = 0;
 
 /// Films changés et films ajoutés chaque jour.
 const int _changedEvery = 1000;
 const int _addedPerDay = 400;
+
+/// Note recalculée par le panneau sur tous ses titres : l'application ne s'en
+/// sert pas, mais le texte de chaque objet change.
+var _volatile = 0;
 
 const XtreamCredentials _credentials = XtreamCredentials(
   serverUrl: 'http://panel.example:8080',
@@ -69,9 +75,10 @@ Map<String, Object?> _movie(int i) {
     // TMDb : ils forment une seule fiche.
     'stream_icon': 'https://image.tmdb.org/t/p/w500/m$title.jpg',
     'tmdb': '${100000 + title}',
-    'rating': _day > 0 && i % _changedEvery == 0 ? '7.2' : '7.1',
     'added': '1700000000',
-    'container_extension': 'mkv',
+    'rating_5based': 3.5 + _volatile / 10,
+    // Un format qui change est un vrai changement : l'application le lit.
+    'container_extension': _day > 0 && i % _changedEvery == 0 ? 'mp4' : 'mkv',
     'category_id': '${i % _categories}',
   };
 }
@@ -89,6 +96,7 @@ Map<String, Object?> _show(int i) {
     'genre': 'Drame',
     'releaseDate': '${1990 + title % 35}-01-01',
     'tmdb': '$title',
+    'rating': '${7 + _volatile / 10}',
     'backdrop_path': ['http://image.example/b$title.jpg'],
     'category_id': '${i % _categories}',
   };
@@ -216,6 +224,30 @@ void main() {
       _day = 1;
       final changedSync = await sync();
       final sheets = await sheetCount();
+      // Un panneau qui recalcule ses notes chaque jour.
+      _volatile = 1;
+      final volatileSync = await sync();
+      // Le jour de la mise à jour vers les empreintes des seuls champs lus :
+      // la base garde celles de tout le texte, de la version 1.
+      final groups = categoriesHash({
+        for (var i = 0; i < _categories; i++) '$i': 'FR | GROUPE $i',
+      });
+      final shown =
+          (await db
+                  .customSelect('SELECT active_catalog_id AS id FROM sources')
+                  .getSingle())
+              .read<int>('id');
+      final merge = CatalogMergeDao(db);
+      await merge.backfillHashes(shown, ContentKind.movie, [
+        for (var i = 0; i < _movies + _addedPerDay; i++)
+          ('x:m:$i', rawEntryHash(jsonEncode(_movie(i)), groups)),
+      ]);
+      await merge.backfillHashes(shown, ContentKind.series, [
+        for (var i = 0; i < _series; i++)
+          ('x:s:$i', rawEntryHash(jsonEncode(_show(i)), groups)),
+      ]);
+      await db.customStatement('UPDATE sources SET hash_version = 1');
+      final transitionSync = await sync();
       // Un catalogue laissé par une version d'avant les empreintes.
       await db.customStatement('UPDATE movies SET source_hash = NULL');
       await db.customStatement('UPDATE series_entries SET source_hash = NULL');
@@ -279,6 +311,10 @@ void main() {
         '${syncTotal.inMilliseconds / 1000} s\n'
         'Synchronisation avec ${_movies ~/ _changedEvery + _addedPerDay} '
         'films changés : ${changedSync.inMilliseconds / 1000} s\n'
+        'Synchronisation, notes recalculées partout : '
+        '${volatileSync.inMilliseconds / 1000} s\n'
+        'Synchronisation de passage aux nouvelles empreintes : '
+        '${transitionSync.inMilliseconds / 1000} s\n'
         'Fiches de films : $importedSheets, puis $sheets\n'
         'Synchronisation après mise à jour : ${upgradeSync.inSeconds} s\n'
         'Pic RSS : ${peak ~/ _mebibyte} Mio\n'

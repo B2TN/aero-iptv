@@ -7,9 +7,12 @@ const int catalogBatchSize = 500;
 
 /// Décide, pendant une synchronisation, si une entrée reçue mérite d'être
 /// traitée : [identity] la reconnaît d'un catalogue à l'autre (`x:m:123`),
-/// [hash] résume ce que le fournisseur en dit. Une entrée refusée n'est ni
+/// [hash] résume ce que l'application en lit. [legacy] donne l'empreinte de
+/// tout son texte, celle d'avant la version 2 des empreintes, que seule la
+/// synchronisation de transition demande. Une entrée refusée n'est ni
 /// décodée ni livrée.
-typedef EntryGate = bool Function(String identity, int hash);
+typedef EntryGate =
+    bool Function(String identity, int hash, int Function() legacy);
 
 /// Partie d'une source, téléchargée d'un seul tenant.
 ///

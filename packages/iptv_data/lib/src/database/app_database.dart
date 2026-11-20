@@ -18,7 +18,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   /// Retrouve, dans le catalogue actif, l'identité commune aux versions des
   /// reprises enregistrées avant qu'elle n'existe. Une reprise dont le
@@ -226,6 +226,10 @@ class AppDatabase extends _$AppDatabase {
       if (from < 11) {
         // Tendances gardées d'une actualisation à l'autre.
         await migrator.createTable(trendingTitles);
+      }
+      if (from < 12) {
+        // Version des empreintes : celles déjà enregistrées sont de la 1.
+        await migrator.addColumn(sources, sources.hashVersion);
       }
     },
   );

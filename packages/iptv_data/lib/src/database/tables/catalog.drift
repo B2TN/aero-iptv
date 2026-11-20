@@ -15,7 +15,10 @@ CREATE TABLE sources (
   last_synced_at INTEGER,
   -- Empreinte de la liste des chaînes à la dernière synchronisation : la
   -- même liste n'est pas réécrite.
-  live_hash INTEGER
+  live_hash INTEGER,
+  -- Version des empreintes enregistrées (`entryHashVersion`) : la
+  -- synchronisation qui en change compare encore les anciennes.
+  hash_version INTEGER NOT NULL DEFAULT 1
 ) AS SourceRow;
 
 CREATE TABLE catalogs (

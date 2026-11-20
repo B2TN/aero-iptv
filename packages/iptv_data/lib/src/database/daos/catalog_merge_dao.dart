@@ -238,20 +238,25 @@ final class CatalogMergeDao {
     };
   }
 
-  /// Enregistre les empreintes [hashes] des films de [catalogId] qui n'en
-  /// avaient pas encore, sans rien d'autre : ils viennent d'un catalogue
-  /// importé avant les empreintes, et sont tenus pour inchangés.
-  Future<void> backfillMovieHashes(
+  /// Remplace les empreintes des titres [hashes] de [catalogId], sans rien
+  /// d'autre : ils sont tenus pour inchangés, et leur empreinte manquait ou
+  /// était d'une version précédente.
+  Future<void> backfillHashes(
     int catalogId,
+    ContentKind kind,
     List<(String, int)> hashes,
   ) async {
+    final (table, key) = switch (kind) {
+      ContentKind.movie => ('movies', 'content_key'),
+      _ => ('series_entries', 'entry_key'),
+    };
     const chunk = 500;
     for (var start = 0; start < hashes.length; start += chunk) {
       final pairs = hashes.skip(start).take(chunk).toList();
       await _db.customStatement(
-        'UPDATE movies SET source_hash = CASE content_key '
+        'UPDATE $table SET source_hash = CASE $key '
         '${List.filled(pairs.length, 'WHEN ? THEN ?').join(' ')} END '
-        'WHERE catalog_id = ? AND source_hash IS NULL AND content_key IN '
+        'WHERE catalog_id = ? AND $key IN '
         '(${List.filled(pairs.length, '?').join(', ')})',
         [
           for (final (key, hash) in pairs) ...[key, hash],
@@ -308,6 +313,23 @@ final class CatalogMergeDao {
     'UPDATE sources SET live_hash = ?1 WHERE id = ?2',
     [hash, sourceId],
   );
+
+  /// Version des empreintes enregistrées pour [sourceId].
+  Future<int> hashVersionOf(int sourceId) async {
+    final row = await _db
+        .customSelect(
+          'SELECT hash_version AS version FROM sources WHERE id = ?1',
+          variables: [Variable.withInt(sourceId)],
+        )
+        .getSingleOrNull();
+    return row?.read<int>('version') ?? 1;
+  }
+
+  Future<void> saveHashVersion(int sourceId, int version) =>
+      _db.customStatement(
+        'UPDATE sources SET hash_version = ?1 WHERE id = ?2',
+        [version, sourceId],
+      );
 
   /// Une série Xtream qui ne dit jamais quand elle change est redemandée à
   /// chaque synchronisation, à sa prochaine ouverture : rien d'autre ne

@@ -37,6 +37,39 @@ final class _Panel {
   };
   final List<String> asked = [];
 
+  /// Note que le panneau recalcule : l'application ne la lit pas.
+  String rating = '7.1';
+
+  static const Map<String, String> categories = {
+    '1': 'FR| TNT',
+    '2': 'FILMS',
+    '3': 'SERIES',
+  };
+
+  Map<String, Object?> movie(int id, int num) => {
+    'num': num,
+    'name': movies[id],
+    'stream_id': id,
+    'category_id': '2',
+    'rating': rating,
+    'container_extension': 'mkv',
+    'tmdb': ?movieTmdb[id],
+    'stream_icon': ?moviePosters[id],
+  };
+
+  Map<String, Object?> show(int id, int num) {
+    final (name, modified, tmdb) = series[id]!;
+    return {
+      'num': num,
+      'name': name,
+      'series_id': id,
+      'category_id': '3',
+      'rating': rating,
+      'last_modified': '$modified',
+      'tmdb': tmdb,
+    };
+  }
+
   http.Response _json(Object body) =>
       http.Response.bytes(utf8.encode(jsonEncode(body)), 200);
 
@@ -53,33 +86,12 @@ final class _Panel {
           {'num': ++num, 'name': name, 'stream_id': id, 'category_id': '1'},
       ]),
       'get_vod_streams' => _json([
-        for (final MapEntry(key: id, value: name) in movies.entries)
-          {
-            'num': ++num,
-            'name': name,
-            'stream_id': id,
-            'category_id': '2',
-            'container_extension': 'mkv',
-            'tmdb': ?movieTmdb[id],
-            'stream_icon': ?moviePosters[id],
-          },
+        for (final id in movies.keys) movie(id, ++num),
       ]),
-      'get_series' => _json([
-        for (final MapEntry(key: id, value: (name, modified, tmdb))
-            in series.entries)
-          {
-            'num': ++num,
-            'name': name,
-            'series_id': id,
-            'category_id': '3',
-            'last_modified': '$modified',
-            'tmdb': tmdb,
-          },
-      ]),
+      'get_series' => _json([for (final id in series.keys) show(id, ++num)]),
       _ => _json([
-        {'category_id': '1', 'category_name': 'FR| TNT'},
-        {'category_id': '2', 'category_name': 'FILMS'},
-        {'category_id': '3', 'category_name': 'SERIES'},
+        for (final MapEntry(key: id, value: name) in categories.entries)
+          {'category_id': id, 'category_name': name},
       ]),
     };
   }
@@ -98,6 +110,35 @@ void main() {
       );
       // Un groupe renommé change toutes ses entrées.
       expect(rawEntryHash(before, 1), isNot(rawEntryHash(before, 0)));
+    });
+
+    test('seuls les champs lus comptent', () {
+      const fields = {'name', 'stream_id', 'stream_icon'};
+      const before =
+          '{"num":1,"name":"Dune","stream_id":10,"rating":"7.1",'
+          '"stream_icon":"http://p/1.jpg","category_ids":[2,3]}';
+
+      int hash(String raw) => rawFieldsHash(raw, fields, 0);
+      // Une note recalculée, un rang ou une liste qui change : rien.
+      expect(
+        hash(
+          '{"num":9,"name":"Dune","stream_id":10,"rating":"8.4",'
+          '"stream_icon":"http://p/1.jpg","category_ids":[5]}',
+        ),
+        hash(before),
+      );
+      // Un champ lu qui change : l'objet change.
+      expect(
+        hash(before.replaceFirst('p/1.jpg', 'p/2.jpg')),
+        isNot(hash(before)),
+      );
+      // Une virgule ou un guillemet échappé dans une valeur ne trompe pas
+      // la lecture.
+      expect(
+        hash('{"plot":"Un, deux \\"trois\\"","name":"Dune","stream_id":10}'),
+        hash('{"name":"Dune","plot":"autre","stream_id":10}'),
+      );
+      expect(rawFieldsHash(before, fields, 1), isNot(hash(before)));
     });
 
     test('lit l identifiant sans décoder l objet', () {
@@ -268,6 +309,68 @@ void main() {
       }, hasLength(1));
       expect(await idOf('series_entries', 'entry_key', 'x:s:20'), lost);
       expect(await found('lost'), hasLength(1));
+    });
+
+    /// Marque le film [contentKey] : une synchronisation qui le traite
+    /// rétablit son titre.
+    Future<void> mark(String contentKey) => db.customStatement(
+      "UPDATE movies SET display_title = 'MARQUE' WHERE content_key = ?1",
+      [contentKey],
+    );
+
+    Future<String> titleOf(String contentKey) async =>
+        (await db
+                .customSelect(
+                  'SELECT display_title FROM movies WHERE content_key = ?1',
+                  variables: [Variable.withString(contentKey)],
+                )
+                .getSingle())
+            .read<String>('display_title');
+
+    test('une note recalculée partout ne fait rien retraiter', () async {
+      await mark('x:m:10');
+      panel.rating = '8.4';
+
+      await sync();
+
+      expect(await titleOf('x:m:10'), 'MARQUE');
+    });
+
+    test('le passage aux nouvelles empreintes ne retraite rien', () async {
+      // L'état laissé par la 0.2 : empreintes de tout le texte, version 1.
+      final groups = categoriesHash(_Panel.categories);
+      String raw(Map<String, Object?> object) => jsonEncode(object);
+      for (final id in panel.movies.keys) {
+        await db.customStatement(
+          'UPDATE movies SET source_hash = ?1 WHERE content_key = ?2',
+          [rawEntryHash(raw(panel.movie(id, 1)), groups), 'x:m:$id'],
+        );
+      }
+      for (final id in panel.series.keys) {
+        await db.customStatement(
+          'UPDATE series_entries SET source_hash = ?1 WHERE entry_key = ?2',
+          [rawEntryHash(raw(panel.show(id, 1)), groups), 'x:s:$id'],
+        );
+      }
+      await db.customStatement('UPDATE sources SET hash_version = 1');
+      await mark('x:m:10');
+
+      await sync();
+
+      expect(await titleOf('x:m:10'), 'MARQUE');
+      final version = await db
+          .customSelect('SELECT hash_version AS v FROM sources')
+          .getSingle();
+      expect(version.read<int>('v'), entryHashVersion);
+      // Les empreintes enregistrées sont désormais les nouvelles : une note
+      // recalculée ne fait toujours rien retraiter.
+      panel.rating = '8.4';
+      await sync();
+      expect(await titleOf('x:m:10'), 'MARQUE');
+      // Un vrai changement, lui, passe.
+      panel.movies[10] = 'FR - Dune, deuxième partie';
+      await sync();
+      expect(await titleOf('x:m:10'), 'Dune, deuxième partie');
     });
 
     test('un catalogue d avant les empreintes passe vite, sans rien '

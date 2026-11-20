@@ -5,6 +5,7 @@ import 'package:iptv_domain/iptv_domain.dart';
 
 import '../adapters/catalog_batch.dart';
 import '../adapters/playlist_source_adapter.dart';
+import '../adapters/xtream/raw_entry.dart';
 import '../database/app_database.dart';
 import '../database/daos/catalog_maintenance_dao.dart';
 import '../database/daos/catalog_merge_dao.dart';
@@ -238,6 +239,8 @@ final class CatalogImportPipeline {
         rethrow;
       }
       if (previous != null) await _discard(previous);
+      // Un catalogue importé en entier porte les empreintes du moment.
+      await _merge.saveHashVersion(sourceId, entryHashVersion);
       shownNow = catalogId;
     }
     try {
@@ -284,20 +287,19 @@ final class CatalogImportPipeline {
       if (gates.liveChanged) await _merge.replaceLive(fresh, shown);
       await _merge.saveLiveHash(sourceId, gates.liveHash);
     }
-    if (!failed.containsKey(ContentKind.movie)) {
-      await _merge.mergeMovies(
-        fresh,
-        shown,
-        removed: gates.removed(ContentKind.movie),
-      );
-      await _merge.backfillMovieHashes(shown, gates.unhashedMovies);
+    for (final kind in [ContentKind.movie, ContentKind.series]) {
+      if (failed.containsKey(kind)) continue;
+      if (kind == ContentKind.movie) {
+        await _merge.mergeMovies(fresh, shown, removed: gates.removed(kind));
+      } else {
+        await _merge.mergeSeries(fresh, shown, removed: gates.removed(kind));
+      }
+      await _merge.backfillHashes(shown, kind, gates.backfill(kind));
     }
-    if (!failed.containsKey(ContentKind.series)) {
-      await _merge.mergeSeries(
-        fresh,
-        shown,
-        removed: gates.removed(ContentKind.series),
-      );
+    // Les empreintes ne passent à la nouvelle version qu'une fois toutes les
+    // listes lues : une section en échec la comparera encore à l'ancienne.
+    if (failed.isEmpty) {
+      await _merge.saveHashVersion(sourceId, entryHashVersion);
     }
     // Premier passage depuis les empreintes : le catalogue vient d'avant
     // l'exclusion des lignes de séparation.
@@ -379,23 +381,35 @@ const int _liveMix = 0x100000001b3;
 /// portes qu'elle ouvre laissent passer ce qui a changé, et notent ce qui a
 /// été vu pour retirer le reste.
 final class _SyncGates {
-  _SyncGates._(this._known, this._liveBefore);
-
   static Future<_SyncGates> load(
     CatalogMergeDao merge,
     int sourceId,
     int shown,
-  ) async => _SyncGates._({
-    ContentKind.movie: await merge.hashesOf(shown, ContentKind.movie),
-    ContentKind.series: await merge.hashesOf(shown, ContentKind.series),
-  }, await merge.liveHashOf(sourceId));
+  ) async => _SyncGates._(
+    {
+      ContentKind.movie: await merge.hashesOf(shown, ContentKind.movie),
+      ContentKind.series: await merge.hashesOf(shown, ContentKind.series),
+    },
+    await merge.liveHashOf(sourceId),
+    transition: await merge.hashVersionOf(sourceId) < entryHashVersion,
+  );
+
+  _SyncGates._(this._known, this._liveBefore, {required this.transition});
 
   final Map<ContentKind, Map<String, int?>> _known;
   final int? _liveBefore;
   final Map<ContentKind, Set<String>> _seen = {};
 
-  /// Films affichés sans empreinte, avec celle qu'ils viennent de recevoir.
-  final List<(String, int)> unhashedMovies = [];
+  /// Les empreintes enregistrées sont d'une version précédente : on les
+  /// compare encore, puis on enregistre les nouvelles. Sans cela, toutes les
+  /// listes passeraient pour modifiées le jour de la mise à jour.
+  final bool transition;
+
+  /// Titres tenus pour inchangés dont l'empreinte enregistrée manquait ou
+  /// était d'une version précédente, avec celle qu'ils viennent de recevoir.
+  final Map<ContentKind, List<(String, int)>> _backfill = {};
+
+  List<(String, int)> backfill(ContentKind kind) => _backfill[kind] ?? const [];
 
   /// Le catalogue affiché avait des titres sans empreinte : il vient d'avant
   /// elles.
@@ -403,19 +417,22 @@ final class _SyncGates {
       _known.values.any((hashes) => hashes.values.any((hash) => hash == null));
   int _live = _liveSeed;
   int? _liveFinal;
+  int _legacyLive = _liveSeed;
 
   /// Porte d'une section. Celle des chaînes ne laisse rien passer : elle
   /// résume la liste, qui ne se télécharge à nouveau que si elle a changé.
   EntryGate gateFor(ContentKind kind) {
     if (kind == ContentKind.live) {
-      return (identity, hash) {
+      return (identity, hash, legacy) {
         _live = (_live ^ hash) * _liveMix;
+        if (transition) _legacyLive = (_legacyLive ^ legacy()) * _liveMix;
         return false;
       };
     }
     final known = _known[kind] ?? const <String, int?>{};
     final seen = _seen[kind] ??= <String>{};
-    return (identity, hash) {
+    final backfill = _backfill[kind] ??= [];
+    return (identity, hash, legacy) {
       seen.add(identity);
       final before = known[identity];
       // Un film d'avant les empreintes est tenu pour inchangé : le traiter
@@ -424,10 +441,13 @@ final class _SyncGates {
       if (before == null &&
           kind == ContentKind.movie &&
           known.containsKey(identity)) {
-        unhashedMovies.add((identity, hash));
+        backfill.add((identity, hash));
         return false;
       }
-      return before != hash;
+      if (before == null || !transition) return before != hash;
+      final changed = before != legacy();
+      if (!changed) backfill.add((identity, hash));
+      return changed;
     };
   }
 
@@ -436,15 +456,18 @@ final class _SyncGates {
 
   int get liveHash => _liveFinal ?? _live;
 
-  bool get liveChanged => liveHash != _liveBefore;
+  bool get liveChanged => (transition ? _legacyLive : liveHash) != _liveBefore;
 
   /// Une section reprise repart de zéro.
   void forget(ContentKind? kind) {
     if (kind == ContentKind.live) {
-      if (_liveFinal == null) _live = _liveSeed;
+      if (_liveFinal == null) {
+        _live = _liveSeed;
+        _legacyLive = _liveSeed;
+      }
     } else {
       _seen[kind]?.clear();
-      if (kind == ContentKind.movie) unhashedMovies.clear();
+      _backfill[kind]?.clear();
     }
   }
 
