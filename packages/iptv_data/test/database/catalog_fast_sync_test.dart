@@ -9,6 +9,7 @@ import 'package:iptv_data/src/adapters/xtream/raw_entry.dart';
 import 'package:iptv_data/src/adapters/xtream/xtream_source_adapter.dart';
 import 'package:iptv_data/src/database/app_database.dart'
     hide AppSettings, WatchProgress;
+import 'package:iptv_data/src/epg/epg_source_adapter.dart';
 import 'package:iptv_data/src/import/catalog_import_pipeline.dart';
 import 'package:iptv_domain/iptv_domain.dart';
 import 'package:test/test.dart';
@@ -20,6 +21,27 @@ const XtreamCredentials _xtream = XtreamCredentials(
   username: 'u',
   password: 'p',
 );
+
+/// Guide d'une seule émission, qui finit à [until], et compte ses lectures.
+final class _Guide implements EpgSourceAdapter {
+  _Guide(this.until);
+
+  final DateTime until;
+  int calls = 0;
+
+  @override
+  Stream<List<EpgProgramme>> fetch(EpgRequest request) async* {
+    calls++;
+    yield [
+      EpgProgramme(
+        epgKey: 'tf1',
+        title: 'Soirée',
+        start: until.subtract(const Duration(hours: 1)),
+        stop: until,
+      ),
+    ];
+  }
+}
 
 /// Panneau Xtream en mémoire, que chaque test modifie entre deux
 /// synchronisations.
@@ -157,16 +179,18 @@ void main() {
     late _Panel panel;
     var now = DateTime.utc(2026, 11, 18, 8);
 
-    Future<List<ImportProgress>> sync({bool full = false}) =>
-        CatalogImportPipeline(
-          database: db,
-          catalogAdapter: XtreamSourceAdapter(
-            MockClient((request) async => panel.answer(request)),
-          ),
-          epgAdapter: const FakeEpgAdapter(),
-          clock: () => now,
-          pause: (_) async {},
-        ).run(sourceId, _xtream, full: full).toList();
+    Future<List<ImportProgress>> sync({
+      bool full = false,
+      EpgSourceAdapter guide = const FakeEpgAdapter(),
+    }) => CatalogImportPipeline(
+      database: db,
+      catalogAdapter: XtreamSourceAdapter(
+        MockClient((request) async => panel.answer(request)),
+      ),
+      epgAdapter: guide,
+      clock: () => now,
+      pause: (_) async {},
+    ).run(sourceId, _xtream, full: full).toList();
 
     Future<int?> idOf(String table, String column, Object value) async {
       final row = await db
@@ -289,6 +313,43 @@ void main() {
           .customSelect('SELECT COUNT(*) AS n FROM live_channels')
           .getSingle();
       expect(channels.read<int>('n'), 3);
+    });
+
+    test(
+      'une liste de chaînes changée n est téléchargée qu une fois',
+      () async {
+        panel
+          ..asked.clear()
+          ..channels[3] = 'FR: Arte';
+
+        await sync();
+
+        expect(
+          panel.asked.where((action) => action == 'get_live_streams'),
+          hasLength(1),
+        );
+        expect(await idOf('live_channels', 'display_name', 'Arte'), isNotNull);
+      },
+    );
+
+    test('un guide qui couvre encore la journée n est pas relu', () async {
+      final guide = _Guide(now.add(const Duration(hours: 50)));
+      await sync(guide: guide);
+      expect(guide.calls, 1);
+
+      // Il reste 26 h de programmes : le guide attend.
+      now = now.add(const Duration(days: 1));
+      await sync(guide: guide);
+      expect(guide.calls, 1);
+
+      // Il n'en reste que 2 h.
+      now = now.add(const Duration(days: 1));
+      await sync(guide: guide);
+      expect(guide.calls, 2);
+
+      // Un import complet relit toujours le guide.
+      await sync(guide: guide, full: true);
+      expect(guide.calls, 3);
     });
 
     test('une nouvelle version d une série rejoint les autres', () async {

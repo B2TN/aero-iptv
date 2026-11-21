@@ -16,7 +16,13 @@ import 'sync_report_codec.dart';
 
 /// Fenêtre de guide conservée autour de l'instant de synchronisation.
 const Duration _epgHistory = Duration(hours: 2);
-const Duration _epgHorizon = Duration(hours: 48);
+const Duration _epgHorizon = Duration(hours: 60);
+
+/// Une synchronisation de routine ne retélécharge pas un guide qui couvre
+/// encore ce temps : c'est souvent la plus grosse partie de la journée sur un
+/// Fire TV Stick. Un guide de trois jours ou plus n'est ainsi relu qu'un jour
+/// sur deux ; un guide plus court l'est chaque jour, comme avant.
+const Duration _epgEnough = Duration(hours: 24);
 
 /// Essais par section. Un panneau surchargé coupe une réponse ou renvoie une
 /// page d'erreur, puis répond normalement quelques secondes plus tard.
@@ -110,10 +116,13 @@ final class CatalogImportPipeline {
 
     /// Télécharge [section] par [fetch], en la reprenant après une panne
     /// passagère. Une section restée en échec rejoint [failed].
+    ///
+    /// Avec [keep], les lots y sont gardés au lieu d'être écrits.
     Stream<ImportProgress> download(
       SourceSection section,
-      Stream<CatalogBatch> Function() fetch,
-    ) async* {
+      Stream<CatalogBatch> Function() fetch, {
+      List<CatalogBatch>? keep,
+    }) async* {
       final kind = section.kind;
       for (var attempt = 1; ; attempt++) {
         // Pendant une lecture, la section ne se connecte même pas.
@@ -125,7 +134,11 @@ final class CatalogImportPipeline {
             // Une lecture vient de commencer : couper ici libère aussitôt la
             // connexion et le processeur.
             if (hold.isPaused) throw const _Interrupted();
-            await session.write(batch);
+            if (keep != null) {
+              keep.add(batch);
+            } else {
+              await session.write(batch);
+            }
             received += batch.received;
             entries += batch.entries.length;
             discoveredEpgUrl ??= batch.discoveredEpgUrl;
@@ -137,9 +150,10 @@ final class CatalogImportPipeline {
             );
           }
           processed += received;
-          written += entries;
+          if (keep == null) written += entries;
           return;
         } on _Interrupted {
+          keep?.clear();
           await _maintenance.purgeSection(catalogId, kind);
           session.forget(kind);
           gates?.forget(kind);
@@ -150,6 +164,7 @@ final class CatalogImportPipeline {
           // Même imprévue, l'erreur d'une section ne coûte pas les autres.
           final failure = importFailureOf(error);
           // Ce que l'essai a écrit est incomplet : le suivant repart de zéro.
+          keep?.clear();
           await _maintenance.purgeSection(catalogId, kind);
           session.forget(kind);
           gates?.forget(kind);
@@ -190,21 +205,23 @@ final class CatalogImportPipeline {
           closeSection();
           continue;
         }
-        final before = processed;
+        // Les chaînes se comparent d'un bloc : gardées en mémoire le temps de
+        // lire leur liste, elles ne sont écrites que si elle a changé. Les
+        // télécharger une seconde fois coûtait autant que la première.
+        final live = kind == ContentKind.live ? <CatalogBatch>[] : null;
         await for (final progress in download(
           section,
           () => section.fetchChanges!(gate),
+          keep: live,
         )) {
           yield progress;
         }
-        // Les chaînes se comparent d'un bloc : si leur liste a changé, elle
-        // est téléchargée à nouveau, entière.
-        if (kind == ContentKind.live && !failed.containsKey(kind)) {
+        if (live != null && !failed.containsKey(kind)) {
           gates!.finishLive();
           if (gates.liveChanged) {
-            processed = before;
-            await for (final progress in download(section, section.fetch)) {
-              yield progress;
+            for (final batch in live) {
+              await session.write(batch);
+              written += batch.entries.length;
             }
           }
         }
@@ -312,14 +329,16 @@ final class CatalogImportPipeline {
       merged: merging,
     );
     await waitWhilePaused();
-    final programmes = await _importEpg(
-      sourceId,
-      shownNow,
-      credentials,
-      discoveredEpgUrl,
-      hold,
-      waitWhilePaused,
-    ).catchError((Object error) => error is Failure ? -1 : throw error);
+    final programmes = merging && await _guideCovers(sourceId)
+        ? 0
+        : await _importEpg(
+            sourceId,
+            shownNow,
+            credentials,
+            discoveredEpgUrl,
+            hold,
+            waitWhilePaused,
+          ).catchError((Object error) => error is Failure ? -1 : throw error);
     final epgFailed = programmes < 0;
     report.close(SyncPhase.guide, received: programmes < 0 ? 0 : programmes);
     try {
@@ -396,6 +415,27 @@ final class CatalogImportPipeline {
     ServerFailure(:final status) => status >= HttpStatus.internalServerError,
     _ => false,
   };
+
+  /// Vrai si le guide enregistré couvre encore [_epgEnough]. Ses émissions
+  /// passées s'effacent quand même.
+  Future<bool> _guideCovers(int sourceId) async {
+    final now = _clock().toUtc();
+    final row = await _db
+        .customSelect(
+          'SELECT MAX(stop_at) AS last FROM epg_programmes '
+          'WHERE source_id = ?',
+          variables: [Variable.withInt(sourceId)],
+          readsFrom: {_db.epgProgrammes},
+        )
+        .getSingle();
+    final last = row.read<int?>('last');
+    if (last == null || last < _seconds(now.add(_epgEnough))) return false;
+    await _db.deleteExpiredProgrammes(
+      sourceId: sourceId,
+      before: _seconds(now.subtract(_epgHistory)),
+    );
+    return true;
+  }
 
   /// Le guide est facultatif : son échec n'annule pas le catalogue déjà activé.
   /// Retourne le nombre de programmes reçus.
@@ -539,14 +579,14 @@ final class _SyncGates {
   int? _liveFinal;
   int _legacyLive = _liveSeed;
 
-  /// Porte d'une section. Celle des chaînes ne laisse rien passer : elle
-  /// résume la liste, qui ne se télécharge à nouveau que si elle a changé.
+  /// Porte d'une section. Celle des chaînes laisse tout passer et résume
+  /// la liste : elle ne sera appliquée que si ce résumé a changé.
   EntryGate gateFor(ContentKind kind) {
     if (kind == ContentKind.live) {
       return (identity, hash, legacy) {
         _live = (_live ^ hash) * _liveMix;
         if (transition) _legacyLive = (_legacyLive ^ legacy()) * _liveMix;
-        return false;
+        return true;
       };
     }
     final known = _known[kind] ?? const <String, int?>{};
