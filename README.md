@@ -186,10 +186,10 @@ Feedback is public: **never post your username, password or playlist address.**
 - Your login details stay on your device, encrypted by the system vault (DPAPI on Windows, Keystore on Android), and are only sent to your provider.
 - No account, no ads, no analytics.
 - The app only contacts your provider, the services listed here, and DeepL if you've entered a key.
-- Once a day, the popular titles come from [TMDB](https://www.themoviedb.org), or from Apple's public charts in builds without a TMDB key. They only receive a country code. On a title's page, its large image may come from TMDB, which then receives its title and year.
+- Once a day, the popular titles come from [TMDB](https://www.themoviedb.org), or from Apple's public charts in builds without a TMDB key. They only receive a country code. On a title's page, its large image may come from TMDB, which then receives its title and year. When your provider gives no description for an episode, the app asks TMDB for the season's descriptions, with the series title, year and season number.
 - To know your country, the app asks [country.is](https://country.is) once which country your IP address is in, and keeps only the country code. You can also pick the country in **Settings**.
 - To find the intro and the end credits of an episode, it asks [TheIntroDB](https://theintrodb.org), [IntroDB](https://introdb.app) and [TVmaze](https://www.tvmaze.com). They only receive the series title, its public IDs, and the season and episode numbers.
-- To list the upcoming episodes of a series, it asks TVmaze with the series title only.
+- To list the upcoming episodes of a series, and to describe episodes that TMDB doesn't, it asks TVmaze with the series title only.
 
 ## Content and rights
 
