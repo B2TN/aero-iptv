@@ -97,18 +97,17 @@ class _AppShellState extends ConsumerState<AppShell> {
       (_, due) => _checkTutorial(due),
       fireImmediately: true,
     );
-    _lifecycle = AppLifecycleListener(
-      onResume: () {
-        unawaited(daily.check());
-        unawaited(updates.checkIfDue());
-        unawaited(trends.check());
-      },
-    );
-    _hourly = Timer.periodic(const Duration(hours: 1), (_) {
+    // Pendant une lecture, seule la synchronisation est notée, pour la
+    // fermeture du lecteur : le reste attendra la prochaine vérification.
+    void checkAll() {
       unawaited(daily.check());
+      if (ref.read(openPlayersProvider) > 0) return;
       unawaited(updates.checkIfDue());
       unawaited(trends.check());
-    });
+    }
+
+    _lifecycle = AppLifecycleListener(onResume: checkAll);
+    _hourly = Timer.periodic(const Duration(hours: 1), (_) => checkAll());
   }
 
   /// Le tutoriel s'ouvre à la première installation. Une installation déjà
