@@ -13,6 +13,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/painting.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 
@@ -124,6 +125,7 @@ Future<void> _png(
   void Function(Canvas canvas) paint, {
   double scale = 2,
   List<int>? faint,
+  String root = _root,
 }) async {
   final pixelWidth = (width * scale).round();
   final pixelHeight = (height * scale).round();
@@ -132,7 +134,7 @@ Future<void> _png(
     paint(canvas);
   });
   _unpremultiply(rgba, faint: faint);
-  File('$_root/$path')
+  File('$root/$path')
     ..createSync(recursive: true)
     ..writeAsBytesSync(
       img.encodePng(_toImage(pixelWidth, pixelHeight, rgba), level: 9),
@@ -623,8 +625,310 @@ Future<void> _chevron() => _png('icons/chevron.png', 22, 40, (canvas) {
     );
 });
 
+// --- README -----------------------------------------------------------------------
+//
+// Bannière et boutons de la page GitHub, dans la même direction artistique que
+// l'application : l'aurore, le verre, Inter. GitHub n'accepte pas de police
+// dans une image SVG : tout est dessiné ici, en PNG à l'échelle 2, ou en JPEG
+// pour la bannière.
+
+const String _docs = '../docs/assets';
+
+/// Charge Inter et sa coupe Display : sans elles, le moteur de test écrit avec
+/// une police de remplacement.
+Future<void> _loadFonts() async {
+  ByteData bytes(String path) =>
+      ByteData.sublistView(File('assets/fonts/$path').readAsBytesSync());
+  await (FontLoader('Inter')
+        ..addFont(Future.value(bytes('Inter-Regular.ttf')))
+        ..addFont(Future.value(bytes('Inter-Medium.ttf')))
+        ..addFont(Future.value(bytes('Inter-SemiBold.ttf'))))
+      .load();
+  await (FontLoader(
+    'InterDisplay',
+  )..addFont(Future.value(bytes('InterDisplay-SemiBold.ttf')))).load();
+}
+
+ui.Paragraph _text(
+  String text, {
+  required double size,
+  required Color color,
+  String family = 'Inter',
+  FontWeight weight = FontWeight.w400,
+  double width = 4000,
+  double height = 1.25,
+  double letterSpacing = 0,
+  List<Shadow> shadows = const [],
+}) {
+  final builder =
+      ui.ParagraphBuilder(
+          ui.ParagraphStyle(fontFamily: family, fontSize: size, height: height),
+        )
+        ..pushStyle(
+          ui.TextStyle(
+            color: color,
+            fontFamily: family,
+            fontSize: size,
+            fontWeight: weight,
+            height: height,
+            letterSpacing: letterSpacing,
+            shadows: shadows,
+          ),
+        )
+        ..addText(text);
+  return builder.build()..layout(ui.ParagraphConstraints(width: width));
+}
+
+/// Bulle de verre de la marque, comme dans la barre de l'application.
+void _orb(Canvas canvas, Offset center, double radius) {
+  final rect = Rect.fromCircle(center: center, radius: radius);
+  canvas
+    ..drawCircle(center, radius * 1.4, _soft(_alpha(_aqua, 0.35), radius * 0.5))
+    ..drawCircle(
+      center,
+      radius,
+      _radial(
+        rect,
+        const [Color(0xFFFFFFFF), Color(0xFF8FE4FF), Color(0xFF1F6FC5)],
+        center: const Alignment(-0.35, -0.45),
+        radius: 0.9,
+        stops: const [0, 0.35, 1],
+      ),
+    )
+    ..drawCircle(
+      center,
+      radius,
+      Paint()
+        ..isAntiAlias = true
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = radius * 0.06
+        ..color = _alpha(_white, 0.6),
+    );
+}
+
+/// Bannière : l'aurore, la marque à gauche, l'accueil de la 0.3 dans un cadre
+/// de verre à droite.
+Future<void> _banner() async {
+  const width = 1800.0;
+  const height = 760.0;
+  final codec = await ui.instantiateImageCodec(
+    File('../docs/captures/0.3.0/01_home.jpg').readAsBytesSync(),
+  );
+  final shot = (await codec.getNextFrame()).image;
+  final rgba = await _render(width.round(), height.round(), (canvas) {
+    const rect = Rect.fromLTWH(0, 0, width, height);
+    const scale = width / _backWidth;
+    canvas
+      ..save()
+      ..translate(0, -(_backHeight * scale - height) / 2 + 30)
+      ..scale(scale)
+      ..drawRect(
+        const Rect.fromLTWH(0, 0, _backWidth, _backHeight),
+        Paint()..color = _night,
+      );
+    _aurora(canvas);
+    canvas
+      ..restore()
+      // Le texte se lit sur un bleu plus sombre, à gauche.
+      ..drawRect(
+        rect,
+        _linear(
+          rect,
+          [_alpha(_night, 0.6), _alpha(_night, 0)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          stops: const [0, 0.5],
+        ),
+      );
+
+    // L'accueil, dans un cadre de verre.
+    const card = Rect.fromLTWH(730, 104, 980, 551.25);
+    final frame = RRect.fromRectAndRadius(card, const Radius.circular(22));
+    canvas
+      ..drawRRect(
+        frame.shift(const Offset(0, 26)),
+        _soft(_alpha(const Color(0xFF010A18), 0.65), 38),
+      )
+      ..drawRRect(frame.inflate(10), _soft(_alpha(_aqua, 0.18), 18))
+      ..save()
+      ..clipRRect(frame);
+    paintImage(
+      canvas: canvas,
+      rect: card,
+      image: shot,
+      fit: BoxFit.cover,
+      filterQuality: FilterQuality.high,
+    );
+    canvas
+      ..drawRect(
+        card,
+        _linear(
+          card,
+          [_alpha(_white, 0.12), _alpha(_white, 0)],
+          stops: const [0, 0.3],
+        ),
+      )
+      ..restore()
+      ..drawRRect(
+        frame,
+        Paint()
+          ..isAntiAlias = true
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2
+          ..color = _alpha(_white, 0.4),
+      );
+
+    // La marque et ce que fait l'application.
+    const lift = [Shadow(color: Color(0x99020D1C), blurRadius: 12)];
+    _orb(canvas, const Offset(128, 236), 34);
+    canvas
+      ..drawParagraph(
+        _text(
+          'Aero IPTV',
+          family: 'InterDisplay',
+          size: 88,
+          weight: FontWeight.w600,
+          color: _white,
+          letterSpacing: -1.5,
+          shadows: lift,
+        ),
+        const Offset(182, 180),
+      )
+      ..drawParagraph(
+        _text(
+          'Your channels, movies and series on TV and PC, in an interface '
+          'made of glass and light.',
+          size: 33,
+          color: const Color(0xFFE2EFFA),
+          width: 580,
+          height: 1.35,
+          shadows: lift,
+        ),
+        const Offset(96, 318),
+      );
+    var x = 96.0;
+    for (final platform in ['Android TV', 'Fire TV', 'Windows']) {
+      final label = _text(
+        platform,
+        size: 22,
+        weight: FontWeight.w600,
+        color: _white,
+      );
+      final chip = RRect.fromRectAndRadius(
+        Rect.fromLTWH(x, 520, label.maxIntrinsicWidth + 36, 46),
+        const Radius.circular(23),
+      );
+      canvas
+        ..drawRRect(chip, Paint()..color = _alpha(_white, 0.14))
+        ..drawRRect(
+          chip,
+          Paint()
+            ..isAntiAlias = true
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.5
+            ..color = _alpha(_white, 0.35),
+        )
+        ..drawParagraph(label, Offset(x + 18, 520 + (46 - label.height) / 2));
+      x += chip.width + 14;
+    }
+  });
+  shot.dispose();
+  File('$_docs/banner.jpg').writeAsBytesSync(
+    img.encodeJpg(
+      _toImage(width.round(), height.round(), rgba).convert(numChannels: 3),
+      quality: 90,
+    ),
+  );
+}
+
+/// Bouton en gel : vert pour les téléchargements, comme le bouton Lecture de
+/// l'application ; bleu pour les avis. Lisible sur les thèmes clair et sombre
+/// de GitHub.
+Future<void> _button(
+  String name,
+  String label, {
+  required bool green,
+  double height = 60,
+  double size = 20,
+}) async {
+  const margin = 12.0;
+  final ink = green ? const Color(0xFF03152B) : _white;
+  final text = _text(label, size: size, weight: FontWeight.w600, color: ink);
+  final width = text.maxIntrinsicWidth + height * 0.9;
+  await _png('$name.png', width + margin * 2, height + margin * 2, (canvas) {
+    final body = RRect.fromRectAndRadius(
+      Rect.fromLTWH(margin, margin, width, height),
+      Radius.circular(height / 2),
+    );
+    final gel = green
+        ? const [
+            Color(0xFFF2FFE6),
+            Color(0xFFB4F296),
+            Color(0xFF7ED65C),
+            Color(0xFF4FB33B),
+          ]
+        : const [
+            Color(0xFFA9DCFF),
+            Color(0xFF4A9BE6),
+            Color(0xFF2671C9),
+            Color(0xFF0F4C99),
+          ];
+    canvas
+      ..drawRRect(
+        body.shift(const Offset(0, 4)),
+        _soft(_alpha(const Color(0xFF010A18), 0.35), 6),
+      )
+      ..drawRRect(
+        body,
+        _linear(body.outerRect, gel, stops: const [0, 0.45, 0.55, 1]),
+      )
+      ..drawRRect(
+        body,
+        Paint()
+          ..isAntiAlias = true
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5
+          ..color = _alpha(_white, green ? 0.85 : 0.55),
+      )
+      ..drawParagraph(
+        text,
+        Offset(
+          margin + (width - text.maxIntrinsicWidth) / 2,
+          margin + (height - text.height) / 2,
+        ),
+      );
+  }, root: _docs);
+}
+
+Future<void> _readmeAssets() async {
+  await _loadFonts();
+  await _banner();
+  await _button('button-windows', 'Download for Windows', green: true);
+  await _button('button-firetv', 'Download for Fire TV', green: true);
+  await _button('button-androidtv', 'Download for Android TV', green: true);
+  await _button('button-feedback', 'Share your feedback', green: false);
+  await _button(
+    'button-bug',
+    'Report a bug',
+    green: false,
+    height: 48,
+    size: 17,
+  );
+  await _button(
+    'button-idea',
+    'Suggest an idea',
+    green: false,
+    height: 48,
+    size: 17,
+  );
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  // Lancement seul : flutter test tool/render_aero_textures_test.dart
+  // --plain-name readme
+  test('readme', _readmeAssets);
 
   test('textures', () async {
     final directory = Directory(_root);

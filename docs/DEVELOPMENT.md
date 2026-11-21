@@ -124,7 +124,7 @@ flutter test integration_test/system_back_test.dart -d emulator-5554
 adb shell input keyevent KEYCODE_BACK
 ```
 
-Regenerating the Frutiger Aero textures, from `app`:
+Regenerating the Frutiger Aero textures, and the banner and buttons of the README, from `app` (the banner uses the home screen capture in `docs/captures`):
 
 ```bash
 flutter test tool/render_aero_textures_test.dart
