@@ -136,6 +136,14 @@ The app icons and the TV banner have their own tool:
 dart run tool/generate_aero_assets.dart
 ```
 
+The screenshots of the README and the release notes come from your own playlist. This command asks for it in the console, starts the app in English in a temporary folder that it deletes at the end, vault included, then captures the home screen, a series, a movie, the player, the channels, the settings and Performance mode at 1920x1080. `-Version 0.2.0` takes the same pictures with that release, for before and after comparisons. The PNG files land in `docs\captures\<version>\`, and only JPEG copies are committed:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tool\capture_release_shots.ps1
+```
+
+`AERO_SERIES`, `AERO_MOVIE` and `AERO_CHANNEL` pick other titles than Dexter, Dune and A&E. `AERO_DEMO=1` runs the same path on the test playlist, without an account.
+
 ## Diagnosing an Xtream account
 
 If a panel refuses an import or playback, this tool shows the account status, tries to open a live stream and a movie while following each redirect, then looks for the route the server accepts for delivering its catalog: `http`, `https`, `POST`, session cookie, `get.php`, `xmltv.php` and `panel_api.php`. It also measures what slows playback down: movie throughput, how long a connection takes to be released, access to the end of the file, and how a live stream answers mpv's request and the relay's. It reads the account from the app's vault and displays neither the username nor the password. `-Servers` adds other addresses to try:

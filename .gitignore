@@ -29,3 +29,7 @@ config/secrets.json
 
 # Image d inspiration de la refonte : oeuvre d un tiers, jamais publiee.
 docs/inspiration.png
+
+# Captures brutes de tool/capture_release_shots.ps1 : seules leurs copies JPEG
+# sont publiées.
+docs/captures/*/*.png

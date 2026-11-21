@@ -19,7 +19,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/captures/0.3.0/01_home.png" alt="Aero IPTV home screen: a full-frame featured title, then rows of series and movies" width="860">
+  <img src="docs/captures/0.3.0/01_home.jpg" alt="Aero IPTV home screen: a full-frame featured title, then rows of series and movies" width="860">
 </p>
 
 Aero IPTV is a player for your own IPTV subscription, designed first for the TV remote. Its look comes from the Frutiger Aero style of the late 2000s: deep blue, glass panels, ribbons of light. Underneath, it works like the streaming apps you already know: a home screen with what's popular, one page per title, and playback that picks up where you left off.
@@ -94,16 +94,16 @@ You can skip the tutorial at any time and open it again from **Settings**, **Abo
 
 <table>
   <tr>
-    <td><img src="docs/captures/0.3.0/02_series.png" alt="Series page: the large image, the summary, then seasons and episodes"></td>
-    <td><img src="docs/captures/0.3.0/03_movie.png" alt="Movie page with its large image and play button"></td>
+    <td><img src="docs/captures/0.3.0/02_series.jpg" alt="Series page: the large image, the summary, then seasons and episodes"></td>
+    <td><img src="docs/captures/0.3.0/03_movie.jpg" alt="Movie page with its large image and play button"></td>
   </tr>
   <tr>
-    <td><img src="docs/captures/0.3.0/04_player.png" alt="Player with the title, time bar and controls"></td>
-    <td><img src="docs/captures/0.3.0/05_channels.png" alt="Live TV: groups on the left, channels and what's on now on the right"></td>
+    <td><img src="docs/captures/0.3.0/04_player.jpg" alt="Player with the title, time bar and controls"></td>
+    <td><img src="docs/captures/0.3.0/05_channels.jpg" alt="Live TV: groups on the left, channels and what's on now on the right"></td>
   </tr>
   <tr>
-    <td><img src="docs/captures/0.3.0/06_settings.png" alt="Settings, with categories on the left"></td>
-    <td><img src="docs/captures/0.3.0/07_performance.png" alt="The home screen in Performance mode"></td>
+    <td><img src="docs/captures/0.3.0/06_settings.jpg" alt="Settings, with categories on the left"></td>
+    <td><img src="docs/captures/0.3.0/07_performance.jpg" alt="The home screen in Performance mode"></td>
   </tr>
 </table>
 
