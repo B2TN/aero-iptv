@@ -3,9 +3,9 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/B2TN/aero-iptv/releases/latest/download/aero-iptv-windows-x64-setup.exe"><img src="docs/assets/button-windows.png" alt="Download for Windows" height="84"></a>
-  <a href="https://github.com/B2TN/aero-iptv/releases/latest/download/aero-iptv-fire-tv-armeabi-v7a.apk"><img src="docs/assets/button-firetv.png" alt="Download for Fire TV" height="84"></a>
-  <a href="https://github.com/B2TN/aero-iptv/releases/latest/download/aero-iptv-fire-tv-armeabi-v7a.apk"><img src="docs/assets/button-androidtv.png" alt="Download for Android TV" height="84"></a>
+  <a href="https://github.com/B2TN/aero-iptv/releases/latest/download/aero-iptv-windows-x64-setup.exe"><img src="docs/assets/button-windows.png" alt="Download for Windows" height="64"></a>
+  <a href="https://github.com/B2TN/aero-iptv/releases/latest/download/aero-iptv-fire-tv-armeabi-v7a.apk"><img src="docs/assets/button-firetv.png" alt="Download for Fire TV" height="64"></a>
+  <a href="https://github.com/B2TN/aero-iptv/releases/latest/download/aero-iptv-fire-tv-armeabi-v7a.apk"><img src="docs/assets/button-androidtv.png" alt="Download for Android TV" height="64"></a>
 </p>
 
 <p align="center">
@@ -174,9 +174,9 @@ Try another version from its page or from the player, or **External player** to 
 Aero IPTV is a young project built in spare time. Every bit of feedback counts: a first impression, a confusing screen, a channel that won't start, an idea. All you need is a free GitHub account, and the form takes a minute. On TV, **Settings**, **About**, **Report a problem** shows a QR code that opens it on your phone.
 
 <p align="center">
-  <a href="https://github.com/B2TN/aero-iptv/issues/new?template=feedback.yml"><img src="docs/assets/button-feedback.png" alt="Share your feedback" height="84"></a><br>
-  <a href="https://github.com/B2TN/aero-iptv/issues/new?template=bug.yml"><img src="docs/assets/button-bug.png" alt="Report a bug" height="72"></a>
-  <a href="https://github.com/B2TN/aero-iptv/issues/new?template=idea.yml"><img src="docs/assets/button-idea.png" alt="Suggest an idea" height="72"></a>
+  <a href="https://github.com/B2TN/aero-iptv/issues/new?template=feedback.yml"><img src="docs/assets/button-feedback.png" alt="Share your feedback" height="64"></a><br>
+  <a href="https://github.com/B2TN/aero-iptv/issues/new?template=bug.yml"><img src="docs/assets/button-bug.png" alt="Report a bug" height="54"></a>
+  <a href="https://github.com/B2TN/aero-iptv/issues/new?template=idea.yml"><img src="docs/assets/button-idea.png" alt="Suggest an idea" height="54"></a>
 </p>
 
 Feedback is public: **never post your username, password or playlist address.**
