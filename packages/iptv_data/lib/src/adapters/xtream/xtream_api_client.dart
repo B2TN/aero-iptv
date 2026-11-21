@@ -63,19 +63,24 @@ final class XtreamApiClient {
 
   /// Lit une liste en flux, sans charger la réponse complète.
   Stream<Map<String, dynamic>> objects(String action) async* {
-    await for (final raw in rawObjects(action)) {
-      final Object? decoded;
-      try {
-        decoded = jsonDecode(raw);
-      } on FormatException {
-        throw const ParseFailure('Réponse Xtream illisible.');
+    await for (final raws in rawBatches(action)) {
+      for (final raw in raws) {
+        final Object? decoded;
+        try {
+          decoded = jsonDecode(raw);
+        } on FormatException {
+          throw const ParseFailure('Réponse Xtream illisible.');
+        }
+        if (decoded is Map<String, dynamic>) yield decoded;
       }
-      if (decoded is Map<String, dynamic>) yield decoded;
     }
   }
 
-  /// Comme [objects], mais livre le texte de chaque objet sans le décoder.
-  Stream<String> rawObjects(String action) async* {
+  /// Comme [objects], mais livre le texte des objets sans les décoder, par
+  /// paquets : ceux que termine chaque morceau reçu. Passer par le flux pour
+  /// chacun des 300 000 objets d'un catalogue coûterait plusieurs secondes à
+  /// un Fire TV Stick.
+  Stream<List<String>> rawBatches(String action) async* {
     final response = await openGet(
       _client,
       _apiUri({'action': action}),
@@ -86,9 +91,8 @@ final class XtreamApiClient {
       // Pas de `yield*` : il transmettrait les erreurs du découpage telles
       // quelles, sans passer par les `on` ci-dessous.
       await for (final chunk in textChunks(response)) {
-        for (final element in splitter.add(chunk)) {
-          yield element;
-        }
+        final elements = splitter.add(chunk);
+        if (elements.isNotEmpty) yield elements;
       }
       if (!splitter.isComplete) throw const TruncatedJsonException();
     } on TruncatedJsonException {

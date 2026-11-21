@@ -119,29 +119,36 @@ final class XtreamSourceAdapter implements PlaylistSourceAdapter {
     var entries = <CatalogEntry>[];
     var received = 0;
     var position = 0;
-    await for (final raw in api.rawObjects(list.list)) {
-      received++;
-      position++;
-      final hash = rawFieldsHash(raw, list.hashed, groups);
-      final id = rawEntryId(raw, list.idField);
-      if (gate == null ||
-          id == null ||
-          gate('${list.identity}$id', hash, () => rawEntryHash(raw, groups))) {
-        final Object? json;
-        try {
-          json = jsonDecode(raw);
-        } on FormatException {
-          throw const ParseFailure('Réponse Xtream illisible.');
+    await for (final raws in api.rawBatches(list.list)) {
+      for (final raw in raws) {
+        received++;
+        position++;
+        final hash = rawFieldsHash(raw, list.hashed, groups);
+        final id = rawEntryId(raw, list.idField);
+        if (gate == null ||
+            id == null ||
+            gate(
+              '${list.identity}$id',
+              hash,
+              () => rawEntryHash(raw, groups),
+            )) {
+          final Object? json;
+          try {
+            json = jsonDecode(raw);
+          } on FormatException {
+            throw const ParseFailure('Réponse Xtream illisible.');
+          }
+          final entry = json is Map<String, dynamic>
+              ? list.map(json, categories, hash, position)
+              : null;
+          if (entry != null) entries.add(entry);
         }
-        final entry = json is Map<String, dynamic>
-            ? list.map(json, categories, hash, position)
-            : null;
-        if (entry != null) entries.add(entry);
-      }
-      if (entries.length >= catalogBatchSize || received >= _receivedPerBatch) {
-        yield CatalogBatch(entries, received: received);
-        entries = [];
-        received = 0;
+        if (entries.length >= catalogBatchSize ||
+            received >= _receivedPerBatch) {
+          yield CatalogBatch(entries, received: received);
+          entries = [];
+          received = 0;
+        }
       }
     }
     if (entries.isNotEmpty || received > 0) {
