@@ -45,11 +45,16 @@ void main() {
   final shots = env['AERO_SHOTS'];
   final root = GlobalKey();
 
+  /// Attend en dessinant l'écran tout du long, comme l'application : les
+  /// fondus et les délais d'affichage se déroulent comme à l'écran.
   Future<void> wait(WidgetTester tester, int milliseconds) async {
-    await tester.runAsync(
-      () => Future<void>.delayed(Duration(milliseconds: milliseconds)),
-    );
-    await tester.pump();
+    final clock = Stopwatch()..start();
+    do {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 40)),
+      );
+      await tester.pump();
+    } while (clock.elapsedMilliseconds < milliseconds);
     await tester.pump();
   }
 
