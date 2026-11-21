@@ -320,6 +320,12 @@ abstract class AppLocalizations {
   /// **'Aucun épisode disponible pour cette version'**
   String get detailNoEpisodes;
 
+  /// No description provided for @detailNoDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune description disponible'**
+  String get detailNoDescription;
+
   /// No description provided for @searchSearching.
   ///
   /// In fr, this message translates to:

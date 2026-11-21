@@ -13,6 +13,7 @@ import '../../../design_system/glass/glass_panel.dart';
 import '../../../design_system/tokens/aero_tokens.dart';
 import '../../../focus/dpad_collection.dart';
 import '../../../focus/focus_guard.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../../l10n/version_names.dart';
 import '../../player/player_target.dart';
 import '../title_menu.dart';
@@ -27,6 +28,49 @@ final _seasonsProvider = FutureProvider.autoDispose
           .watch(catalogRepositoryProvider)
           .seasonsOf(key.sourceId, key.entryId),
     );
+
+/// Résumés d'épisodes que le fournisseur ne donne pas, cherchés pour la
+/// saison affichée et gardés dans le catalogue. Sans réseau, la fiche reste
+/// lisible sans eux.
+final _summariesProvider = FutureProvider.autoDispose
+    .family<
+      Map<String, String>,
+      ({int sourceId, int entryId, int season, String title, int? year})
+    >((ref, key) async {
+      final language = ref.watch(
+        settingsProvider.select((settings) => settings.languageCode),
+      );
+      final seasons = await ref.watch(
+        _seasonsProvider((sourceId: key.sourceId, entryId: key.entryId)).future,
+      );
+      final season = seasons.where((s) => s.number == key.season).firstOrNull;
+      if (season == null) return const {};
+      try {
+        return await ref.watch(completeEpisodeSummariesProvider)(
+          key.sourceId,
+          title: key.title,
+          year: key.year,
+          season: season,
+          language: language,
+        );
+      } on Failure {
+        return const {};
+      }
+    });
+
+/// Résumé affiché sous un épisode : celui du fournisseur, sinon celui trouvé
+/// sur TMDB ou TVmaze, sinon un texte neutre. Pendant la recherche, une ligne
+/// vide garde sa place, pour que la liste ne saute pas à son arrivée.
+String episodeOverview(
+  AppLocalizations l10n,
+  Episode episode,
+  Map<String, String>? found,
+) {
+  final own = episode.overview?.trim();
+  if (own != null && own.isNotEmpty) return own;
+  if (found == null) return '';
+  return found[episode.contentKey] ?? l10n.detailNoDescription;
+}
 
 /// Résumé et genre de la série. Sans réponse du fournisseur, la fiche reste
 /// complète, simplement sans résumé.
@@ -386,10 +430,18 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                 episode.season == resumed.season &&
                 episode.number == resumed.number,
           );
-    // Avec des résumés, chaque épisode prend deux lignes de plus.
-    final described = season.episodes.any(
-      (episode) => episode.overview != null,
-    );
+    // Chaque épisode a son résumé, ou un texte neutre : deux lignes de plus.
+    final found = ref
+        .watch(
+          _summariesProvider((
+            sourceId: widget.sourceId,
+            entryId: _entryId,
+            season: season.number,
+            title: widget.series.title,
+            year: widget.series.year,
+          )),
+        )
+        .value;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -423,7 +475,7 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                   widget.resume == null && !_versionChanged && !_seasonChanged,
               initialIndex: resumedIndex < 0 ? 0 : resumedIndex,
               itemCount: season.episodes.length,
-              itemExtent: described ? 96 : 56,
+              itemExtent: 96,
               padding: const EdgeInsets.all(4),
               onSelect: (index) => _playEpisode(seen, season.episodes[index]),
               onLongSelect: (index) => showEpisodeMenu(
@@ -440,7 +492,7 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                 final episode = season.episodes[index];
                 return EpisodeLine(
                   title: episodeLabel(l10n, widget.series, episode),
-                  overview: episode.overview,
+                  overview: episodeOverview(l10n, episode, found),
                   watched: seen.of(episode.season, episode.number),
                   focused: focused,
                 );

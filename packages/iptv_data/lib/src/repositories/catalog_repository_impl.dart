@@ -91,6 +91,21 @@ final class CatalogRepositoryImpl implements CatalogRepository {
   }
 
   @override
+  Future<void> saveEpisodeOverviews(
+    int seriesEntryId,
+    Map<String, String> overviews,
+  ) => transactionKeepingCause(_db, () async {
+    for (final MapEntry(key: contentKey, value: overview)
+        in overviews.entries) {
+      await _db.saveFoundEpisodeOverview(
+        overview: overview,
+        entryId: seriesEntryId,
+        contentKey: contentKey,
+      );
+    }
+  });
+
+  @override
   Future<List<Movie>> moviesByTitleKeys(
     int sourceId,
     Set<String> titleKeys,

@@ -95,6 +95,38 @@ final class TmdbClient {
         : _imageUrl(_backdropBase, first['backdrop_path']);
   }
 
+  /// Identifiant de la série nommée [title], d'après le premier résultat.
+  Future<int?> seriesId(String title, {int? year}) async {
+    final results = await _get('/3/search/tv', {
+      'query': title,
+      'include_adult': 'false',
+      'first_air_date_year': ?year?.toString(),
+    });
+    final id = results.firstOrNull?['id'];
+    return id is int ? id : null;
+  }
+
+  /// Résumés des épisodes de la saison [season] de la série [seriesId], par
+  /// numéro d'épisode, dans [language]. TMDB laisse vide le résumé d'un
+  /// épisode qu'il n'a pas dans cette langue : celui-là n'y figure pas.
+  Future<Map<int, String>> seasonOverviews(
+    int seriesId,
+    int season, {
+    required String language,
+  }) async {
+    final json = await _object('/3/tv/$seriesId/season/$season', {
+      'language': language,
+    });
+    final episodes = json?['episodes'];
+    if (episodes is! List) return const {};
+    return {
+      for (final episode in episodes.whereType<Map<String, dynamic>>())
+        if (episode['episode_number'] case final int number)
+          if (_nonEmpty(episode['overview']) case final overview?)
+            number: overview,
+    };
+  }
+
   Future<List<_Result>> _results(
     ContentKind kind,
     String path,
@@ -105,6 +137,16 @@ final class TmdbClient {
 
   /// Résultats d'une requête de l'API.
   Future<List<Map<String, dynamic>>> _get(
+    String path,
+    Map<String, String> query,
+  ) async {
+    final results = (await _object(path, query))?['results'];
+    if (results is! List) return const [];
+    return results.whereType<Map<String, dynamic>>().toList();
+  }
+
+  /// Réponse d'une requête de l'API, `null` si ce n'est pas un objet.
+  Future<Map<String, dynamic>?> _object(
     String path,
     Map<String, String> query,
   ) async {
@@ -122,9 +164,7 @@ final class TmdbClient {
     } on FormatException {
       throw const ParseFailure('Réponse TMDb illisible.');
     }
-    final results = json is Map<String, dynamic> ? json['results'] : null;
-    if (results is! List) return const [];
-    return results.whereType<Map<String, dynamic>>().toList();
+    return json is Map<String, dynamic> ? json : null;
   }
 
   _Result? _toResult(Map<String, dynamic> json, ContentKind kind) {

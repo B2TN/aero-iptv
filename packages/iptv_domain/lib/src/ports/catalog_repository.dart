@@ -31,6 +31,14 @@ abstract interface class CatalogRepository {
   /// Identifiant TMDb de la série d'un épisode, quand le fournisseur le donne.
   Future<String?> tmdbIdOfEpisode(int sourceId, String contentKey);
 
+  /// Garde les résumés trouvés ailleurs pour des épisodes de la version
+  /// [seriesEntryId], par `contentKey`. Un résumé du fournisseur arrivé
+  /// depuis n'est pas remplacé.
+  Future<void> saveEpisodeOverviews(
+    int seriesEntryId,
+    Map<String, String> overviews,
+  );
+
   /// Films dont le titre normalisé figure dans [titleKeys].
   Future<List<Movie>> moviesByTitleKeys(int sourceId, Set<String> titleKeys);
 

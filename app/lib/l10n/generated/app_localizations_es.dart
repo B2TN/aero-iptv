@@ -130,6 +130,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'No hay episodios disponibles para esta versión';
 
   @override
+  String get detailNoDescription => 'No hay descripción disponible';
+
+  @override
   String get searchSearching => 'Buscando…';
 
   @override

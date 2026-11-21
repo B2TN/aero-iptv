@@ -391,6 +391,12 @@ saveEpisodeOverview:
   UPDATE episodes SET overview = :overview
   WHERE series_entry_id = :entry_id AND content_key = :content_key;
 
+-- Résumé trouvé sur TMDB ou TVmaze : celui du fournisseur reste prioritaire.
+saveFoundEpisodeOverview:
+  UPDATE episodes SET overview = :overview
+  WHERE series_entry_id = :entry_id AND content_key = :content_key
+    AND (overview IS NULL OR TRIM(overview) = '');
+
 -- Maintenance -----------------------------------------------------------------
 
 orphanCatalogs:

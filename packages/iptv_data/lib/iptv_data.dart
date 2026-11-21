@@ -16,6 +16,7 @@ export 'src/remote/tmdb_client.dart';
 export 'src/repositories/artwork_repository_impl.dart';
 export 'src/repositories/catalog_repository_impl.dart';
 export 'src/repositories/epg_repository_impl.dart';
+export 'src/repositories/episode_summary_repository_impl.dart';
 export 'src/repositories/favorites_repository_impl.dart';
 export 'src/repositories/live_tv_repository_impl.dart';
 export 'src/repositories/playlist_repository_impl.dart';

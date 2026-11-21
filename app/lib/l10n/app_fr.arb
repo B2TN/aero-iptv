@@ -66,6 +66,7 @@
     }
   },
   "detailNoEpisodes": "Aucun épisode disponible pour cette version",
+  "detailNoDescription": "Aucune description disponible",
   "searchSearching": "Recherche en cours…",
   "menuOpenPage": "Voir la fiche",
   "menuChooseVersion": "Choisir la version",

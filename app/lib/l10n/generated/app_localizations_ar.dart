@@ -128,6 +128,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get detailNoEpisodes => 'لا توجد حلقات متاحة لهذه النسخة';
 
   @override
+  String get detailNoDescription => 'لا يوجد وصف متاح';
+
+  @override
   String get searchSearching => 'جارٍ البحث…';
 
   @override

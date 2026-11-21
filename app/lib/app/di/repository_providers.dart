@@ -147,6 +147,25 @@ final artworkRepositoryProvider = Provider<ArtworkRepository>(
   ),
 );
 
+/// Résumés d'épisodes que le fournisseur ne donne pas, cherchés sur TMDB et
+/// TVmaze. Gardé pour la session : chaque saison n'y est demandée qu'une fois.
+final episodeSummaryRepositoryProvider = Provider<EpisodeSummaryRepository>((
+  ref,
+) {
+  final client = ref.watch(httpClientProvider);
+  return EpisodeSummaryRepositoryImpl(
+    tmdb: _tmdbToken.isEmpty ? null : TmdbClient(client, readToken: _tmdbToken),
+    tvMaze: TvMazeClient(client),
+  );
+});
+
+final completeEpisodeSummariesProvider = Provider<CompleteEpisodeSummaries>(
+  (ref) => CompleteEpisodeSummaries(
+    ref.watch(catalogRepositoryProvider),
+    ref.watch(episodeSummaryRepositoryProvider),
+  ),
+);
+
 final countryLocatorProvider = Provider<CountryLocator>(
   (ref) => CountryIsClient(ref.watch(httpClientProvider)),
 );

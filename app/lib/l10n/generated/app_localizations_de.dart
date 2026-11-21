@@ -130,6 +130,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Für diese Version sind keine Folgen verfügbar';
 
   @override
+  String get detailNoDescription => 'Keine Beschreibung verfügbar';
+
+  @override
   String get searchSearching => 'Suche läuft…';
 
   @override

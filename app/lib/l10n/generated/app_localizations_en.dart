@@ -129,6 +129,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get detailNoEpisodes => 'No episodes available for this version';
 
   @override
+  String get detailNoDescription => 'No description available';
+
+  @override
   String get searchSearching => 'Searching…';
 
   @override

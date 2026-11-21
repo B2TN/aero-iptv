@@ -45,6 +45,12 @@ final class FakeCatalog implements CatalogRepository {
   Future<String?> tmdbIdOfEpisode(int sourceId, String contentKey) async =>
       null;
 
+  @override
+  Future<void> saveEpisodeOverviews(
+    int seriesEntryId,
+    Map<String, String> overviews,
+  ) async {}
+
   FakeCatalog({this.movieList = const [], this.seriesList = const []});
 
   final List<Movie> movieList;

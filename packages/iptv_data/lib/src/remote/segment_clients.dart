@@ -186,6 +186,47 @@ final class TvMazeClient {
     );
   }
 
+  /// Résumés, en anglais, des épisodes de la saison [season] de la série
+  /// [title], par numéro d'épisode. Vide si aucune série ne correspond.
+  Future<Map<int, String>> seasonSummaries(
+    String title, {
+    int? year,
+    required int season,
+  }) async {
+    final show = await _findShow(title, year: year);
+    final id = show?['id'];
+    if (id is! int) return const {};
+    final episodes = await _getJson(
+      Uri.https('api.tvmaze.com', '/shows/$id/episodes'),
+    );
+    if (episodes is! List) return const {};
+    return {
+      for (final episode in episodes.whereType<Map<String, dynamic>>())
+        if (episode['season'] == season)
+          if (episode['number'] case final int number)
+            if (plainSummary(episode['summary']) case final summary?)
+              number: summary,
+    };
+  }
+
+  /// Texte d'un résumé TVmaze, écrit en HTML simple (`<p>`, `<b>`, `<i>`).
+  static String? plainSummary(Object? html) {
+    if (html is! String) return null;
+    final text = html
+        .replaceAll(RegExp('<br ?/?>|</p>', caseSensitive: false), ' ')
+        .replaceAll(RegExp('<[^>]*>'), '')
+        .replaceAll('&amp;', '&')
+        .replaceAll('&quot;', '"')
+        .replaceAll('&#39;', "'")
+        .replaceAll('&apos;', "'")
+        .replaceAll('&lt;', '<')
+        .replaceAll('&gt;', '>')
+        .replaceAll('&nbsp;', ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    return text.isEmpty ? null : text;
+  }
+
   /// Retard au-delà duquel un épisode diffusé et absent n'est plus attendu.
   static const Duration lateWindow = Duration(days: 30);
 

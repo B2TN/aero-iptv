@@ -88,6 +88,35 @@ final class _Catalog extends Fake implements CatalogRepository {
   @override
   Future<TitleDetails> seriesDetails(int sourceId, int seriesEntryId) async =>
       details;
+
+  /// Résumés gardés après une recherche sur TMDB ou TVmaze.
+  final Map<String, String> savedOverviews = {};
+
+  @override
+  Future<String?> tmdbIdOfEpisode(int sourceId, String contentKey) async =>
+      null;
+
+  @override
+  Future<void> saveEpisodeOverviews(
+    int seriesEntryId,
+    Map<String, String> overviews,
+  ) async => savedOverviews.addAll(overviews);
+}
+
+/// Résumés que TMDB ou TVmaze donnent pour la saison demandée.
+final class _Summaries implements EpisodeSummaryRepository {
+  const _Summaries(this.found);
+
+  final Map<int, String> found;
+
+  @override
+  Future<Map<int, String>> seasonSummaries({
+    required String title,
+    int? year,
+    String? tmdbId,
+    required int season,
+    required String language,
+  }) async => season == 1 ? found : const {};
 }
 
 /// Positions enregistrées, toutes versions confondues, la plus récente
@@ -192,6 +221,7 @@ Future<_Progress> _open(
   ),
   ScheduleRepository? schedule,
   bool overviews = true,
+  Map<int, String> found = const {},
   List<MediaVersion> versions = const [],
   List<WatchProgress> progress = const [],
   String language = 'fr',
@@ -213,6 +243,7 @@ Future<_Progress> _open(
         scheduleRepositoryProvider.overrideWithValue(
           schedule ?? _Schedule(_running),
         ),
+        episodeSummaryRepositoryProvider.overrideWithValue(_Summaries(found)),
       ],
       child: WidgetsApp(
         color: const Color(0xFF000000),
@@ -326,6 +357,26 @@ void main() {
     final title = tester.getRect(find.text('Épisode 1'));
     final summary = tester.getRect(find.text('Léa rejoint l équipe de Marc.'));
     expect(summary.top, greaterThan(title.bottom));
+  });
+
+  testWidgets('complète un résumé que le fournisseur ne donne pas', (
+    tester,
+  ) async {
+    await _open(
+      tester,
+      found: const {1: 'Autre résumé.', 2: 'Marc quitte le port.'},
+    );
+
+    // Celui du fournisseur reste.
+    expect(find.text('Léa rejoint l équipe de Marc.'), findsOneWidget);
+    expect(find.text('Autre résumé.'), findsNothing);
+    expect(find.text('Marc quitte le port.'), findsOneWidget);
+  });
+
+  testWidgets('sans résumé nulle part, un texte neutre', (tester) async {
+    await _open(tester, overviews: false);
+
+    expect(find.text('Aucune description disponible'), findsNWidgets(2));
   });
 
   testWidgets('annonce les prochains épisodes avec leur date', (tester) async {
