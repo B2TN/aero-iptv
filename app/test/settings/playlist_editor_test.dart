@@ -95,6 +95,7 @@ final class _Importer implements CatalogImporter {
     PlaylistSource source,
     PlaylistCredentials credentials, {
     bool full = false,
+    ImportPause? pause,
   }) {
     received.add(credentials);
     return const Stream.empty();

@@ -23,11 +23,22 @@ final class IsolateCatalogImporter implements CatalogImporter {
     PlaylistSource source,
     PlaylistCredentials credentials, {
     bool full = false,
+    ImportPause? pause,
   }) {
     final port = ReceivePort();
     final controller = StreamController<ImportProgress>();
+    StreamSubscription<bool>? pauses;
 
-    final subscription = port.cast<ImportProgress>().listen(controller.add);
+    final subscription = port.listen((message) {
+      if (message is SendPort) {
+        // L'isolate envoie d'abord son port de commande : il y reçoit l'état
+        // de la pause, puis chacun de ses changements.
+        message.send(pause?.isPaused ?? false);
+        pauses = pause?.changes.listen(message.send);
+        return;
+      }
+      controller.add(message as ImportProgress);
+    });
 
     unawaited(
       _spawn(_database, port.sendPort, source.id, credentials, full)
@@ -40,6 +51,7 @@ final class IsolateCatalogImporter implements CatalogImporter {
             // les a déjà reçus lorsque ce rappel s'exécute.
             await Future<void>.delayed(Duration.zero);
             await subscription.cancel();
+            await pauses?.cancel();
             port.close();
             await controller.close();
           }),
@@ -69,6 +81,10 @@ final class IsolateCatalogImporter implements CatalogImporter {
     bool full,
   ) async {
     final client = http.Client();
+    final pause = ImportPause();
+    final commands = ReceivePort();
+    commands.listen((paused) => pause.set(paused: paused as bool));
+    progress.send(commands.sendPort);
     try {
       final adapters = AdapterResolver(client);
       final pipeline = CatalogImportPipeline(
@@ -77,13 +93,14 @@ final class IsolateCatalogImporter implements CatalogImporter {
         epgAdapter: adapters.epgFor(credentials),
       );
       await pipeline
-          .run(sourceId, credentials, full: full)
+          .run(sourceId, credentials, full: full, pause: pause)
           .forEach(progress.send);
     } on Object catch (error, stack) {
       // Converti ici, où l'erreur est encore intacte : toutes ne survivent pas
       // au passage entre isolates.
       Error.throwWithStackTrace(importFailureOf(error), stack);
     } finally {
+      commands.close();
       client.close();
     }
   }

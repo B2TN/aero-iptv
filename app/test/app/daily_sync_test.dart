@@ -43,14 +43,17 @@ final class _Vault implements CredentialStore {
 /// trouve donc la première en cours.
 final class _Importer implements CatalogImporter {
   final List<bool> fulls = [];
+  final List<ImportPause?> pauses = [];
 
   @override
   Stream<ImportProgress> run(
     PlaylistSource source,
     PlaylistCredentials credentials, {
     bool full = false,
+    ImportPause? pause,
   }) async* {
     fulls.add(full);
+    pauses.add(pause);
     yield const ImportProgress(ImportStage.catalog);
   }
 }
@@ -140,6 +143,32 @@ void main() {
     players.closed();
     await settle();
     expect(importer.fulls, [false]);
+  });
+
+  test('commencée, elle se met en pause pendant une lecture', () async {
+    final container = containerWith(
+      _source(lastSyncedAt: DateTime(2026, 11, 17, 23)),
+    );
+    await container.read(dailySyncProvider.notifier).check(atLaunch: true);
+    await settle();
+    final pause = importer.pauses.single!;
+    expect(pause.isPaused, isFalse);
+
+    final players = container.read(openPlayersProvider.notifier)..opened();
+    await settle();
+    expect(pause.isPaused, isTrue);
+
+    // L'épisode suivant ouvre son lecteur avant que le premier se ferme.
+    players
+      ..opened()
+      ..closed();
+    await settle();
+    expect(pause.isPaused, isTrue);
+
+    players.closed();
+    await settle();
+    expect(pause.isPaused, isFalse);
+    expect(importer.fulls, hasLength(1));
   });
 
   test('le réglage coupé l empêche', () async {

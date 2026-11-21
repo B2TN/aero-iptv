@@ -31,7 +31,8 @@ final openPlayersProvider = NotifierProvider<OpenPlayers, int>(OpenPlayers.new);
 /// vérification de chaque heure.
 ///
 /// Elle ne démarre jamais pendant une lecture : elle attend la fermeture du
-/// lecteur. Commencée, elle continue, même si une lecture démarre ensuite.
+/// lecteur. Commencée, elle se met en pause dès qu'une lecture démarre, et
+/// reprend à la fermeture du lecteur (voir `ImportController`).
 class DailySync extends Notifier<void> {
   /// Due pendant une lecture : elle part dès la fermeture du lecteur.
   bool _waiting = false;

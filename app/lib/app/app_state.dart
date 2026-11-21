@@ -7,6 +7,7 @@ import 'package:iptv_player/iptv_player.dart' show MemoryTier;
 
 import '../design_system/tokens/aero_look.dart';
 import '../l10n/generated/app_localizations.dart';
+import 'daily_sync.dart' show openPlayersProvider;
 import 'di/infrastructure_providers.dart';
 import 'di/repository_providers.dart';
 
@@ -156,9 +157,14 @@ final class ImportStatus {
 class ImportController extends Notifier<ImportStatus> {
   StreamSubscription<ImportProgress>? _subscription;
 
+  /// Une lecture suspend la synchronisation en cours : sur un Fire TV Stick,
+  /// elle prendrait au lecteur le débit du fournisseur et le processeur.
+  ImportPause? _pause;
+
   @override
   ImportStatus build() {
     ref.onDispose(() => unawaited(_subscription?.cancel()));
+    ref.listen(openPlayersProvider, (_, open) => _pause?.set(paused: open > 0));
     return const ImportStatus();
   }
 
@@ -187,9 +193,11 @@ class ImportController extends Notifier<ImportStatus> {
     if (state.running) return;
     state = const ImportStatus(running: true, stage: ImportStage.connecting);
     _keepAwake(true);
+    final pause = _pause = ImportPause()
+      ..set(paused: ref.read(openPlayersProvider) > 0);
     _subscription = ref
         .read(importPlaylistProvider)
-        .call(source, full: full)
+        .call(source, full: full, pause: pause)
         .listen(
           (progress) {
             final done = progress.stage == ImportStage.done;

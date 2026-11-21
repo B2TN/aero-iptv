@@ -15,6 +15,7 @@ export 'src/entities/epg_programme.dart';
 export 'src/entities/favorite.dart';
 export 'src/entities/episode.dart';
 export 'src/entities/home_feed.dart';
+export 'src/entities/import_pause.dart';
 export 'src/entities/import_progress.dart';
 export 'src/entities/media_segments.dart';
 export 'src/entities/media_track.dart';

@@ -53,6 +53,7 @@ final class _Importer implements CatalogImporter {
     PlaylistSource source,
     PlaylistCredentials credentials, {
     bool full = false,
+    ImportPause? pause,
   }) async* {
     runs++;
     fulls.add(full);

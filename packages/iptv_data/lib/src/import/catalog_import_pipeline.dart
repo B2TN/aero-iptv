@@ -39,7 +39,7 @@ final class CatalogImportPipeline {
        _catalogAdapter = catalogAdapter,
        _epgAdapter = epgAdapter,
        _clock = clock,
-       _pause = pause,
+       _delay = pause,
        _maintenance = CatalogMaintenanceDao(database),
        _merge = CatalogMergeDao(database);
 
@@ -47,7 +47,7 @@ final class CatalogImportPipeline {
   final PlaylistSourceAdapter _catalogAdapter;
   final EpgSourceAdapter _epgAdapter;
   final DateTime Function() _clock;
-  final Future<void> Function(Duration duration) _pause;
+  final Future<void> Function(Duration duration) _delay;
   final CatalogMaintenanceDao _maintenance;
   final CatalogMergeDao _merge;
 
@@ -62,13 +62,27 @@ final class CatalogImportPipeline {
   /// qui vient d'arriver lui sont appliquées. [full] le remplace en entier,
   /// comme au premier import : les règles de nettoyage ont changé, et tous
   /// les titres avec elles.
+  ///
+  /// Pendant une [pause], rien ne se télécharge ni ne s'écrit : un
+  /// téléchargement en cours s'arrête au lot suivant, et reprend du début.
   Stream<ImportProgress> run(
     int sourceId,
     PlaylistCredentials credentials, {
     bool full = false,
+    ImportPause? pause,
   }) async* {
     yield const ImportProgress(ImportStage.connecting);
     final report = _Report();
+    final hold = pause ?? ImportPause();
+
+    /// Attend la fin de la pause, qui ne compte dans aucune étape du relevé.
+    Future<void> waitWhilePaused() async {
+      if (!hold.isPaused) return;
+      report.stop();
+      await hold.resumed;
+      report.start();
+    }
+
     await _maintenance.purgeOrphans();
     // Un accès refusé s'arrête ici, avant d'avoir réservé quoi que ce soit.
     final sections = await _catalogAdapter.open(credentials);
@@ -102,10 +116,15 @@ final class CatalogImportPipeline {
     ) async* {
       final kind = section.kind;
       for (var attempt = 1; ; attempt++) {
+        // Pendant une lecture, la section ne se connecte même pas.
+        await waitWhilePaused();
         var received = 0;
         var entries = 0;
         try {
           await for (final batch in fetch()) {
+            // Une lecture vient de commencer : couper ici libère aussitôt la
+            // connexion et le processeur.
+            if (hold.isPaused) throw const _Interrupted();
             await session.write(batch);
             received += batch.received;
             entries += batch.entries.length;
@@ -120,6 +139,13 @@ final class CatalogImportPipeline {
           processed += received;
           written += entries;
           return;
+        } on _Interrupted {
+          await _maintenance.purgeSection(catalogId, kind);
+          session.forget(kind);
+          gates?.forget(kind);
+          await waitWhilePaused();
+          // Une pause n'est pas une panne : l'essai ne compte pas.
+          attempt--;
         } on Object catch (error, stack) {
           // Même imprévue, l'erreur d'une section ne coûte pas les autres.
           final failure = importFailureOf(error);
@@ -128,7 +154,7 @@ final class CatalogImportPipeline {
           session.forget(kind);
           gates?.forget(kind);
           if (attempt < _sectionAttempts && _isTransient(failure)) {
-            await _pause(_retryDelay * attempt);
+            await _delay(_retryDelay * attempt);
             continue;
           }
           // Une source d'un seul tenant n'a rien d'autre à sauver.
@@ -220,6 +246,7 @@ final class CatalogImportPipeline {
             _maintenance.buildSearchIndex(catalogId),
     };
     final failedRefinements = <CatalogRefinement, Failure>{};
+    await waitWhilePaused();
     for (final MapEntry(key: step, value: refine) in refinements.entries) {
       try {
         await refine();
@@ -230,6 +257,7 @@ final class CatalogImportPipeline {
     report.close(SyncPhase.refinement);
 
     final int shownNow;
+    await waitWhilePaused();
     if (merging) {
       try {
         if (gates != null) {
@@ -283,11 +311,14 @@ final class CatalogImportPipeline {
       failedRefinements: failedRefinements,
       merged: merging,
     );
+    await waitWhilePaused();
     final programmes = await _importEpg(
       sourceId,
       shownNow,
       credentials,
       discoveredEpgUrl,
+      hold,
+      waitWhilePaused,
     ).catchError((Object error) => error is Failure ? -1 : throw error);
     final epgFailed = programmes < 0;
     report.close(SyncPhase.guide, received: programmes < 0 ? 0 : programmes);
@@ -368,11 +399,16 @@ final class CatalogImportPipeline {
 
   /// Le guide est facultatif : son échec n'annule pas le catalogue déjà activé.
   /// Retourne le nombre de programmes reçus.
+  ///
+  /// Interrompu par [hold], il recommence une fois la pause finie : les
+  /// programmes déjà écrits sont simplement remplacés.
   Future<int> _importEpg(
     int sourceId,
     int catalogId,
     PlaylistCredentials credentials,
     String? discoveredUrl,
+    ImportPause hold,
+    Future<void> Function() waitWhilePaused,
   ) async {
     final now = _clock().toUtc();
     final keys = await _db.epgKeysOfCatalog(catalogId: catalogId).get();
@@ -385,7 +421,30 @@ final class CatalogImportPipeline {
     );
 
     var received = 0;
+    for (;;) {
+      try {
+        received = await _writeEpg(sourceId, request, hold);
+        break;
+      } on _Interrupted {
+        await waitWhilePaused();
+      }
+    }
+    await _db.deleteExpiredProgrammes(
+      sourceId: sourceId,
+      before: _seconds(request.from),
+    );
+    return received;
+  }
+
+  /// Écrit le guide au fil de son arrivée. Retourne le nombre de programmes.
+  Future<int> _writeEpg(
+    int sourceId,
+    EpgRequest request,
+    ImportPause hold,
+  ) async {
+    var received = 0;
     await for (final programmes in _epgAdapter.fetch(request)) {
+      if (hold.isPaused) throw const _Interrupted();
       received += programmes.length;
       await _db.batch((batch) {
         batch.insertAllOnConflictUpdate(_db.epgProgrammes, [
@@ -401,10 +460,6 @@ final class CatalogImportPipeline {
         ]);
       });
     }
-    await _db.deleteExpiredProgrammes(
-      sourceId: sourceId,
-      before: _seconds(request.from),
-    );
     return received;
   }
 
@@ -418,6 +473,10 @@ final class _Report {
   Duration _since = Duration.zero;
   final List<SyncStep> steps = [];
 
+  /// Une pause ne compte dans aucune étape.
+  void stop() => _watch.stop();
+  void start() => _watch.start();
+
   /// Termine l'étape [phase], commencée à la fin de la précédente.
   void close(SyncPhase phase, {int received = 0, int changed = 0}) {
     final now = _watch.elapsed;
@@ -426,6 +485,11 @@ final class _Report {
     );
     _since = now;
   }
+}
+
+/// Une pause a coupé un téléchargement en cours.
+final class _Interrupted implements Exception {
+  const _Interrupted();
 }
 
 /// Graine et multiplicateur de l'empreinte de la liste des chaînes.
